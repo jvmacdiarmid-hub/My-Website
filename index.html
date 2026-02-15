@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Review Search</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f1eb;
+            color: #2c2c2c;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #3a2d27, #5c4033);
+            color: #f5f1eb;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .search-container {
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            background: transparent;
+            color: #2c2c2c;
+        }
+
+        .search-box input::placeholder {
+            color: #999;
+        }
+
+        .search-box button {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .search-box button:hover {
+            background: #3a2d27;
+        }
+
+        .search-box button:disabled {
+            background: #a89888;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 1rem;
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .status-message.error {
+            color: #c0392b;
+        }
+
+        .results-container {
+            max-width: 900px;
+            margin: 0 auto 3rem;
+            padding: 0 1rem;
+        }
+
+        .results-header {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 1rem;
+            padding-left: 0.25rem;
+        }
+
+        .book-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+
+        .book-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .book-card-inner {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .book-cover {
+            flex-shrink: 0;
+            width: 128px;
+        }
+
+        .book-cover img {
+            width: 128px;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .book-cover .no-cover {
+            width: 128px;
+            height: 180px;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            color: #999;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        .book-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .book-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2c2c2c;
+            margin-bottom: 0.25rem;
+        }
+
+        .book-author {
+            font-size: 1rem;
+            color: #777;
+            margin-bottom: 0.75rem;
+        }
+
+        .book-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .meta-tag {
+            background: #f0ebe4;
+            color: #5c4033;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .rating {
+            color: #e8a630;
+            font-weight: 700;
+        }
+
+        .book-description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #444;
+            margin-bottom: 0.75rem;
+        }
+
+        .book-description.truncated {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .toggle-desc {
+            background: none;
+            border: none;
+            color: #5c4033;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .toggle-desc:hover {
+            text-decoration: underline;
+        }
+
+        .reviews-section {
+            border-top: 1px solid #eee;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .reviews-section h3 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: #3a2d27;
+        }
+
+        .review-item {
+            border-left: 3px solid #e8a630;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            background: #fdfbf7;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .review-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .review-author {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #5c4033;
+            margin-bottom: 0.25rem;
+        }
+
+        .review-rating {
+            font-size: 0.85rem;
+            color: #e8a630;
+            margin-bottom: 0.4rem;
+        }
+
+        .review-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        .review-date {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 0.3rem;
+        }
+
+        .external-links {
+            margin-top: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .external-links a {
+            display: inline-block;
+            font-size: 0.85rem;
+            color: #5c4033;
+            text-decoration: none;
+            border: 1px solid #ccc;
+            padding: 0.3rem 0.75rem;
+            border-radius: 4px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .external-links a:hover {
+            background: #f0ebe4;
+            border-color: #5c4033;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ddd;
+            border-top-color: #5c4033;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: #999;
+            font-size: 0.85rem;
+            border-top: 1px solid #e0dbd4;
+        }
+
+        footer a {
+            color: #5c4033;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .book-card-inner {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .book-meta {
+                justify-content: center;
+            }
+
+            .book-description {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Book Review Search</h1>
+    <p>Search for any book and read reviews from readers around the world</p>
+</header>
+
+<div class="search-container">
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Enter a book title..." autocomplete="off">
+        <button id="searchBtn" onclick="searchBooks()">Search</button>
+    </div>
+</div>
+
+<div id="status" class="status-message"></div>
+<div id="results" class="results-container"></div>
+
+<footer>
+    Powered by <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a>
+    and <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a>
+</footer>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchBooks();
+    });
+
+    function setStatus(msg, isError = false) {
+        statusEl.innerHTML = msg;
+        statusEl.className = 'status-message' + (isError ? ' error' : '');
+    }
+
+    function renderStars(rating) {
+        if (!rating) return '';
+        const full = Math.floor(rating);
+        const half = rating - full >= 0.5 ? 1 : 0;
+        const empty = 5 - full - half;
+        return '\u2605'.repeat(full) + (half ? '\u00BD' : '') + '\u2606'.repeat(empty) + ' ' + rating.toFixed(1);
+    }
+
+    async function searchBooks() {
+        const query = searchInput.value.trim();
+        if (!query) {
+            setStatus('Please enter a book title.', true);
+            return;
+        }
+
+        searchBtn.disabled = true;
+        resultsEl.innerHTML = '';
+        setStatus('<span class="spinner"></span> Searching for books...');
+
+        try {
+            // Fetch from both Open Library and Google Books in parallel
+            const [olData, gbData] = await Promise.all([
+                fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(query)}&limit=5`)
+                    .then(r => r.json()).catch(() => null),
+                fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(query)}&maxResults=5`)
+                    .then(r => r.json()).catch(() => null)
+            ]);
+
+            // Merge results, keyed by a normalized title to avoid exact duplicates
+            const books = [];
+            const seen = new Set();
+
+            // Process Google Books results (often has richer review data)
+            if (gbData && gbData.items) {
+                for (const item of gbData.items) {
+                    const v = item.volumeInfo || {};
+                    const key = (v.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+
+                    books.push({
+                        title: v.title || 'Unknown Title',
+                        authors: v.authors || [],
+                        cover: v.imageLinks ? (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail) : null,
+                        description: v.description || '',
+                        publishedDate: v.publishedDate || '',
+                        categories: v.categories || [],
+                        pageCount: v.pageCount || null,
+                        rating: v.averageRating || null,
+                        ratingsCount: v.ratingsCount || 0,
+                        isbn: (v.industryIdentifiers || []).find(i => i.type === 'ISBN_13')?.identifier
+                            || (v.industryIdentifiers || []).find(i => i.type === 'ISBN_10')?.identifier || '',
+                        previewLink: v.previewLink || '',
+                        source: 'google'
+                    });
+                }
+            }
+
+            // Process Open Library results
+            if (olData && olData.docs) {
+                for (const doc of olData.docs) {
+                    const key = (doc.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+
+                    books.push({
+                        title: doc.title || 'Unknown Title',
+                        authors: doc.author_name || [],
+                        cover: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+                        description: '',
+                        publishedDate: doc.first_publish_year ? String(doc.first_publish_year) : '',
+                        categories: doc.subject ? doc.subject.slice(0, 3) : [],
+                        pageCount: doc.number_of_pages_median || null,
+                        rating: doc.ratings_average || null,
+                        ratingsCount: doc.ratings_count || 0,
+                        isbn: (doc.isbn || [])[0] || '',
+                        olKey: doc.key || '',
+                        source: 'openlibrary'
+                    });
+                }
+            }
+
+            if (books.length === 0) {
+                setStatus('No books found. Try a different search term.', true);
+                searchBtn.disabled = false;
+                return;
+            }
+
+            setStatus(`<span class="spinner"></span> Found ${books.length} book(s). Loading reviews...`);
+
+            // Fetch reviews for each book in parallel
+            const reviewPromises = books.map(book => fetchReviews(book));
+            const reviewsPerBook = await Promise.all(reviewPromises);
+
+            books.forEach((book, i) => {
+                book.reviews = reviewsPerBook[i];
+            });
+
+            renderResults(books);
+            setStatus('');
+        } catch (err) {
+            console.error(err);
+            setStatus('An error occurred while searching. Please try again.', true);
+        }
+
+        searchBtn.disabled = false;
+    }
+
+    async function fetchReviews(book) {
+        const reviews = [];
+
+        // 1. Try Open Library ratings/reviews via works API
+        if (book.olKey) {
+            try {
+                const workRes = await fetch(`https://openlibrary.org${book.olKey}.json`);
+                const workData = await workRes.json();
+                if (workData.description) {
+                    if (!book.description) {
+                        book.description = typeof workData.description === 'string'
+                            ? workData.description : workData.description.value || '';
+                    }
+                }
+            } catch (_) {}
+
+            // Open Library ratings
+            try {
+                const ratingsRes = await fetch(`https://openlibrary.org${book.olKey}/ratings.json`);
+                const ratingsData = await ratingsRes.json();
+                if (ratingsData.summary && ratingsData.summary.average && !book.rating) {
+                    book.rating = ratingsData.summary.average;
+                    book.ratingsCount = ratingsData.summary.count || 0;
+                }
+            } catch (_) {}
+        }
+
+        // 2. Google Books embedded user reviews if available (via ISBN lookup)
+        if (book.isbn) {
+            try {
+                const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}&maxResults=1`);
+                const gbData = await gbRes.json();
+                if (gbData.items && gbData.items.length > 0) {
+                    const vol = gbData.items[0].volumeInfo || {};
+                    if (vol.averageRating && !book.rating) {
+                        book.rating = vol.averageRating;
+                        book.ratingsCount = vol.ratingsCount || 0;
+                    }
+                    if (vol.description && !book.description) {
+                        book.description = vol.description;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        // 3. Open Library reviews (community reviews endpoint)
+        if (book.olKey) {
+            try {
+                const editionsRes = await fetch(`https://openlibrary.org${book.olKey}/editions.json?limit=1`);
+                const editionsData = await editionsRes.json();
+                if (editionsData.entries && editionsData.entries.length > 0) {
+                    const edKey = editionsData.entries[0].key;
+                    try {
+                        const revRes = await fetch(`https://openlibrary.org${edKey}/reviews.json`);
+                        const revData = await revRes.json();
+                        if (revData && Array.isArray(revData.entries)) {
+                            for (const rev of revData.entries.slice(0, 10)) {
+                                reviews.push({
+                                    author: rev.reviewer || 'Anonymous',
+                                    text: rev.body || rev.text || '',
+                                    rating: rev.rating || null,
+                                    date: rev.created ? rev.created.value || '' : '',
+                                    source: 'Open Library'
+                                });
+                            }
+                        }
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        }
+
+        // If we still have no reviews, note the rating info as context
+        if (reviews.length === 0 && book.rating) {
+            reviews.push({
+                author: 'Community Rating',
+                text: `This book has an average rating of ${book.rating.toFixed(1)} out of 5 based on ${book.ratingsCount.toLocaleString()} rating(s). Individual text reviews may not be available through the public API.`,
+                rating: book.rating,
+                date: '',
+                source: book.source === 'google' ? 'Google Books' : 'Open Library'
+            });
+        }
+
+        return reviews;
+    }
+
+    function renderResults(books) {
+        resultsEl.innerHTML = `<p class="results-header">Showing ${books.length} result(s)</p>`;
+
+        for (const book of books) {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+
+            const coverHtml = book.cover
+                ? `<img src="${book.cover}" alt="Cover of ${escapeHtml(book.title)}" loading="lazy">`
+                : `<div class="no-cover">No Cover Available</div>`;
+
+            const metaTags = [];
+            if (book.publishedDate) metaTags.push(book.publishedDate);
+            if (book.pageCount) metaTags.push(`${book.pageCount} pages`);
+            if (book.categories.length) metaTags.push(book.categories[0]);
+            if (book.rating) metaTags.push(`<span class="rating">${renderStars(book.rating)}</span>`);
+            if (book.ratingsCount) metaTags.push(`${book.ratingsCount.toLocaleString()} rating(s)`);
+
+            const descId = 'desc-' + Math.random().toString(36).slice(2, 9);
+            const descHtml = book.description
+                ? `<p class="book-description truncated" id="${descId}">${escapeHtml(book.description)}</p>
+                   <button class="toggle-desc" onclick="toggleDesc('${descId}', this)">Show more</button>`
+                : '';
+
+            const linksHtml = [];
+            if (book.previewLink) {
+                linksHtml.push(`<a href="${book.previewLink}" target="_blank" rel="noopener">Google Books</a>`);
+            }
+            if (book.olKey) {
+                linksHtml.push(`<a href="https://openlibrary.org${book.olKey}" target="_blank" rel="noopener">Open Library</a>`);
+            }
+            if (book.isbn) {
+                linksHtml.push(`<a href="https://www.goodreads.com/search?q=${book.isbn}" target="_blank" rel="noopener">Goodreads</a>`);
+            }
+
+            let reviewsHtml = '';
+            if (book.reviews && book.reviews.length > 0) {
+                const reviewItems = book.reviews.map(r => `
+                    <div class="review-item">
+                        <div class="review-author">${escapeHtml(r.author)}</div>
+                        ${r.rating ? `<div class="review-rating">${renderStars(r.rating)}</div>` : ''}
+                        <div class="review-text">${escapeHtml(r.text)}</div>
+                        ${r.date ? `<div class="review-date">${escapeHtml(r.date)}</div>` : ''}
+                    </div>
+                `).join('');
+
+                reviewsHtml = `
+                    <div class="reviews-section">
+                        <h3>Reviews &amp; Ratings</h3>
+                        ${reviewItems}
+                    </div>
+                `;
+            } else {
+                reviewsHtml = `
+                    <div class="reviews-section">
+                        <h3>Reviews &amp; Ratings</h3>
+                        <p style="color: #999; font-size: 0.9rem;">No text reviews available. Check external links below for more reviews.</p>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="book-card-inner">
+                    <div class="book-cover">${coverHtml}</div>
+                    <div class="book-details">
+                        <div class="book-title">${escapeHtml(book.title)}</div>
+                        <div class="book-author">${book.authors.length ? 'by ' + escapeHtml(book.authors.join(', ')) : 'Author unknown'}</div>
+                        <div class="book-meta">${metaTags.map(t => `<span class="meta-tag">${t}</span>`).join('')}</div>
+                        ${descHtml}
+                        <div class="external-links">
+                            ${linksHtml.join('')}
+                        </div>
+                    </div>
+                </div>
+                ${reviewsHtml}
+            `;
+
+            resultsEl.appendChild(card);
+        }
+    }
+
+    function toggleDesc(id, btn) {
+        const el = document.getElementById(id);
+        if (el.classList.contains('truncated')) {
+            el.classList.remove('truncated');
+            btn.textContent = 'Show less';
+        } else {
+            el.classList.add('truncated');
+            btn.textContent = 'Show more';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+
+</body>
+</html>
