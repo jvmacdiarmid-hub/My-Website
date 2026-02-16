@@ -854,29 +854,30 @@
             } catch (_) {}
         }
 
-        // Open Library community reviews
+        // Open Library community reviews via reading log API
         if (book.olKey) {
+            const workId = book.olKey.replace('/works/', '');
             try {
-                const editionsRes = await fetch(`https://openlibrary.org${book.olKey}/editions.json?limit=3`);
-                const editionsData = await editionsRes.json();
-                if (editionsData.entries) {
-                    for (const edition of editionsData.entries) {
-                        try {
-                            const revRes = await fetch(`https://openlibrary.org${edition.key}/reviews.json`);
-                            const revData = await revRes.json();
-                            if (revData && Array.isArray(revData.entries)) {
-                                for (const rev of revData.entries.slice(0, 10)) {
-                                    reviews.push({
-                                        author: rev.reviewer || 'Anonymous',
-                                        text: rev.body || rev.text || '',
-                                        rating: rev.rating || null,
-                                        date: rev.created ? rev.created.value || '' : '',
-                                        source: 'Open Library'
-                                    });
-                                }
-                            }
-                        } catch (_) {}
+                const revRes = await fetch(`https://openlibrary.org/works/${workId}/ratings.json`);
+                const revData = await revRes.json();
+                if (revData.summary && revData.summary.average) {
+                    if (!book.rating) {
+                        book.rating = revData.summary.average;
+                        book.ratingsCount = revData.summary.count || 0;
                     }
+                }
+                // Breakdown by star count provides useful context for Claude
+                if (revData.counts) {
+                    book.ratingBreakdown = revData.counts;
+                }
+            } catch (_) {}
+
+            // Fetch bookshelves data (want-to-read, currently-reading, already-read counts)
+            try {
+                const shelfRes = await fetch(`https://openlibrary.org/works/${workId}/bookshelves.json`);
+                const shelfData = await shelfRes.json();
+                if (shelfData.counts) {
+                    book.shelves = shelfData.counts;
                 }
             } catch (_) {}
         }
@@ -900,6 +901,8 @@
             book.authors.length ? `Author(s): ${book.authors.join(', ')}` : '',
             book.publishedDate ? `Published: ${book.publishedDate}` : '',
             book.rating ? `Average rating: ${book.rating}/5 (${book.ratingsCount} ratings)` : '',
+            book.ratingBreakdown ? `Rating breakdown: 1-star: ${book.ratingBreakdown['1'] || 0}, 2-star: ${book.ratingBreakdown['2'] || 0}, 3-star: ${book.ratingBreakdown['3'] || 0}, 4-star: ${book.ratingBreakdown['4'] || 0}, 5-star: ${book.ratingBreakdown['5'] || 0}` : '',
+            book.shelves ? `Reader shelves: ${book.shelves.want_to_read || 0} want to read, ${book.shelves.currently_reading || 0} currently reading, ${book.shelves.already_read || 0} already read` : '',
             book.categories.length ? `Genres: ${book.categories.join(', ')}` : '',
             book.description ? `Description: ${book.description}` : '',
         ].filter(Boolean).join('\n');
