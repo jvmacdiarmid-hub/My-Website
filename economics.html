@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economics — Book Review Search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="top-nav">
+    <a href="index.html" class="nav-brand">BookLens</a>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="politics.html">Politics</a>
+        <a href="economics.html" class="active">Economics</a>
+        <a href="culture.html">Culture</a>
+        <a href="history.html">History</a>
+        <a href="sociology.html">Sociology</a>
+        <a href="debate.html">Debate</a>
+    </div>
+</nav>
+
+<div class="hero" style="background: linear-gradient(135deg, #064e3b 0%, #059669 40%, #34d399 100%);">
+    <h1>&#128200; Economics</h1>
+    <p>Markets, trade, finance, and the forces shaping the global economy</p>
+</div>
+
+<div class="api-key-bar">
+    <div class="api-key-inner">
+        <label for="apiKeyInput">Claude API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+        <span class="key-status missing" id="keyStatus">Not set</span>
+    </div>
+    <div class="api-key-help">Need a key? <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get one from Anthropic</a></div>
+</div>
+
+<div class="search-container">
+    <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search economics books...">
+        <button id="searchBtn" onclick="searchBooks()">Search</button>
+    </div>
+</div>
+
+<div id="status" class="status-message"></div>
+
+<div class="results-container">
+    <div id="searchResults"></div>
+    <div id="detailView" class="detail-view"></div>
+</div>
+
+<footer>
+    Powered by <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a>,
+    <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a>,
+    and <a href="https://www.anthropic.com" target="_blank" rel="noopener">Claude AI</a>
+</footer>
+
+<script>window.BOOK_CATEGORY = 'economics';</script>
+<script src="app.js"></script>
+</body>
+</html>
