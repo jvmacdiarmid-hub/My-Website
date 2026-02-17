@@ -14,8 +14,8 @@
     --text: #1a1a1a;
     --text-secondary: #555555;
     --text-muted: #888888;
-    --accent: #0066cc;
-    --accent-hover: #004c99;
+    --accent: #c41230;
+    --accent-hover: #9b0e24;
     --rule: #d6d6d6;
     --rule-dark: #aaaaaa;
     --label-politics: #c41e3a;
@@ -38,6 +38,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1.5;
+    border-top: 4px solid #000;
 }
 
 a { color: var(--accent); text-decoration: none; }
@@ -47,8 +48,13 @@ a:hover { text-decoration: underline; }
 
 .masthead {
     text-align: center;
-    padding: 1.25rem 1rem 0.5rem;
-    border-bottom: 1px solid var(--rule);
+    padding: 1.25rem 1rem 0.75rem;
+    border-bottom: 3px solid var(--text);
+}
+
+.masthead-inner {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .masthead-date {
@@ -90,12 +96,12 @@ a:hover { text-decoration: underline; }
 /* ---------- Section Navigation ---------- */
 
 .section-nav {
-    border-bottom: 2px solid var(--text);
+    border-bottom: 1px solid #333;
     padding: 0;
     position: sticky;
     top: 0;
     z-index: 100;
-    background: var(--bg);
+    background: #111;
 }
 
 .section-nav-inner {
@@ -113,7 +119,7 @@ a:hover { text-decoration: underline; }
     font-family: var(--sans);
     font-size: 0.78rem;
     font-weight: 600;
-    color: var(--text);
+    color: rgba(255,255,255,0.80);
     text-decoration: none;
     padding: 0.65rem 1rem;
     letter-spacing: 0.04em;
@@ -125,7 +131,7 @@ a:hover { text-decoration: underline; }
 }
 
 .section-nav a:hover {
-    color: var(--accent);
+    color: #fff;
     text-decoration: none;
 }
 
@@ -140,7 +146,7 @@ a:hover { text-decoration: underline; }
     border: none;
     cursor: pointer;
     padding: 0.5rem;
-    color: var(--text);
+    color: #fff;
 }
 
 .nav-toggle svg { display: block; }
@@ -323,7 +329,7 @@ a:hover { text-decoration: underline; }
 /* Bottom section */
 .bottom-section {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 3fr 2fr;
     gap: 0;
     border-bottom: 1px solid var(--rule);
 }
@@ -393,14 +399,14 @@ a:hover { text-decoration: underline; }
     font-size: 0.95rem;
     color: var(--text-secondary);
     line-height: 1.5;
-    max-width: 560px;
+    max-width: 660px;
     margin: 0 auto;
 }
 
 /* ---------- API key bar ---------- */
 
 .api-key-bar {
-    max-width: 680px;
+    max-width: 760px;
     margin: 1.5rem auto 0;
     padding: 0 1rem;
 }
@@ -468,7 +474,7 @@ a:hover { text-decoration: underline; }
 /* ---------- Search ---------- */
 
 .search-container {
-    max-width: 680px;
+    max-width: 760px;
     margin: 1.25rem auto 1.5rem;
     padding: 0 1rem;
 }
@@ -543,7 +549,7 @@ a:hover { text-decoration: underline; }
 .status-message.error { color: #c41e3a; }
 
 .results-container {
-    max-width: 880px;
+    max-width: 960px;
     margin: 0 auto 3rem;
     padding: 0 1rem;
 }
