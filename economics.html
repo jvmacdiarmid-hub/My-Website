@@ -3,20 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Economics — Book Review Search</title>
+    <title>Economics — BookLens</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<nav class="top-nav">
-    <a href="index.html" class="nav-brand">BookLens</a>
-    <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <div class="nav-links">
+<header class="masthead">
+    <div class="masthead-date">
+        <script>
+            const d = new Date();
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            document.write(days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear());
+        </script>
+    </div>
+    <h1 class="masthead-title"><a href="index.html">BookLens</a></h1>
+    <div class="masthead-tagline">Books, Ideas, and the Conversations That Shape Our World</div>
+</header>
+
+<nav class="section-nav">
+    <div class="section-nav-inner">
         <a href="index.html">Home</a>
         <a href="politics.html">Politics</a>
         <a href="economics.html" class="active">Economics</a>
@@ -27,8 +36,8 @@
     </div>
 </nav>
 
-<div class="hero" style="background: linear-gradient(135deg, #064e3b 0%, #059669 40%, #34d399 100%);">
-    <h1>&#128200; Economics</h1>
+<div class="category-header">
+    <h1>Economics</h1>
     <p>Markets, trade, finance, and the forces shaping the global economy</p>
 </div>
 
