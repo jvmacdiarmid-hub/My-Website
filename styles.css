@@ -449,6 +449,57 @@ a:hover { text-decoration: underline; }
 .persp-badge.center { color: var(--persp-center); }
 .persp-badge.right  { color: var(--persp-right); }
 
+/* ---------- Per-article viewpoint sources ---------- */
+
+.persp-sources {
+    margin-top: 0.85rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--rule);
+}
+
+.persp-sources-label {
+    font-family: var(--sans);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.persp-sources-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+}
+
+.persp-sources-list li a {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    line-height: 1.4;
+    transition: color 0.15s;
+}
+
+.persp-sources-list li a::before {
+    content: '›';
+    flex-shrink: 0;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.5;
+}
+
+.perspective-col.persp-left   .persp-sources-list li a:hover { color: var(--persp-left); }
+.perspective-col.persp-center .persp-sources-list li a:hover { color: var(--persp-center); }
+.perspective-col.persp-right  .persp-sources-list li a:hover { color: var(--persp-right); }
+
 .perspective-col .article-image {
     width: 100%;
     margin-bottom: 0.75rem;
