@@ -1,0 +1,33 @@
+name: Auto-merge Claude branches into master
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Merge Claude branch into master
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          CLAUDE_BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "Merging $CLAUDE_BRANCH into master"
+
+          git fetch origin "$CLAUDE_BRANCH"
+          git merge --no-ff "origin/$CLAUDE_BRANCH" \
+            -m "Auto-merge $CLAUDE_BRANCH into master"
+
+          git push origin master
