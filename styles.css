@@ -513,6 +513,43 @@ a:hover { text-decoration: underline; }
     object-fit: cover;
 }
 
+/* ── Story Supplements: History & Debate ── */
+.story-supplements {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+}
+
+.story-history,
+.story-debate {
+    padding: 1.1rem 1.25rem 1.2rem;
+}
+
+.story-history {
+    border-right: 1px solid var(--rule);
+}
+
+.story-supplements-label {
+    font-family: var(--sans);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.55rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.story-supplements-body {
+    font-family: var(--serif);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin: 0;
+}
+
 /* Section divider */
 .section-divider {
     border: none;
@@ -1245,6 +1282,14 @@ footer a:hover { color: var(--accent); }
     .perspective-col.persp-left   { border-left-color: var(--persp-left); }
     .perspective-col.persp-center { border-left-color: var(--persp-center); }
     .perspective-col.persp-right  { border-left-color: var(--persp-right); border-bottom: none; }
+
+    .story-supplements {
+        grid-template-columns: 1fr;
+    }
+    .story-history {
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+    }
 
     .perspectives-key > div { justify-content: flex-start; }
 
