@@ -25,18 +25,20 @@ jobs:
           CLAUDE_BRANCH="${GITHUB_REF#refs/heads/}"
           echo "Processing branch: $CLAUDE_BRANCH"
 
+          BASE_BRANCH="claude/book-review-search-site-81u4Z"
+
           # Check if a PR already exists for this branch
-          EXISTING_PR=$(gh pr list --head "$CLAUDE_BRANCH" --base master --json number -q '.[0].number' 2>/dev/null)
+          EXISTING_PR=$(gh pr list --head "$CLAUDE_BRANCH" --base "$BASE_BRANCH" --json number -q '.[0].number' 2>/dev/null)
 
           if [ -n "$EXISTING_PR" ]; then
             echo "PR #$EXISTING_PR already exists"
             PR_NUM="$EXISTING_PR"
           else
             PR_NUM=$(gh pr create \
-              --base master \
+              --base "$BASE_BRANCH" \
               --head "$CLAUDE_BRANCH" \
-              --title "Merge $CLAUDE_BRANCH into master" \
-              --body "Automated merge of $CLAUDE_BRANCH into master." \
+              --title "Merge $CLAUDE_BRANCH" \
+              --body "Automated merge of $CLAUDE_BRANCH." \
               --json number -q '.number')
             echo "Created PR #$PR_NUM"
           fi
