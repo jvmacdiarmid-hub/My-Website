@@ -8,26 +8,38 @@ on:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
-      - name: Checkout master
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master
           fetch-depth: 0
-          # Use PAT so the push can bypass branch protection
-          token: ${{ secrets.AUTO_MERGE_TOKEN }}
 
-      - name: Merge Claude branch into master
+      - name: Create PR and merge into master
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
           CLAUDE_BRANCH="${GITHUB_REF#refs/heads/}"
-          echo "Merging $CLAUDE_BRANCH into master"
+          echo "Processing branch: $CLAUDE_BRANCH"
 
-          git fetch origin "$CLAUDE_BRANCH"
-          git merge --no-ff "origin/$CLAUDE_BRANCH" \
-            -m "Auto-merge $CLAUDE_BRANCH into master"
+          # Check if a PR already exists for this branch
+          EXISTING_PR=$(gh pr list --head "$CLAUDE_BRANCH" --base master --json number -q '.[0].number' 2>/dev/null)
 
-          git push origin master
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists"
+            PR_NUM="$EXISTING_PR"
+          else
+            PR_NUM=$(gh pr create \
+              --base master \
+              --head "$CLAUDE_BRANCH" \
+              --title "Merge $CLAUDE_BRANCH into master" \
+              --body "Automated merge of $CLAUDE_BRANCH into master." \
+              --json number -q '.number')
+            echo "Created PR #$PR_NUM"
+          fi
+
+          # Merge the PR
+          gh pr merge "$PR_NUM" --merge
