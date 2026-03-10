@@ -1,0 +1,19 @@
+{
+  "name": "nvca-proforma",
+  "version": "1.0.0",
+  "description": "NVCA Pro Forma Builder and Analyzer — browser app + CLI test runner",
+  "scripts": {
+    "test":          "node run-tests.js",
+    "test:pps":      "node run-tests.js --category PPS",
+    "test:safe":     "node run-tests.js --category SAFE",
+    "test:notes":    "node run-tests.js --category 'Convertible Notes'",
+    "test:pool":     "node run-tests.js --category 'Option Pool'",
+    "test:full":     "node run-tests.js --category 'Full Pro Forma'",
+    "test:analysis": "node run-tests.js --category Analyzer",
+    "test:list":     "node run-tests.js --list"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "license": "MIT"
+}

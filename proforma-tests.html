@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pro Forma Test Runner — Victor Macdiarmid</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #1a1a1a; --dark: #2c2c2c; --mid: #555; --muted: #888;
+      --border: #d9d9d9; --bg: #f8f6f2; --white: #ffffff;
+      --red: #c41e3a; --green: #2e7d32; --amber: #b45309; --blue: #1565c0;
+      --pass-bg: #f0fdf4; --pass-border: #bbf7d0; --pass-text: #166534;
+      --fail-bg: #fff5f5; --fail-border: #fecaca; --fail-text: #991b1b;
+      --skip-bg: #fafafa; --skip-border: var(--border); --skip-text: var(--muted);
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans:  'Inter', system-ui, sans-serif;
+    }
+    body { font-family: var(--sans); background: var(--bg); color: var(--black); font-size: 14px; line-height: 1.5; }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    .site-nav { background: var(--white); border-bottom: 2px solid var(--black); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 24px; height: 48px; }
+    .nav-logo  { font-family: var(--serif); font-weight: 700; font-size: 18px; text-decoration: none; color: var(--black); white-space: nowrap; }
+    .nav-links { display: flex; gap: 16px; }
+    .nav-links a { font-size: 12px; font-weight: 500; color: var(--mid); text-decoration: none; text-transform: uppercase; letter-spacing: .04em; }
+    .nav-links a:hover { color: var(--black); }
+    .nav-links a.active { color: var(--black); border-bottom: 2px solid var(--black); }
+
+    /* ── Page header ─────────────────────────────────────────── */
+    .page-header { background: var(--white); border-bottom: 1px solid var(--border); padding: 20px; }
+    .header-inner { max-width: 1400px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .page-header h1 { font-family: var(--serif); font-size: 26px; }
+    .page-header p  { color: var(--mid); font-size: 13px; margin-top: 4px; }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: var(--sans); transition: background .15s; }
+    .btn-primary   { background: var(--black); color: var(--white); }
+    .btn-primary:hover { background: var(--dark); }
+    .btn-secondary { background: var(--white); color: var(--black); border-color: var(--border); }
+    .btn-secondary:hover { border-color: #aaa; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content { max-width: 1400px; margin: 0 auto; padding: 16px 20px; display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 800px) { .content { grid-template-columns: 1fr; } }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 64px; }
+    .panel { background: var(--white); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+    .panel-header { padding: 10px 14px; border-bottom: 1px solid var(--border); background: #fafafa; display: flex; align-items: center; justify-content: space-between; }
+    .panel-title  { font-size: 13px; font-weight: 600; }
+    .panel-body   { padding: 12px 14px; }
+
+    /* ── Summary scoreboard ──────────────────────────────────── */
+    .scoreboard { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .score-card { text-align: center; padding: 10px 6px; border-radius: 4px; }
+    .score-card.pass { background: var(--pass-bg); border: 1px solid var(--pass-border); }
+    .score-card.fail { background: var(--fail-bg); border: 1px solid var(--fail-border); }
+    .score-card.skip { background: var(--skip-bg); border: 1px solid var(--skip-border); }
+    .score-num  { font-size: 28px; font-weight: 700; line-height: 1; }
+    .score-card.pass .score-num { color: var(--pass-text); }
+    .score-card.fail .score-num { color: var(--fail-text); }
+    .score-card.skip .score-num { color: var(--muted); }
+    .score-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing:.04em; margin-top: 2px; }
+
+    /* ── Progress bar ────────────────────────────────────────── */
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+    .progress-fill { height: 100%; border-radius: 3px; background: var(--green); transition: width .3s; }
+
+    /* ── Category filter ─────────────────────────────────────── */
+    .cat-list { display: flex; flex-direction: column; gap: 4px; }
+    .cat-btn { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; background: var(--white); color: var(--black); font-family: var(--sans); text-align: left; transition: background .15s; }
+    .cat-btn:hover  { background: #f0ede8; }
+    .cat-btn.active { background: var(--black); color: var(--white); border-color: var(--black); }
+    .cat-btn.active .cat-count { background: rgba(255,255,255,.2); }
+    .cat-count { font-size: 10px; padding: 1px 5px; border-radius: 10px; background: #eee; }
+
+    /* ── Custom test panel ───────────────────────────────────── */
+    .custom-panel textarea { width: 100%; font-family: monospace; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; padding: 8px; resize: vertical; background: #fafaf8; color: var(--black); }
+    .custom-panel textarea:focus { outline: none; border-color: var(--black); }
+
+    /* ── Test list ───────────────────────────────────────────── */
+    .test-list { display: flex; flex-direction: column; gap: 6px; }
+    .test-item { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; cursor: pointer; transition: border-color .15s; }
+    .test-item:hover { border-color: #aaa; }
+    .test-item.pass { border-left: 4px solid var(--green); }
+    .test-item.fail { border-left: 4px solid var(--red); }
+    .test-item.pending { border-left: 4px solid var(--border); }
+    .test-item.running { border-left: 4px solid var(--amber); }
+    .test-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--white); }
+    .test-status-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+    .icon-pass    { background: var(--pass-bg); color: var(--green); border: 1px solid var(--pass-border); }
+    .icon-fail    { background: var(--fail-bg); color: var(--red);   border: 1px solid var(--fail-border); }
+    .icon-pending { background: #f5f5f5; color: var(--muted); border: 1px solid var(--border); }
+    .icon-running { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; animation: pulse .8s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .test-name { flex: 1; font-size: 13px; font-weight: 500; }
+    .test-cat  { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: #eee; color: var(--mid); white-space: nowrap; }
+    .test-dur  { font-size: 11px; color: var(--muted); white-space: nowrap; min-width: 48px; text-align: right; }
+    .test-error { background: var(--fail-bg); padding: 10px 14px 10px 46px; font-family: monospace; font-size: 12px; color: var(--fail-text); border-top: 1px solid var(--fail-border); display: none; }
+    .test-item.fail.expanded .test-error { display: block; }
+    .run-single-btn { padding: 3px 8px; font-size: 11px; background: var(--white); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; color: var(--mid); font-family: var(--sans); }
+    .run-single-btn:hover { border-color: var(--black); color: var(--black); }
+
+    /* ── Console output ─────────────────────────────────────── */
+    .console-wrap { background: #1e1e1e; border-radius: 4px; overflow: hidden; }
+    .console-titlebar { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: #2d2d2d; font-size: 11px; color: #aaa; }
+    .console-body { font-family: monospace; font-size: 12px; padding: 10px 12px; max-height: 200px; overflow-y: auto; color: #d4d4d4; }
+    .log-pass  { color: #4ec9b0; }
+    .log-fail  { color: #f48771; }
+    .log-info  { color: #9cdcfe; }
+    .log-muted { color: #6a9955; }
+    .console-body::-webkit-scrollbar { width: 6px; }
+    .console-body::-webkit-scrollbar-track { background: #1e1e1e; }
+    .console-body::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+    /* ── Category badge colours ─────────────────────────────── */
+    .cat-Utilities      { background: #e8f5e9; color: #2e7d32; }
+    .cat-PPS            { background: #e3f2fd; color: #1565c0; }
+    .cat-SAFE           { background: #fce4ec; color: #c62828; }
+    .cat-Notes          { background: #f9fbe7; color: #558b2f; }
+    .cat-Option-Pool    { background: #fff3e0; color: #b45309; }
+    .cat-Full-Pro-Forma { background: #f3e5f5; color: #6a1b9a; }
+    .cat-Analyzer       { background: #e0f2f1; color: #00695c; }
+    .cat-Rounding       { background: #fafafa; color: var(--muted); }
+    .cat-Custom         { background: #fff9c4; color: #f57f17; }
+
+    /* ── Misc ──────────────────────────────────────────────── */
+    .empty-msg { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .section-title { font-size: 13px; font-weight: 600; }
+    .chip { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .chip-pass { background: var(--pass-bg); color: var(--pass-text); border: 1px solid var(--pass-border); }
+    .chip-fail { background: var(--fail-bg); color: var(--fail-text); border: 1px solid var(--fail-border); }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAV ══════════════════════════════════════════════════════ -->
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Victor Macdiarmid</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="proforma.html">Pro Forma</a>
+      <a href="proforma-tests.html" class="active">Tests</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="header-inner">
+    <div>
+      <h1>Pro Forma Test Runner</h1>
+      <p>Browser-based test harness for the NVCA pro forma engine &mdash; iterate fast, catch regressions early.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-primary" id="run-all-btn" onclick="runAll()">&#9654; Run All Tests</button>
+      <button class="btn btn-secondary" onclick="runFiltered()">&#9654; Run Category</button>
+      <button class="btn btn-secondary" onclick="resetAll()">&#10227; Reset</button>
+      <a href="proforma.html" class="btn btn-secondary">&#8592; Pro Forma Builder</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONTENT ══════════════════════════════════════════════════ -->
+<div class="content">
+
+  <!-- ─── SIDEBAR ─────────────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <!-- Scoreboard -->
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Results</span><span id="duration-label" style="font-size:11px;color:var(--muted)"></span></div>
+      <div class="panel-body">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="scoreboard">
+          <div class="score-card pass"><div class="score-num" id="count-pass">—</div><div class="score-label">Pass</div></div>
+          <div class="score-card fail"><div class="score-num" id="count-fail">—</div><div class="score-label">Fail</div></div>
+          <div class="score-card skip"><div class="score-num" id="count-skip">—</div><div class="score-label">Pending</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category filter -->
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Categories</span></div>
+      <div class="panel-body">
+        <div class="cat-list" id="cat-list"></div>
+      </div>
+    </div>
+
+    <!-- Custom test sandbox -->
+    <div class="panel custom-panel">
+      <div class="panel-header"><span class="panel-title">Custom Test</span></div>
+      <div class="panel-body" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="font-size:11px;color:var(--muted);">Write a JS snippet. Use <code>E</code> for the engine and <code>T</code> for test helpers. Throw an Error to fail.</p>
+        <textarea id="custom-code" rows="7" spellcheck="false">// Example: check PPS for a custom scenario
+const s = [
+  { name:'Founders', type:'common', shares:5000000 },
+  { name:'Pool', type:'option', shares:500000 },
+];
+const r = E.buildProForma(s, {
+  roundName: 'Seed',
+  preMoneyValuation: 5000000,
+  newInvestment: 1000000,
+  newShareClass: 'Seed Preferred',
+});
+T.assertGt(r.pps, 0, 'PPS must be positive');
+console.log('PPS:', E.formatCurrency(r.pps, 4));
+console.log('Post FD:', E.formatNumber(r.postFD));</textarea>
+        <button class="btn btn-primary btn-sm" onclick="runCustom()">&#9654; Run Custom</button>
+        <div id="custom-result"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── MAIN: TEST LIST ──────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Console -->
+    <div class="console-wrap">
+      <div class="console-titlebar">
+        <span>Console Output</span>
+        <button onclick="clearConsole()" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:11px;font-family:var(--sans);">Clear</button>
+      </div>
+      <div class="console-body" id="console-body">
+        <span class="log-muted">// Ready. Click "Run All Tests" to begin.</span>
+      </div>
+    </div>
+
+    <!-- Test items -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title" id="tests-heading">All Tests</span>
+        <span id="filter-label" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div class="panel-body">
+        <div class="test-list" id="test-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="proforma-engine.js"></script>
+<script src="proforma-tests.js"></script>
+<script>
+// ══ STATE ═══════════════════════════════════════════════════════
+const E = ProFormaEngine;
+const T = ProFormaTests;
+let activeCategory = 'All';
+let testStates     = {};   // name → { status, error, duration }
+let isRunning      = false;
+
+// ══ INIT ═════════════════════════════════════════════════════════
+function init() {
+  renderCatList();
+  renderTestList();
+  updateScoreboard();
+}
+
+// ══ CATEGORY LIST ════════════════════════════════════════════════
+function renderCatList() {
+  const cats    = ['All', ...T.getCategories()];
+  const results = Object.values(testStates);
+  const countFor = cat => cat === 'All'
+    ? T.registry.length
+    : T.registry.filter(t => t.category === cat).length;
+
+  document.getElementById('cat-list').innerHTML = cats.map(cat => {
+    const tests   = cat === 'All' ? T.registry : T.registry.filter(t => t.category === cat);
+    const passed  = tests.filter(t => testStates[t.name]?.status === 'pass').length;
+    const failed  = tests.filter(t => testStates[t.name]?.status === 'fail').length;
+    const hasRun  = passed + failed > 0;
+    const allPass = hasRun && failed === 0;
+    const hasFail = failed > 0;
+
+    const chipHtml = hasRun
+      ? `<span class="chip ${hasFail?'chip-fail':'chip-pass'}">${passed}/${tests.length}</span>`
+      : `<span class="cat-count">${countFor(cat)}</span>`;
+
+    return `<button class="cat-btn ${activeCategory===cat?'active':''}" onclick="setCat('${escJs(cat)}')">${escHtml(cat)} ${chipHtml}</button>`;
+  }).join('');
+}
+
+function setCat(cat) {
+  activeCategory = cat;
+  renderCatList();
+  renderTestList();
+  document.getElementById('tests-heading').textContent = cat === 'All' ? 'All Tests' : cat;
+  document.getElementById('filter-label').textContent  = cat === 'All' ? '' : `Showing: ${cat}`;
+}
+
+// ══ TEST LIST RENDER ═════════════════════════════════════════════
+function renderTestList() {
+  const tests = activeCategory === 'All'
+    ? T.registry
+    : T.registry.filter(t => t.category === activeCategory);
+
+  if (!tests.length) {
+    document.getElementById('test-list').innerHTML = '<p class="empty-msg">No tests in this category.</p>';
+    return;
+  }
+
+  document.getElementById('test-list').innerHTML = tests.map(t => {
+    const st   = testStates[t.name];
+    const stat = st ? st.status : 'pending';
+    const dur  = st?.duration != null ? `${st.duration}ms` : '';
+    const err  = st?.error || '';
+
+    const iconMap = { pass:'&#10003;', fail:'&#10005;', pending:'&middot;', running:'&#8230;' };
+    const icon    = iconMap[stat] || '·';
+    const catCls  = `cat-${t.category.replace(/\s+/g,'-')}`;
+    const expanded = stat === 'fail' ? 'expanded' : '';
+
+    return `
+      <div class="test-item ${stat} ${expanded}" id="ti-${escId(t.name)}" onclick="toggleTestItem(this)">
+        <div class="test-header">
+          <div class="test-status-icon icon-${stat}">${icon}</div>
+          <span class="test-name">${escHtml(t.name)}</span>
+          <span class="test-cat ${catCls}">${escHtml(t.category)}</span>
+          <span class="test-dur">${dur}</span>
+          <button class="run-single-btn" onclick="event.stopPropagation();runSingle('${escJs(t.name)}')" title="Run this test">&#9654;</button>
+        </div>
+        ${err ? `<div class="test-error">${escHtml(err)}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function toggleTestItem(el) {
+  if (el.classList.contains('fail')) {
+    el.classList.toggle('expanded');
+  }
+}
+
+// ══ SCOREBOARD ═══════════════════════════════════════════════════
+function updateScoreboard() {
+  const all     = T.registry;
+  const passed  = all.filter(t => testStates[t.name]?.status === 'pass').length;
+  const failed  = all.filter(t => testStates[t.name]?.status === 'fail').length;
+  const pending = all.filter(t => !testStates[t.name] || testStates[t.name].status === 'pending').length;
+  const total   = all.length;
+
+  document.getElementById('count-pass').textContent = passed;
+  document.getElementById('count-fail').textContent = failed;
+  document.getElementById('count-skip').textContent = pending;
+
+  const done = passed + failed;
+  const pct  = total > 0 ? (done / total) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-fill').style.background = failed > 0 ? 'var(--red)' : 'var(--green)';
+}
+
+// ══ RUN ALL ═══════════════════════════════════════════════════════
+async function runAll() {
+  if (isRunning) return;
+  isRunning = true;
+  const btn = document.getElementById('run-all-btn');
+  btn.textContent = '⏳ Running…';
+  btn.disabled = true;
+
+  testStates = {};
+  // Mark all as running
+  T.registry.forEach(t => { testStates[t.name] = { status: 'running', error: null, duration: null }; });
+  renderTestList(); updateScoreboard();
+
+  const start = performance.now();
+  consoleLine('info', `▶ Running ${T.registry.length} tests…`);
+
+  await T.runAll(result => {
+    testStates[result.name] = result;
+    updateTestItem(result);
+    updateScoreboard();
+    renderCatList();
+    consoleLine(result.status === 'pass' ? 'pass' : 'fail',
+      `  ${result.status === 'pass' ? '✓' : '✗'} [${result.category}] ${result.name}` +
+      (result.error ? `: ${result.error}` : '') +
+      ` (${result.duration}ms)`);
+  });
+
+  const elapsed   = (performance.now() - start).toFixed(0);
+  const passed    = Object.values(testStates).filter(s => s.status === 'pass').length;
+  const failed    = Object.values(testStates).filter(s => s.status === 'fail').length;
+  document.getElementById('duration-label').textContent = `${elapsed}ms`;
+  consoleLine('info', `\n● ${passed} passed, ${failed} failed in ${elapsed}ms`);
+
+  btn.textContent = '▶ Run All Tests';
+  btn.disabled    = false;
+  isRunning       = false;
+  renderTestList();
+}
+
+async function runFiltered() {
+  if (activeCategory === 'All') { runAll(); return; }
+  const tests = T.registry.filter(t => t.category === activeCategory);
+  if (!tests.length) return;
+
+  consoleLine('info', `▶ Running ${tests.length} tests in "${activeCategory}"…`);
+  for (const t of tests) {
+    testStates[t.name] = { status: 'running', error: null, duration: null };
+    updateTestItem({ ...t, ...testStates[t.name] });
+  }
+
+  await T.runCategory(activeCategory, result => {
+    testStates[result.name] = result;
+    updateTestItem(result);
+    updateScoreboard();
+    renderCatList();
+    consoleLine(result.status === 'pass' ? 'pass' : 'fail',
+      `  ${result.status === 'pass' ? '✓' : '✗'} ${result.name}` +
+      (result.error ? `: ${result.error}` : ''));
+  });
+  renderTestList();
+}
+
+async function runSingle(name) {
+  const prev = testStates[name];
+  testStates[name] = { status: 'running', error: null, duration: null };
+  updateTestItem({ name, category: T.registry.find(t=>t.name===name)?.category||'', ...testStates[name] });
+
+  consoleLine('info', `▶ ${name}`);
+  const result = await T.runOne(name);
+  testStates[result.name] = result;
+  updateTestItem(result);
+  updateScoreboard();
+  renderCatList();
+
+  consoleLine(result.status === 'pass' ? 'pass' : 'fail',
+    `  ${result.status === 'pass' ? '✓ PASS' : '✗ FAIL'}: ${result.name}` +
+    (result.error ? `\n    ${result.error}` : '') +
+    ` (${result.duration}ms)`);
+}
+
+function updateTestItem(result) {
+  const el = document.getElementById('ti-' + escId(result.name));
+  if (!el) return;
+  el.className = `test-item ${result.status} ${result.status === 'fail' ? 'expanded' : ''}`;
+  const iconMap = { pass:'&#10003;', fail:'&#10005;', pending:'&middot;', running:'&#8230;' };
+  el.querySelector('.test-status-icon').className = `test-status-icon icon-${result.status}`;
+  el.querySelector('.test-status-icon').innerHTML = iconMap[result.status] || '·';
+  el.querySelector('.test-dur').textContent = result.duration != null ? `${result.duration}ms` : '';
+
+  let errDiv = el.querySelector('.test-error');
+  if (result.error) {
+    if (!errDiv) {
+      errDiv = document.createElement('div');
+      errDiv.className = 'test-error';
+      el.appendChild(errDiv);
+    }
+    errDiv.style.display = 'block';
+    errDiv.textContent = result.error;
+  } else if (errDiv) {
+    errDiv.style.display = 'none';
+  }
+}
+
+function resetAll() {
+  testStates = {};
+  renderTestList();
+  renderCatList();
+  updateScoreboard();
+  document.getElementById('duration-label').textContent = '';
+  document.getElementById('progress-fill').style.width = '0%';
+  consoleLine('muted', '// Reset. Run tests to see results.');
+}
+
+// ══ CUSTOM TEST SANDBOX ══════════════════════════════════════════
+async function runCustom() {
+  const code = document.getElementById('custom-code').value;
+  const resultEl = document.getElementById('custom-result');
+
+  consoleLine('info', '▶ Running custom test…');
+
+  // Capture console.log within the sandbox
+  const logs = [];
+  const sandboxConsole = { log: (...args) => {
+    const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    logs.push(msg);
+    consoleLine('info', '  ' + msg);
+  }};
+
+  try {
+    const fn = new Function('E', 'T', 'console', code);
+    await fn(ProFormaEngine, ProFormaTests, sandboxConsole);
+
+    resultEl.innerHTML = `
+      <div style="padding:8px 10px;background:var(--pass-bg);border:1px solid var(--pass-border);border-radius:4px;font-size:12px;color:var(--pass-text);">
+        &#10003; Custom test passed
+        ${logs.length ? `<br><pre style="margin-top:6px;font-size:11px;color:var(--mid)">${escHtml(logs.join('\n'))}</pre>` : ''}
+      </div>`;
+    consoleLine('pass', '  ✓ Custom test passed');
+  } catch (err) {
+    resultEl.innerHTML = `
+      <div style="padding:8px 10px;background:var(--fail-bg);border:1px solid var(--fail-border);border-radius:4px;font-size:12px;color:var(--fail-text);font-family:monospace;">
+        &#10005; ${escHtml(err.message)}
+      </div>`;
+    consoleLine('fail', '  ✗ ' + err.message);
+  }
+}
+
+// ══ CONSOLE ══════════════════════════════════════════════════════
+function consoleLine(type, text) {
+  const body = document.getElementById('console-body');
+  const span = document.createElement('div');
+  span.className = `log-${type}`;
+  span.textContent = text;
+  body.appendChild(span);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('console-body').innerHTML = '<span class="log-muted">// Console cleared.</span>';
+}
+
+// ══ UTILS ════════════════════════════════════════════════════════
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s)   { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escId(s)   { return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
+
+// ══ BOOT ═════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
