@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NVCA Pro Forma Builder — Victor Macdiarmid</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #1a1a1a;
+      --dark:  #2c2c2c;
+      --mid:   #555;
+      --muted: #888;
+      --border:#d9d9d9;
+      --bg:    #f8f6f2;
+      --white: #ffffff;
+      --red:   #c41e3a;
+      --green: #2e7d32;
+      --amber: #b45309;
+      --blue:  #1565c0;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans:  'Inter', system-ui, sans-serif;
+      --radius: 4px;
+    }
+    body { font-family: var(--sans); background: var(--bg); color: var(--black); font-size: 14px; line-height: 1.5; }
+
+    /* ── Navigation ───────────────────────────────────────────── */
+    .site-nav { background: var(--white); border-bottom: 2px solid var(--black); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 24px; height: 48px; }
+    .nav-logo { font-family: var(--serif); font-weight: 700; font-size: 18px; text-decoration: none; color: var(--black); white-space: nowrap; }
+    .nav-links { display: flex; gap: 16px; }
+    .nav-links a { font-size: 12px; font-weight: 500; color: var(--mid); text-decoration: none; text-transform: uppercase; letter-spacing: .04em; }
+    .nav-links a:hover { color: var(--black); }
+    .nav-links a.active { color: var(--black); border-bottom: 2px solid var(--black); }
+
+    /* ── Page header ──────────────────────────────────────────── */
+    .page-header { background: var(--white); border-bottom: 1px solid var(--border); padding: 20px; text-align: center; }
+    .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 700; }
+    .page-header p  { color: var(--mid); font-size: 13px; margin-top: 4px; }
+    .header-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+
+    /* ── Buttons ──────────────────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: background .15s, border-color .15s; font-family: var(--sans); }
+    .btn-primary   { background: var(--black); color: var(--white); }
+    .btn-primary:hover { background: var(--dark); }
+    .btn-secondary { background: var(--white); color: var(--black); border-color: var(--border); }
+    .btn-secondary:hover { border-color: #aaa; }
+    .btn-danger    { background: var(--white); color: var(--red); border-color: #f0b0b0; }
+    .btn-danger:hover { background: #fff0f0; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-icon { padding: 5px 8px; font-size: 13px; }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .main-layout { max-width: 1400px; margin: 0 auto; padding: 16px 20px; display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+    /* ── Panels ───────────────────────────────────────────────── */
+    .panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+    .panel-title  { font-family: var(--serif); font-size: 15px; font-weight: 600; }
+    .panel-body   { padding: 16px; }
+
+    /* ── Forms ────────────────────────────────────────────────── */
+    .field-group { display: grid; gap: 12px; }
+    .field-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 12px; font-weight: 500; color: var(--mid); text-transform: uppercase; letter-spacing: .04em; }
+    input[type="text"], input[type="number"], select {
+      font-family: var(--sans); font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--black); background: var(--white); width: 100%;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--black); }
+    input[type="number"] { font-variant-numeric: tabular-nums; }
+    .field-hint { font-size: 11px; color: var(--muted); }
+    select { cursor: pointer; }
+
+    /* ── Divider ──────────────────────────────────────────────── */
+    .section-divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .section-label   { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+
+    /* ── Cap table input ──────────────────────────────────────── */
+    #cap-table-rows { display: flex; flex-direction: column; gap: 6px; }
+    .stakeholder-row {
+      display: grid; grid-template-columns: minmax(0,1.8fr) 100px minmax(0,1.2fr) 26px; gap: 6px; align-items: center;
+      padding: 8px; background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .stakeholder-row .row-type-badge {
+      display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; white-space: nowrap;
+    }
+    .badge-common   { background: #e8f5e9; color: #2e7d32; }
+    .badge-preferred{ background: #e3f2fd; color: #1565c0; }
+    .badge-option   { background: #fff3e0; color: #b45309; }
+    .badge-warrant  { background: #f3e5f5; color: #6a1b9a; }
+    .badge-safe     { background: #fce4ec; color: #c62828; }
+    .badge-note     { background: #f9fbe7; color: #558b2f; }
+    .remove-row-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; padding: 2px; border-radius: 2px; }
+    .remove-row-btn:hover { color: var(--red); background: #fff0f0; }
+
+    /* Expandable extra fields for SAFE/note */
+    .extra-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--border); }
+    .extra-fields input { font-size: 12px; padding: 5px 8px; }
+
+    /* ── Add row type bar ─────────────────────────────────────── */
+    .add-row-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+    /* ── Templates ────────────────────────────────────────────── */
+    .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .template-card { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border-color .15s, background .15s; }
+    .template-card:hover { border-color: var(--black); background: #f0ede8; }
+    .template-card h4 { font-size: 13px; font-weight: 600; }
+    .template-card p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Output ───────────────────────────────────────────────── */
+    .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    @media (max-width: 700px) { .metrics-grid { grid-template-columns: 1fr 1fr; } }
+    .metric-card  { background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+    .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .metric-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; color: var(--black); }
+    .metric-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Cap table display ────────────────────────────────────── */
+    .cap-table-wrap { overflow-x: auto; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--black); color: var(--white); }
+    thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:hover { background: #f5f3ef; }
+    tbody tr.group-header td { background: #f0ede8; font-weight: 600; font-size: 12px; color: var(--mid); padding: 4px 10px; text-transform: uppercase; letter-spacing: .04em; }
+    tbody td { padding: 8px 10px; }
+    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tbody td.pct { text-align: right; color: var(--mid); font-size: 12px; }
+    tfoot tr { background: #f0ede8; font-weight: 600; }
+    tfoot td { padding: 8px 10px; }
+    tfoot td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .change-badge { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 4px; }
+    .badge-new     { background: #e3f2fd; color: var(--blue); }
+    .badge-converted { background: #e8f5e9; color: var(--green); }
+    .badge-expanded { background: #fff3e0; color: var(--amber); }
+    .bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 3px; }
+    .bar-fill { height: 100%; border-radius: 2px; background: var(--black); }
+
+    /* ── Analysis panel ───────────────────────────────────────── */
+    .analysis-section { margin-bottom: 16px; }
+    .analysis-section:last-child { margin-bottom: 0; }
+    .analysis-section h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .issue-list { display: flex; flex-direction: column; gap: 6px; }
+    .issue-item { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border-left: 3px solid transparent; }
+    .issue-item.error   { background: #fff5f5; border-color: var(--red);   color: #7f1d1d; }
+    .issue-item.warning { background: #fffbeb; border-color: var(--amber);  color: #78350f; }
+    .issue-item.note    { background: #f0f9ff; border-color: var(--blue);   color: #1e3a5f; }
+    .issue-icon { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
+    .issue-text { font-size: 12px; line-height: 1.5; }
+    .issue-code { font-weight: 600; font-size: 11px; margin-right: 6px; opacity: .7; font-family: monospace; }
+
+    /* ── Status banner ────────────────────────────────────────── */
+    .status-banner { padding: 10px 14px; border-radius: var(--radius); display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500; }
+    .status-ok      { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+    .status-warning { background: #fffbeb; color: var(--amber);  border: 1px solid #fde68a; }
+    .status-error   { background: #fff5f5; color: var(--red);    border: 1px solid #fecaca; }
+
+    /* ── Conversion table ─────────────────────────────────────── */
+    .conv-table td.conv-basis { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 10px; }
+    .basis-cap      { background: #e3f2fd; color: var(--blue); }
+    .basis-discount { background: #f3e5f5; color: #6a1b9a; }
+    .basis-pps      { background: #e8f5e9; color: var(--green); }
+
+    /* ── Empty state ──────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .empty-state h3 { font-size: 16px; color: var(--mid); margin-bottom: 8px; }
+    .empty-state p  { font-size: 13px; }
+
+    /* ── Tab nav ──────────────────────────────────────────────── */
+    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 16px; background: #fafafa; }
+    .tab-btn { padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--mid); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; font-family: var(--sans); }
+    .tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
+    .tab-btn:hover  { color: var(--black); }
+    .tab-pane { display: none; padding: 16px; }
+    .tab-pane.active { display: block; }
+
+    /* ── Misc ─────────────────────────────────────────────────── */
+    .text-muted { color: var(--muted); }
+    .text-right { text-align: right; }
+    .font-mono  { font-family: monospace; }
+    .tooltip { position: relative; }
+    .tooltip[data-tip]:hover::after { content: attr(data-tip); position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 3px; white-space: nowrap; z-index: 999; margin-top: 4px; }
+    .test-link { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--blue); text-decoration: none; }
+    .test-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAVIGATION ══════════════════════════════════════════════ -->
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Victor Macdiarmid</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="technology.html">Books</a>
+      <a href="proforma.html" class="active">Pro Forma</a>
+      <a href="proforma-tests.html">Tests</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ PAGE HEADER ═════════════════════════════════════════════ -->
+<div class="page-header">
+  <h1>NVCA Pro Forma Builder</h1>
+  <p>Build NVCA-compliant financing pro formas · Analyze equity pool, PPS, rounding, SAFE/note conversions</p>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="buildAndRender()">&#9654; Build Pro Forma</button>
+    <button class="btn btn-secondary" onclick="clearAll()">&#10006; Clear All</button>
+    <a href="proforma-tests.html" class="btn btn-secondary">&#128300; Test Runner</a>
+  </div>
+</div>
+
+<!-- ══ MAIN LAYOUT ═════════════════════════════════════════════ -->
+<div class="main-layout">
+
+  <!-- ─── LEFT: INPUT PANEL ──────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Templates -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Load Template</span>
+        <span class="text-muted" style="font-size:11px;">Pre-filled NVCA scenarios</span>
+      </div>
+      <div class="panel-body">
+        <div class="template-grid">
+          <div class="template-card" onclick="loadTemplate('seed-round')">
+            <h4>Seed Round</h4>
+            <p>Two founders, option pool, seed preferred</p>
+          </div>
+          <div class="template-card" onclick="loadTemplate('series-a')">
+            <h4>Series A + SAFE</h4>
+            <p>Prior seed round + SAFE converting in</p>
+          </div>
+          <div class="template-card" onclick="loadTemplate('safe-conversion')">
+            <h4>Multi-SAFE + Note</h4>
+            <p>Cap, discount, cap+discount, and note</p>
+          </div>
+          <div class="template-card" onclick="loadTemplate('down-round')">
+            <h4>Down Round</h4>
+            <p>Series B below Series A price</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Round Configuration -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Round Configuration</span>
+      </div>
+      <div class="panel-body">
+        <div class="field-group">
+          <div class="field-row">
+            <div class="field">
+              <label>Round Name</label>
+              <input type="text" id="roundName" value="Series A" />
+            </div>
+            <div class="field">
+              <label>New Share Class</label>
+              <input type="text" id="newShareClass" value="Series A Preferred" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Pre-Money Valuation ($)</label>
+              <input type="number" id="preMoneyValuation" value="10000000" min="0" />
+            </div>
+            <div class="field">
+              <label>New Investment ($)</label>
+              <input type="number" id="newInvestment" value="2000000" min="0" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>New Investor Name</label>
+              <input type="text" id="newInvestorName" value="New Investors" />
+            </div>
+            <div class="field">
+              <label>Closing Date</label>
+              <input type="text" id="closingDate" value="2024-06-01" placeholder="YYYY-MM-DD" />
+            </div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="section-label">Option Pool</div>
+          <div class="field-row">
+            <div class="field">
+              <label>Target Pool % (post-money)</label>
+              <input type="number" id="optionPoolTargetPct" value="15" min="0" max="50" step="0.5" />
+              <span class="field-hint">Enter as percentage, e.g. 15 = 15%</span>
+            </div>
+            <div class="field">
+              <label>Pool Method</label>
+              <select id="optionPoolMethod">
+                <option value="pre-money">Pre-money (pool shuffle)</option>
+                <option value="post-money">Post-money</option>
+              </select>
+              <span class="field-hint">Pre-money dilutes existing holders</span>
+            </div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="section-label">New Preferred Terms</div>
+          <div class="field-row">
+            <div class="field">
+              <label>Liquidation Multiple</label>
+              <input type="number" id="liquidationMultiple" value="1" min="1" step="0.25" />
+            </div>
+            <div class="field">
+              <label>Participating Preferred?</label>
+              <select id="participating">
+                <option value="false">No — non-participating</option>
+                <option value="true">Yes — participating</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Rounding Method</label>
+              <select id="roundingMethod">
+                <option value="round">Round (standard)</option>
+                <option value="floor">Floor (conservative)</option>
+                <option value="ceil">Ceiling (generous)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cap Table Input -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Existing Cap Table</span>
+        <span class="text-muted" style="font-size:11px;">Before this round</span>
+      </div>
+      <div class="panel-body">
+        <div id="cap-table-rows"></div>
+        <div class="add-row-bar">
+          <button class="btn btn-sm btn-secondary" onclick="addRow('common')">+ Common</button>
+          <button class="btn btn-sm btn-secondary" onclick="addRow('preferred')">+ Preferred</button>
+          <button class="btn btn-sm btn-secondary" onclick="addRow('option')">+ Option Pool</button>
+          <button class="btn btn-sm btn-secondary" onclick="addRow('warrant')">+ Warrant</button>
+          <button class="btn btn-sm btn-secondary" onclick="addRow('safe')">+ SAFE</button>
+          <button class="btn btn-sm btn-secondary" onclick="addRow('note')">+ Conv. Note</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- ─── RIGHT: OUTPUT PANEL ────────────────────────────────── -->
+  <div id="output-panel">
+    <div class="panel">
+      <div class="empty-state">
+        <h3>Pro Forma Output</h3>
+        <p>Fill in your round details and cap table, then click <strong>Build Pro Forma</strong>.</p>
+        <p style="margin-top:8px;">Or <a href="#" onclick="loadTemplate('series-a');buildAndRender();return false" style="color:var(--blue)">load the Series A template</a> to see an example.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-layout -->
+
+<script src="proforma-engine.js"></script>
+<script>
+// ══ STATE ═══════════════════════════════════════════════════════
+let rowCounter = 0;
+
+// ══ ROW MANAGEMENT ══════════════════════════════════════════════
+const TYPE_LABELS = { common:'Common', preferred:'Preferred', option:'Option', warrant:'Warrant', safe:'SAFE', note:'Conv. Note' };
+const BADGE_CLASS = { common:'badge-common', preferred:'badge-preferred', option:'badge-option', warrant:'badge-warrant', safe:'badge-safe', note:'badge-note' };
+
+function addRow(type, data = {}) {
+  const id = rowCounter++;
+  const container = document.getElementById('cap-table-rows');
+  const div = document.createElement('div');
+  div.className = 'stakeholder-row';
+  div.dataset.id = id;
+  div.dataset.type = type;
+
+  const nameVal   = escHtml(data.name   || '');
+  const sharesVal = data.shares  != null ? data.shares  : '';
+  const seriesVal = escHtml(data.series || '');
+
+  let mainHtml = `
+    <input type="text"   class="row-name"   placeholder="Name" value="${nameVal}" style="font-size:12px;padding:5px 8px;" />
+    <input type="number" class="row-shares" placeholder="Shares" value="${sharesVal}" min="0" style="font-size:12px;padding:5px 8px;" />
+    <span class="row-type-badge ${BADGE_CLASS[type]}">${TYPE_LABELS[type]}</span>
+    <button class="remove-row-btn" onclick="removeRow(${id})" title="Remove">&#10005;</button>
+  `;
+
+  // Extra fields for SAFE / note / preferred
+  let extraHtml = '';
+  if (type === 'preferred') {
+    extraHtml = `
+      <div class="extra-fields">
+        <div class="field"><label>Series (e.g. A)</label><input type="text" class="row-series" value="${seriesVal}" placeholder="A" /></div>
+        <div class="field"><label>Issue Price ($)</label><input type="number" class="row-oip" value="${data.originalIssuePrice || ''}" placeholder="1.00" step="0.0001" /></div>
+        <div class="field"><label>Liq Multiple</label><input type="number" class="row-liq" value="${data.liquidationMultiple || 1}" min="1" step="0.25" /></div>
+      </div>`;
+  } else if (type === 'safe') {
+    extraHtml = `
+      <div class="extra-fields">
+        <div class="field"><label>Principal ($)</label><input type="number" class="row-principal" value="${data.principal || ''}" placeholder="500000" /></div>
+        <div class="field"><label>Val. Cap ($)</label><input type="number" class="row-valcap" value="${data.valuationCap || ''}" placeholder="8000000" /></div>
+        <div class="field"><label>Discount Rate</label><input type="number" class="row-discount" value="${data.discountRate != null ? data.discountRate : ''}" placeholder="0.80" step="0.01" min="0" max="1" /></div>
+        <div class="field" style="grid-column:span 3"><label>SAFE Type</label>
+          <select class="row-safetype" style="font-size:12px;padding:5px 8px;">
+            <option value="pre-money" ${(data.safeType||'pre-money')==='pre-money'?'selected':''}>Pre-money SAFE</option>
+            <option value="post-money" ${data.safeType==='post-money'?'selected':''}>Post-money SAFE</option>
+          </select>
+        </div>
+      </div>`;
+  } else if (type === 'note') {
+    extraHtml = `
+      <div class="extra-fields">
+        <div class="field"><label>Principal ($)</label><input type="number" class="row-principal" value="${data.principal || ''}" placeholder="1000000" /></div>
+        <div class="field"><label>Val. Cap ($)</label><input type="number" class="row-valcap" value="${data.valuationCap || ''}" placeholder="8000000" /></div>
+        <div class="field"><label>Discount Rate</label><input type="number" class="row-discount" value="${data.discountRate != null ? data.discountRate : ''}" placeholder="0.80" step="0.01" min="0" max="1" /></div>
+        <div class="field"><label>Annual Rate</label><input type="number" class="row-rate" value="${data.interestRate != null ? data.interestRate : ''}" placeholder="0.06" step="0.01" min="0" max="1" /></div>
+        <div class="field"><label>Issue Date</label><input type="text" class="row-issuedate" value="${escHtml(data.issueDate || '')}" placeholder="2023-01-01" /></div>
+      </div>`;
+  }
+
+  div.innerHTML = mainHtml + extraHtml;
+  container.appendChild(div);
+}
+
+function removeRow(id) {
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) el.remove();
+}
+
+function readCapTable() {
+  const rows = document.querySelectorAll('#cap-table-rows .stakeholder-row');
+  const result = [];
+  rows.forEach(row => {
+    const type = row.dataset.type;
+    const name   = row.querySelector('.row-name')?.value.trim()   || 'Unnamed';
+    const shares = parseNum(row.querySelector('.row-shares')?.value) || 0;
+
+    const s = { name, type, shares };
+
+    if (type === 'preferred') {
+      s.series             = row.querySelector('.row-series')?.value.trim() || '';
+      s.originalIssuePrice = parseNum(row.querySelector('.row-oip')?.value);
+      s.liquidationMultiple= parseNum(row.querySelector('.row-liq')?.value) || 1;
+      s.participating      = false;
+    }
+    if (type === 'safe') {
+      s.shares      = 0;
+      s.principal   = parseNum(row.querySelector('.row-principal')?.value)  || 0;
+      s.valuationCap= parseNum(row.querySelector('.row-valcap')?.value)     || null;
+      s.discountRate= parseNum(row.querySelector('.row-discount')?.value)   || null;
+      s.safeType    = row.querySelector('.row-safetype')?.value             || 'pre-money';
+    }
+    if (type === 'note') {
+      s.shares      = 0;
+      s.principal   = parseNum(row.querySelector('.row-principal')?.value)  || 0;
+      s.valuationCap= parseNum(row.querySelector('.row-valcap')?.value)     || null;
+      s.discountRate= parseNum(row.querySelector('.row-discount')?.value)   || null;
+      s.interestRate= parseNum(row.querySelector('.row-rate')?.value)       || null;
+      s.issueDate   = row.querySelector('.row-issuedate')?.value.trim()     || null;
+    }
+    result.push(s);
+  });
+  return result;
+}
+
+function readRoundConfig() {
+  return {
+    roundName:           document.getElementById('roundName').value.trim() || 'New Round',
+    preMoneyValuation:   parseNum(document.getElementById('preMoneyValuation').value) || 0,
+    newInvestment:       parseNum(document.getElementById('newInvestment').value)     || 0,
+    optionPoolTargetPct: (parseNum(document.getElementById('optionPoolTargetPct').value) || 0) / 100,
+    optionPoolMethod:    document.getElementById('optionPoolMethod').value,
+    newShareClass:       document.getElementById('newShareClass').value.trim()  || 'New Preferred',
+    newInvestorName:     document.getElementById('newInvestorName').value.trim()|| 'New Investors',
+    liquidationMultiple: parseNum(document.getElementById('liquidationMultiple').value) || 1,
+    participating:       document.getElementById('participating').value === 'true',
+    closingDate:         document.getElementById('closingDate').value.trim() || new Date().toISOString().slice(0,10),
+  };
+}
+
+// ══ TEMPLATES ═══════════════════════════════════════════════════
+function loadTemplate(scenario) {
+  const t = ProFormaEngine.buildTemplate(scenario);
+  if (!t) return;
+
+  // Round config
+  const rc = t.roundConfig;
+  document.getElementById('roundName').value           = rc.roundName || '';
+  document.getElementById('preMoneyValuation').value   = rc.preMoneyValuation || '';
+  document.getElementById('newInvestment').value       = rc.newInvestment || '';
+  document.getElementById('optionPoolTargetPct').value = ((rc.optionPoolTargetPct || 0) * 100).toFixed(1);
+  document.getElementById('optionPoolMethod').value    = rc.optionPoolMethod || 'pre-money';
+  document.getElementById('newShareClass').value       = rc.newShareClass || '';
+  document.getElementById('newInvestorName').value     = rc.newInvestorName || '';
+  document.getElementById('liquidationMultiple').value = rc.liquidationMultiple || 1;
+  document.getElementById('participating').value       = String(rc.participating || false);
+  document.getElementById('closingDate').value         = rc.closingDate || '';
+
+  // Cap table
+  document.getElementById('cap-table-rows').innerHTML = '';
+  rowCounter = 0;
+  t.stakeholders.forEach(s => addRow(s.type, s));
+}
+
+// ══ BUILD & RENDER ═══════════════════════════════════════════════
+function buildAndRender() {
+  const preRoundCap = readCapTable();
+  const roundConfig = readRoundConfig();
+  const options     = { roundingMethod: document.getElementById('roundingMethod').value };
+
+  let result, analysis;
+  try {
+    result   = ProFormaEngine.buildProForma(preRoundCap, roundConfig, options);
+    analysis = ProFormaEngine.analyzeProForma(result, preRoundCap, roundConfig);
+  } catch (err) {
+    renderError(err.message);
+    return;
+  }
+
+  renderOutput(result, analysis);
+}
+
+function renderError(msg) {
+  document.getElementById('output-panel').innerHTML = `
+    <div class="panel">
+      <div class="panel-body">
+        <div class="issue-item error" style="border-radius:4px;">
+          <span class="issue-icon">&#9888;</span>
+          <div class="issue-text"><strong>Build Error:</strong> ${escHtml(msg)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderOutput(r, a) {
+  const E = ProFormaEngine;
+  const fmtC  = n => E.formatCurrency(n, 0);
+  const fmtC4 = n => E.formatCurrency(n, 4);
+  const fmtN  = n => E.formatNumber(n, 0);
+  const fmtP  = n => E.formatPct(n, 2);
+
+  // ── Status banner
+  const statusCls = { ok:'status-ok', warning:'status-warning', error:'status-error' }[a.summary.status];
+  const statusIcon= { ok:'&#10003;', warning:'&#9888;', error:'&#9889;' }[a.summary.status];
+  const statusMsg = { ok:'No issues detected. Pro forma looks clean.', warning:`${a.summary.warningCount} warning(s) require attention.`, error:`${a.summary.issueCount} error(s) detected — review before using.` }[a.summary.status];
+
+  // ── Metrics
+  const metricsHtml = `
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Price Per Share</div>
+        <div class="metric-value">${fmtC4(r.pps)}</div>
+        <div class="metric-sub">Pre-money FD: ${fmtN(r.premoneyFD)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Post-Money Valuation</div>
+        <div class="metric-value">${fmtC(r.postMoneyValuation)}</div>
+        <div class="metric-sub">Pre: ${fmtC(r.preMoneyValuation)} + ${fmtC(r.newInvestment)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">FD Shares (Post)</div>
+        <div class="metric-value">${fmtN(r.postFD)}</div>
+        <div class="metric-sub">Pre: ${fmtN(r.premoneyFD)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Option Pool</div>
+        <div class="metric-value">${fmtP(r.actualOptionPoolPct)}</div>
+        <div class="metric-sub">${r.optionExpansion > 0 ? `+${fmtN(r.optionExpansion)} new shares` : 'No expansion'}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">New Investor Shares</div>
+        <div class="metric-value">${fmtN(r.newInvestorShares)}</div>
+        <div class="metric-sub">${fmtP(r.newInvestorShares / r.postFD)} of post-money</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Conversions</div>
+        <div class="metric-value">${r.convertedInstruments.length}</div>
+        <div class="metric-sub">${r.convertedInstruments.length > 0 ? r.convertedInstruments.map(c => c.originalType.toUpperCase()).join(', ') : 'None'}</div>
+      </div>
+    </div>`;
+
+  // ── Cap table rows
+  const typeOrder = ['common', 'option', 'warrant', 'preferred'];
+  const grouped = {};
+  typeOrder.forEach(t => grouped[t] = []);
+  r.postRoundCap.forEach(s => {
+    const t = typeOrder.includes(s.type) ? s.type : 'preferred';
+    grouped[t].push(s);
+  });
+
+  let capRows = '';
+  const sections = [
+    { key:'common',    label:'Common Shares' },
+    { key:'option',    label:'Options & Warrants' },
+    { key:'warrant',   label:'Warrants' },
+    { key:'preferred', label:'Preferred Shares' },
+  ];
+
+  sections.forEach(sec => {
+    const items = grouped[sec.key] || [];
+    if (!items.length) return;
+    capRows += `<tr class="group-header"><td colspan="4">${sec.label}</td></tr>`;
+    items.forEach(s => {
+      const badge = s._expansion ? '<span class="change-badge badge-expanded">expanded</span>'
+                  : r.convertedInstruments.find(c => c.name === s.name) ? '<span class="change-badge badge-converted">converted</span>'
+                  : r.postRoundCap.find(c => c === s && s.series === r.roundConfig.newShareClass) ? '<span class="change-badge badge-new">new</span>'
+                  : '';
+      const bar = `<div class="bar"><div class="bar-fill" style="width:${Math.min(100, s.pct * 100 / (r.postRoundCap.reduce((m,x)=>Math.max(m,(x.shares||0)/r.postFD),0)))}%"></div></div>`;
+      capRows += `<tr>
+        <td>${escHtml(s.name)} ${badge}</td>
+        <td class="num">${fmtN(s.shares || 0)}</td>
+        <td class="pct">${fmtP(s.pct || 0)}</td>
+        <td>${bar}</td>
+      </tr>`;
+    });
+  });
+
+  const capTableHtml = `
+    <div class="cap-table-wrap">
+      <table>
+        <thead><tr>
+          <th>Stakeholder</th><th style="text-align:right">Shares</th><th style="text-align:right">% FD</th><th style="min-width:80px">Ownership</th>
+        </tr></thead>
+        <tbody>${capRows}</tbody>
+        <tfoot><tr>
+          <td><strong>Total Fully Diluted</strong></td>
+          <td class="num"><strong>${fmtN(r.postFD)}</strong></td>
+          <td class="num"><strong>100.00%</strong></td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+
+  // ── Conversion details
+  let convHtml = '';
+  if (r.convertedInstruments.length > 0) {
+    let convRows = r.convertedInstruments.map(c => {
+      const basisClass = { cap:'basis-cap', discount:'basis-discount', pps:'basis-pps' }[c.conversionBasis] || '';
+      const noteExtra = c.originalType === 'note'
+        ? `<br><small class="text-muted">Principal ${fmtC(c.principal)} + Interest ${fmtC(c.interest || 0)} = ${fmtC(c.conversionAmount)}</small>`
+        : '';
+      return `<tr>
+        <td>${escHtml(c.name)}</td>
+        <td>${escHtml(c.originalType.toUpperCase())}</td>
+        <td class="num">${fmtC(c.principal || c.conversionAmount || 0)}${noteExtra}</td>
+        <td class="num">${fmtC4(c.conversionPPS)}</td>
+        <td class="num">${fmtP(c.effectiveDiscount || 0)}</td>
+        <td><span class="conv-basis ${basisClass}">${c.conversionBasis}</span></td>
+        <td class="num">${fmtN(c.shares)}</td>
+      </tr>`;
+    }).join('');
+    convHtml = `
+      <div class="cap-table-wrap">
+        <table class="conv-table">
+          <thead><tr>
+            <th>Instrument</th><th>Type</th><th style="text-align:right">Amount</th>
+            <th style="text-align:right">Conv. PPS</th><th style="text-align:right">Discount</th>
+            <th>Basis</th><th style="text-align:right">Shares</th>
+          </tr></thead>
+          <tbody>${convRows}</tbody>
+        </table>
+      </div>`;
+  } else {
+    convHtml = '<p class="text-muted" style="font-size:13px;">No SAFEs or convertible notes in this round.</p>';
+  }
+
+  // ── Analysis
+  function issueHtml(items, cls, icon) {
+    return items.map(i => `
+      <div class="issue-item ${cls}">
+        <span class="issue-icon">${icon}</span>
+        <div class="issue-text"><span class="issue-code">${i.code || ''}</span>${escHtml(i.message)}</div>
+      </div>`).join('');
+  }
+
+  const errorHtml   = issueHtml(a.issues,   'error',   '&#9889;');
+  const warnHtml    = issueHtml(a.warnings, 'warning', '&#9888;');
+  const noteHtml    = issueHtml(a.notes,    'note',    '&#8505;');
+
+  const analysisHtml = `
+    ${a.issues.length   ? `<div class="analysis-section"><h3>Errors (${a.issues.length})</h3><div class="issue-list">${errorHtml}</div></div>` : ''}
+    ${a.warnings.length ? `<div class="analysis-section"><h3>Warnings (${a.warnings.length})</h3><div class="issue-list">${warnHtml}</div></div>` : ''}
+    ${a.notes.length    ? `<div class="analysis-section"><h3>Notes &amp; Observations (${a.notes.length})</h3><div class="issue-list">${noteHtml}</div></div>` : ''}
+    ${!a.issues.length && !a.warnings.length && !a.notes.length ? '<p class="text-muted" style="font-size:13px;">No issues or notes.</p>' : ''}`;
+
+  // ── Assemble
+  document.getElementById('output-panel').innerHTML = `
+    <div class="panel">
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab(this,'tab-captable')">Cap Table</button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-conversions')">Conversions</button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-analysis')">
+          Analysis
+          ${a.summary.issueCount  ? `<span style="background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px">${a.summary.issueCount}</span>` : ''}
+          ${a.summary.warningCount && !a.summary.issueCount ? `<span style="background:var(--amber);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px">${a.summary.warningCount}</span>` : ''}
+        </button>
+      </div>
+
+      <div id="tab-captable" class="tab-pane active">
+        <div class="status-banner ${statusCls}">${statusIcon} ${statusMsg}</div>
+        ${metricsHtml}
+        ${capTableHtml}
+      </div>
+
+      <div id="tab-conversions" class="tab-pane">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+          SAFEs and convertible notes convert at the lower of their cap price or discount price vs the round PPS.
+        </p>
+        ${convHtml}
+      </div>
+
+      <div id="tab-analysis" class="tab-pane">
+        ${analysisHtml}
+        <a href="proforma-tests.html" class="test-link">&#128300; Open Test Runner</a>
+      </div>
+    </div>`;
+}
+
+// ══ TAB SWITCHING ════════════════════════════════════════════════
+function switchTab(btn, tabId) {
+  const panel = btn.closest('.panel');
+  panel.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  panel.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ══ UTILITIES ════════════════════════════════════════════════════
+function clearAll() {
+  document.getElementById('cap-table-rows').innerHTML = '';
+  rowCounter = 0;
+  document.getElementById('output-panel').innerHTML = `<div class="panel"><div class="empty-state"><h3>Pro Forma Output</h3><p>Fill in your details and click Build Pro Forma.</p></div></div>`;
+}
+
+function parseNum(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = Number(String(v).replace(/,/g,''));
+  return isFinite(n) ? n : null;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══ INIT ═════════════════════════════════════════════════════════
+// Load Series A template on page load for a good first impression
+loadTemplate('series-a');
+</script>
+</body>
+</html>
