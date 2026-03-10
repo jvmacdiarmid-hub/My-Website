@@ -209,6 +209,7 @@
     .file-chip { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; }
     .chip-xlsx { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     .chip-docx { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+    .chip-zip  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
     .upload-status { display: none; margin-top: 10px; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; }
     .upload-status.show { display: flex; gap: 8px; align-items: flex-start; }
     .upload-status.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
@@ -289,7 +290,7 @@
              ondragover="handleDragOver(event)"
              ondragleave="handleDragLeave(event)"
              ondrop="handleDrop(event)">
-          <input type="file" id="file-input" accept=".xlsx,.xls,.docx,.doc"
+          <input type="file" id="file-input" accept=".xlsx,.xls,.docx,.doc,.zip"
                  onchange="handleFileSelect(event)" />
           <div class="drop-zone-icon">&#128196;</div>
           <div class="drop-zone-title">Drop file here or click to browse</div>
@@ -297,6 +298,7 @@
           <div class="file-chips">
             <span class="file-chip chip-xlsx">.xlsx Excel</span>
             <span class="file-chip chip-docx">.docx Word</span>
+            <span class="file-chip chip-zip">.zip Archive</span>
           </div>
         </div>
 
@@ -315,6 +317,9 @@
             <strong>Word (.docx)</strong> — values labelled in the document, e.g.
             <code>Pre-money valuation: $12,000,000</code>, <code>Option pool: 15%</code>,
             or lines like <code>Founders  8,000,000  Common</code>.<br><br>
+            <strong>ZIP archive (.zip)</strong> — drop a zip containing an Excel or Word
+            file. If multiple documents are inside, the first Excel file is used (or the
+            first Word file if no Excel file is found).<br><br>
             <strong>After upload</strong>, review the preview and confirm before the form is
             populated. You can edit any value afterwards.
           </div>
@@ -501,6 +506,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <!-- mammoth.js for Word parsing (MIT licence) -->
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<!-- JSZip for ZIP archive support (MIT licence) -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 // ══ STATE ═══════════════════════════════════════════════════════
 let rowCounter = 0;
@@ -919,14 +926,18 @@ async function processFile(file) {
 
   try {
     let parsed;
-    if (ext === 'xlsx' || ext === 'xls') {
+    if (ext === 'zip') {
+      if (typeof JSZip === 'undefined') { setUploadStatus('error', 'JSZip library not loaded. Check your internet connection.'); return; }
+      await processZip(file);   // processZip handles its own status + modal
+      return;
+    } else if (ext === 'xlsx' || ext === 'xls') {
       if (typeof XLSX === 'undefined') { setUploadStatus('error', 'SheetJS library not loaded. Check your internet connection.'); return; }
       parsed = await parseExcel(file);
     } else if (ext === 'docx' || ext === 'doc') {
       if (typeof mammoth === 'undefined') { setUploadStatus('error', 'mammoth.js library not loaded. Check your internet connection.'); return; }
       parsed = await parseWord(file);
     } else {
-      setUploadStatus('error', `Unsupported file type .${ext}. Upload an .xlsx or .docx file.`);
+      setUploadStatus('error', `Unsupported file type <strong>.${escHtml(ext)}</strong> — upload .xlsx, .docx, or .zip.`);
       return;
     }
 
@@ -941,6 +952,76 @@ async function processFile(file) {
   } catch (err) {
     setUploadStatus('error', `&#10005; Parse error: ${escHtml(err.message)}`);
   }
+}
+
+// ── ZIP HANDLER ───────────────────────────────────────────────────
+// Unzips the archive, finds the best candidate file, and processes it.
+
+async function processZip(zipFile) {
+  const zip      = await JSZip.loadAsync(await zipFile.arrayBuffer());
+  const entries  = [];
+
+  zip.forEach((path, entry) => {
+    if (entry.dir) return;
+    const ext = path.split('.').pop().toLowerCase();
+    // Skip macOS resource-fork files (__MACOSX/...)
+    if (path.startsWith('__MACOSX/') || path.startsWith('.')) return;
+    if (['xlsx', 'xls', 'docx', 'doc'].includes(ext)) entries.push({ path, entry, ext });
+  });
+
+  if (!entries.length) {
+    setUploadStatus('error', `&#10005; No Excel or Word files found inside <strong>${escHtml(zipFile.name)}</strong>. The ZIP must contain a .xlsx or .docx file.`);
+    return;
+  }
+
+  // Prefer xlsx over docx; within each type take the first (alphabetically)
+  entries.sort((a, b) => {
+    const rank = e => (['xlsx','xls'].includes(e.ext) ? 0 : 1);
+    return rank(a) - rank(b) || a.path.localeCompare(b.path);
+  });
+
+  const chosen = entries[0];
+  const skipped = entries.slice(1);
+
+  setUploadStatus('loading', `&#8987; Found ${entries.length} file(s) in ZIP &mdash; parsing <strong>${escHtml(chosen.path)}</strong>\u2026`);
+
+  let blob;
+  try {
+    blob = await chosen.entry.async('blob');
+  } catch (e) {
+    setUploadStatus('error', `&#10005; Could not read ${escHtml(chosen.path)} from ZIP: ${escHtml(e.message)}`);
+    return;
+  }
+
+  const innerFile = new File([blob], chosen.path);
+
+  let parsed;
+  try {
+    if (chosen.ext === 'xlsx' || chosen.ext === 'xls') {
+      if (typeof XLSX === 'undefined') { setUploadStatus('error', 'SheetJS library not loaded.'); return; }
+      parsed = await parseExcel(innerFile);
+    } else {
+      if (typeof mammoth === 'undefined') { setUploadStatus('error', 'mammoth.js library not loaded.'); return; }
+      parsed = await parseWord(innerFile);
+    }
+  } catch (e) {
+    setUploadStatus('error', `&#10005; Parse error in ${escHtml(chosen.path)}: ${escHtml(e.message)}`);
+    return;
+  }
+
+  // Note any skipped files as a warning
+  if (skipped.length) {
+    parsed.warnings.unshift(`ZIP contained ${skipped.length + 1} file(s). Used: ${chosen.path}. Ignored: ${skipped.map(e => e.path).join(', ')}.`);
+  }
+
+  const total = parsed.stakeholders.length + Object.keys(parsed.roundConfig).length;
+  if (total === 0) {
+    setUploadStatus('warning', `&#9888; No recognisable data found in ${escHtml(chosen.path)}. See format guide.`);
+    return;
+  }
+
+  setUploadStatus('success', `&#10003; Extracted ${escHtml(chosen.path)} from ZIP &mdash; ${parsed.stakeholders.length} stakeholder(s) detected.`);
+  showPreviewModal(parsed, `${zipFile.name} \u2192 ${chosen.path}`);
 }
 
 function setUploadStatus(type, html) {

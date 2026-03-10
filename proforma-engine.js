@@ -390,11 +390,13 @@ const ProFormaEngine = (function () {
     });
 
     // Post-money option pool expansion (if method is post-money)
+    // Solve: (curPool + expansion) / (tempFD + expansion) = T
+    //   → expansion = (T*tempFD - curPool) / (1 - T)
     if (optionPoolTargetPct > 0 && optionPoolMethod === 'post-money') {
-      const tempFD     = getFullyDiluted(postRoundCap);
-      const curPool    = getOptionPool(postRoundCap);
-      const targetPool = roundShares(tempFD * optionPoolTargetPct / (1 - optionPoolTargetPct), roundingMethod);
-      const expansion  = Math.max(0, targetPool - curPool);
+      const tempFD    = getFullyDiluted(postRoundCap);
+      const curPool   = getOptionPool(postRoundCap);
+      const rawExp    = (optionPoolTargetPct * tempFD - curPool) / (1 - optionPoolTargetPct);
+      const expansion = Math.max(0, roundShares(rawExp, roundingMethod));
       if (expansion > 0) {
         const poolEntry = postRoundCap.find(s => s.type === 'option' && /pool/i.test(s.name));
         if (poolEntry) { poolEntry.shares += expansion; poolEntry._expansion = (poolEntry._expansion || 0) + expansion; }
@@ -769,3 +771,8 @@ const ProFormaEngine = (function () {
     formatPct,
   };
 })();
+
+// CommonJS export — lets Node.js load this file directly via require()
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ProFormaEngine;
+}

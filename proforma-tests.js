@@ -1,6 +1,7 @@
 /**
  * NVCA Pro Forma — Test Suite
- * Requires: proforma-engine.js loaded first.
+ * Browser: ProFormaEngine must be loaded as a global before this script.
+ * Node.js: run via `node run-tests.js` which sets up globals before loading.
  *
  * Exposed as: window.ProFormaTests
  */
@@ -600,3 +601,8 @@ const ProFormaTests = (function () {
     assertInRange,
   };
 })();
+
+// CommonJS export for Node.js CLI runner
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ProFormaTests;
+}
