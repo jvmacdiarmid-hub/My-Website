@@ -188,6 +188,62 @@
     .tooltip[data-tip]:hover::after { content: attr(data-tip); position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 3px; white-space: nowrap; z-index: 999; margin-top: 4px; }
     .test-link { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--blue); text-decoration: none; }
     .test-link:hover { text-decoration: underline; }
+
+    /* ── File upload ──────────────────────────────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 20px 16px; text-align: center; cursor: pointer;
+      transition: border-color .15s, background .15s; position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--black); background: #f0ede8;
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer;
+    }
+    .drop-zone-icon { font-size: 28px; line-height: 1; margin-bottom: 6px; }
+    .drop-zone-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .drop-zone-sub   { font-size: 11px; color: var(--muted); }
+    .file-chips { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+    .file-chip { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; }
+    .chip-xlsx { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .chip-docx { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+    .upload-status { display: none; margin-top: 10px; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; }
+    .upload-status.show { display: flex; gap: 8px; align-items: flex-start; }
+    .upload-status.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+    .upload-status.error   { background: #fff5f5; color: var(--red);   border: 1px solid #fecaca; }
+    .upload-status.warning { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
+    .upload-status.loading { background: #f0f9ff; color: var(--blue);  border: 1px solid #bae6fd; }
+
+    /* ── Format guide accordion ───────────────────────────────── */
+    .format-guide { margin-top: 10px; }
+    .format-guide summary { font-size: 11px; color: var(--blue); cursor: pointer; list-style: none; }
+    .format-guide summary::before { content: '▶ '; }
+    .format-guide[open] summary::before { content: '▼ '; }
+    .format-guide-body { margin-top: 8px; font-size: 11px; color: var(--mid); line-height: 1.6; }
+    .format-guide-body code { background: #f0ede8; padding: 1px 4px; border-radius: 2px; font-size: 10px; }
+
+    /* ── Preview modal ────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 500; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+      background: var(--white); border-radius: 6px; width: 100%; max-width: 560px;
+      max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .modal-header h2 { font-family: var(--serif); font-size: 17px; }
+    .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted); padding: 2px 6px; border-radius: 3px; font-family: var(--sans); }
+    .modal-close:hover { background: #f0ede8; color: var(--black); }
+    .modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+    .modal-section { margin-bottom: 16px; }
+    .modal-section:last-child { margin-bottom: 0; }
+    .modal-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; background: #fafafa; }
+    .parse-warning { font-size: 11px; color: var(--amber); margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -221,6 +277,50 @@
 
   <!-- ─── LEFT: INPUT PANEL ──────────────────────────────────── -->
   <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- File Upload -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Upload Document</span>
+        <span class="text-muted" style="font-size:11px;">Import from Excel or Word</span>
+      </div>
+      <div class="panel-body">
+        <div class="drop-zone" id="drop-zone"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event)">
+          <input type="file" id="file-input" accept=".xlsx,.xls,.docx,.doc"
+                 onchange="handleFileSelect(event)" />
+          <div class="drop-zone-icon">&#128196;</div>
+          <div class="drop-zone-title">Drop file here or click to browse</div>
+          <div class="drop-zone-sub">Parses your existing pro forma and populates the form</div>
+          <div class="file-chips">
+            <span class="file-chip chip-xlsx">.xlsx Excel</span>
+            <span class="file-chip chip-docx">.docx Word</span>
+          </div>
+        </div>
+
+        <div class="upload-status" id="upload-status">
+          <span id="upload-status-icon"></span>
+          <span id="upload-status-text"></span>
+        </div>
+
+        <details class="format-guide">
+          <summary>Supported formats &amp; tips</summary>
+          <div class="format-guide-body">
+            <strong>Excel (.xlsx)</strong> — any sheet with a column header row containing
+            words like <code>Name</code>, <code>Shares</code>, <code>Type</code>, or
+            <code>Series</code>. Labeled rows like <code>Pre-Money Valuation: $10,000,000</code>
+            are picked up for round config. Multiple sheets are all scanned.<br><br>
+            <strong>Word (.docx)</strong> — values labelled in the document, e.g.
+            <code>Pre-money valuation: $12,000,000</code>, <code>Option pool: 15%</code>,
+            or lines like <code>Founders  8,000,000  Common</code>.<br><br>
+            <strong>After upload</strong>, review the preview and confirm before the form is
+            populated. You can edit any value afterwards.
+          </div>
+        </details>
+      </div>
+    </div>
 
     <!-- Templates -->
     <div class="panel">
@@ -367,7 +467,40 @@
 
 </div><!-- /main-layout -->
 
+<!-- ══ PREVIEW MODAL ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="preview-modal" onclick="if(event.target===this)closePreviewModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-title">Parsed Document</h2>
+      <button class="modal-close" onclick="closePreviewModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">Round Configuration Detected</div>
+        <div id="modal-config"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Stakeholders Detected (<span id="modal-count">0</span>)</div>
+        <div id="modal-stakes"></div>
+      </div>
+      <div id="modal-warnings" class="parse-warning"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:12px;">
+        Click <strong>Apply to Form</strong> to populate the builder. You can edit any value after import.
+        Existing cap table rows will be replaced by the imported ones.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePreviewModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyParsedData()">&#10003; Apply to Form</button>
+    </div>
+  </div>
+</div>
+
 <script src="proforma-engine.js"></script>
+<!-- SheetJS for Excel parsing (MIT licence) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<!-- mammoth.js for Word parsing (MIT licence) -->
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script>
 // ══ STATE ═══════════════════════════════════════════════════════
 let rowCounter = 0;
@@ -755,6 +888,404 @@ function escHtml(s) {
 // ══ INIT ═════════════════════════════════════════════════════════
 // Load Series A template on page load for a good first impression
 loadTemplate('series-a');
+
+// ══ FILE UPLOAD ══════════════════════════════════════════════════
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+  e.target.value = ''; // allow re-uploading same file
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+async function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  setUploadStatus('loading', `&#8987; Parsing ${escHtml(file.name)}\u2026`);
+
+  try {
+    let parsed;
+    if (ext === 'xlsx' || ext === 'xls') {
+      if (typeof XLSX === 'undefined') { setUploadStatus('error', 'SheetJS library not loaded. Check your internet connection.'); return; }
+      parsed = await parseExcel(file);
+    } else if (ext === 'docx' || ext === 'doc') {
+      if (typeof mammoth === 'undefined') { setUploadStatus('error', 'mammoth.js library not loaded. Check your internet connection.'); return; }
+      parsed = await parseWord(file);
+    } else {
+      setUploadStatus('error', `Unsupported file type .${ext}. Upload an .xlsx or .docx file.`);
+      return;
+    }
+
+    const total = parsed.stakeholders.length + Object.keys(parsed.roundConfig).length;
+    if (total === 0) {
+      setUploadStatus('warning', '&#9888; No recognisable data found. See the format guide below.');
+      return;
+    }
+
+    setUploadStatus('success', `&#10003; Parsed \u201c${escHtml(file.name)}\u201d &mdash; ${parsed.stakeholders.length} stakeholder(s) detected. Review before applying.`);
+    showPreviewModal(parsed, file.name);
+  } catch (err) {
+    setUploadStatus('error', `&#10005; Parse error: ${escHtml(err.message)}`);
+  }
+}
+
+function setUploadStatus(type, html) {
+  const el   = document.getElementById('upload-status');
+  el.className = `upload-status show ${type}`;
+  el.innerHTML = html;
+}
+
+// ── EXCEL PARSER ─────────────────────────────────────────────────
+
+async function parseExcel(file) {
+  const buffer = await file.arrayBuffer();
+  const wb     = XLSX.read(buffer, { type: 'array', cellDates: true });
+
+  const result = { stakeholders: [], roundConfig: {}, warnings: [], source: 'excel' };
+
+  for (const sheetName of wb.SheetNames) {
+    const ws   = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+    xlExtractRoundConfig(rows, result);
+    xlExtractCapTable(rows, result, sheetName);
+  }
+
+  if (!result.stakeholders.length)
+    result.warnings.push('No cap table detected. Make sure your sheet has a header row with columns like "Name" and "Shares".');
+
+  return result;
+}
+
+// Scan every row for labelled round-config values
+function xlExtractRoundConfig(rows, result) {
+  const rc = result.roundConfig;
+  rows.forEach(row => {
+    for (let c = 0; c < Math.min(row.length, 5); c++) {
+      const cell = String(row[c] || '').trim();
+      if (!cell) continue;
+
+      if (!rc.preMoneyValuation && /pre[\s-]?money/i.test(cell)) {
+        const v = xlFindNum(row, c + 1); if (v > 0) rc.preMoneyValuation = v;
+      }
+      if (!rc.newInvestment && /(?:new\s+)?investment|aggregate\s+proceeds|round\s+size|new\s+money|gross\s+proceeds/i.test(cell)) {
+        const v = xlFindNum(row, c + 1); if (v > 0) rc.newInvestment = v;
+      }
+      if (!rc.optionPoolTargetPct && /option\s+pool|equity\s+incentive|esop/i.test(cell)) {
+        const v = xlFindNum(row, c + 1);
+        if (v > 0) rc.optionPoolTargetPct = v > 1 ? v : +(v * 100).toFixed(2); // normalize 0.15 → 15
+      }
+      if (!rc.roundName && /round\s+(?:name|type)|financing\s+round/i.test(cell)) {
+        const v = xlFindStr(row, c + 1); if (v) rc.roundName = v;
+      }
+      if (!rc.newInvestorName && /(?:new|lead)\s+investor/i.test(cell)) {
+        const v = xlFindStr(row, c + 1); if (v) rc.newInvestorName = v;
+      }
+      if (!rc.closingDate && /closing\s+date|close\s+date/i.test(cell)) {
+        const v = xlFindStr(row, c + 1); if (v) rc.closingDate = v;
+      }
+    }
+  });
+}
+
+function xlFindNum(row, startCol) {
+  for (let c = startCol; c < row.length; c++) {
+    const n = parseRawNum(row[c]);
+    if (n !== null && n > 0) return n;
+  }
+  return null;
+}
+
+function xlFindStr(row, startCol) {
+  for (let c = startCol; c < row.length; c++) {
+    const v = String(row[c] || '').trim();
+    if (v) return v;
+  }
+  return null;
+}
+
+// Find header row and extract stakeholders
+function xlExtractCapTable(rows, result, sheetName) {
+  const headerIdx = xlFindHeaderRow(rows);
+  if (headerIdx === -1) return;
+
+  const hdrs = rows[headerIdx].map(h => String(h || '').trim().toLowerCase());
+  const cols  = {
+    name:      xlFindCol(hdrs, ['name','holder','stockholder','shareholder','investor','party','owner']),
+    shares:    xlFindCol(hdrs, ['shares','# shares','number of shares','share count','total shares','no. of shares','no of shares']),
+    type:      xlFindCol(hdrs, ['type','class','security','security type','instrument']),
+    series:    xlFindCol(hdrs, ['series','round','preferred series','pref series']),
+    oip:       xlFindCol(hdrs, ['issue price','oip','original issue price','purchase price','price/share','price per share']),
+    liqMult:   xlFindCol(hdrs, ['liquidation','liq multiple','liq pref','multiple','liq. pref']),
+    principal: xlFindCol(hdrs, ['principal','principal amount','note amount','safe amount','amount']),
+    cap:       xlFindCol(hdrs, ['cap','valuation cap','val cap','price cap','val. cap']),
+    discount:  xlFindCol(hdrs, ['discount','discount rate','disc rate','disc.']),
+    rate:      xlFindCol(hdrs, ['interest rate','annual rate','rate','int. rate']),
+    issueDate: xlFindCol(hdrs, ['issue date','date issued','issuance date','note date']),
+  };
+
+  if (cols.name === -1) return; // must at least have a name column
+
+  for (let r = headerIdx + 1; r < rows.length; r++) {
+    const row  = rows[r];
+    const name = String(row[cols.name] || '').trim();
+    if (!name || name.length < 2) continue;
+    if (/^(total|subtotal|sum|grand total|all|—|-+)$/i.test(name)) continue;
+
+    const s = xlParseRow(row, cols, name);
+    if (s && !result.stakeholders.find(x => x.name === s.name)) result.stakeholders.push(s);
+  }
+}
+
+function xlParseRow(row, cols, name) {
+  const typeRaw = cols.type !== -1 ? String(row[cols.type] || '').trim() : '';
+  const type    = inferType(name, typeRaw);
+  const shares  = cols.shares !== -1 ? (parseRawNum(row[cols.shares]) || 0) : 0;
+
+  const s = { name, type, shares };
+
+  if (type === 'preferred') {
+    s.series             = cols.series  !== -1 ? String(row[cols.series]  || '').trim() : '';
+    s.originalIssuePrice = cols.oip     !== -1 ? parseRawNum(row[cols.oip])    : null;
+    s.liquidationMultiple= cols.liqMult !== -1 ? (parseRawNum(row[cols.liqMult]) || 1) : 1;
+    s.participating      = false;
+  }
+  if (type === 'safe' || type === 'note') {
+    s.shares      = 0;
+    // principal: use dedicated col if present, else treat shares-col value as principal
+    s.principal   = cols.principal !== -1 ? (parseRawNum(row[cols.principal]) || 0)
+                                           : (parseRawNum(row[cols.shares])   || 0);
+    s.valuationCap= cols.cap      !== -1 ? parseRawNum(row[cols.cap])      : null;
+    s.discountRate= cols.discount !== -1 ? parseRawNum(row[cols.discount]) : null;
+    if (s.discountRate && s.discountRate > 1) s.discountRate /= 100; // 80 → 0.80
+
+    if (type === 'note') {
+      s.interestRate = cols.rate     !== -1 ? parseRawNum(row[cols.rate])      : null;
+      if (s.interestRate && s.interestRate > 1) s.interestRate /= 100;
+      s.issueDate    = cols.issueDate !== -1 ? String(row[cols.issueDate] || '').trim() || null : null;
+    } else {
+      s.safeType = 'pre-money';
+    }
+  }
+  return s;
+}
+
+function xlFindHeaderRow(rows) {
+  const keywords = ['name','holder','shares','type','class','common','preferred','options','stockholder','investor'];
+  for (let i = 0; i < Math.min(rows.length, 25); i++) {
+    const txt = rows[i].map(c => String(c || '').toLowerCase()).join(' ');
+    if (keywords.filter(k => txt.includes(k)).length >= 2) return i;
+  }
+  return -1;
+}
+
+function xlFindCol(hdrs, keywords) {
+  for (const kw of keywords) {
+    const idx = hdrs.findIndex(h => h.includes(kw));
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+// ── WORD PARSER ──────────────────────────────────────────────────
+
+async function parseWord(file) {
+  const buffer     = await file.arrayBuffer();
+  const extracted  = await mammoth.extractRawText({ arrayBuffer: buffer });
+  const text       = extracted.value;
+
+  const result = { stakeholders: [], roundConfig: {}, warnings: [], source: 'word', rawText: text };
+
+  docExtractRoundConfig(text, result);
+  docExtractStakeholders(text, result);
+
+  if (!result.stakeholders.length)
+    result.warnings.push('No structured cap table lines found. Only configuration values were extracted. Add stakeholders manually after import.');
+
+  return result;
+}
+
+function docExtractRoundConfig(text, result) {
+  const rc = result.roundConfig;
+
+  const matchers = [
+    { key: 'preMoneyValuation',   re: /pre[\s-]?money\s+valuation\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
+    { key: 'newInvestment',       re: /(?:aggregate\s+)?(?:gross\s+)?proceeds\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
+    { key: 'newInvestment',       re: /(?:new\s+)?investment\s*(?:amount)?\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
+    { key: 'newInvestment',       re: /round\s+size\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
+    { key: 'optionPoolTargetPct', re: /option\s+pool\s*[:\u2013=]?\s*([\d\.]+)\s*%/i },
+    { key: 'optionPoolTargetPct', re: /equity\s+incentive\s+plan\s*[:\u2013=]?\s*([\d\.]+)\s*%/i },
+    { key: 'roundName',           re: /(series\s+[a-z](?:\s+preferred)?)\s+(?:financing|preferred|round|stock)/i },
+    { key: 'newInvestorName',     re: /lead\s+investor\s*[:\u2013=]?\s*([A-Za-z][A-Za-z\s&,\.]{2,40}?)(?:\n|$)/i },
+    { key: 'closingDate',         re: /closing\s+date\s*[:\u2013=]?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i },
+  ];
+
+  for (const { key, re } of matchers) {
+    if (rc[key]) continue;
+    const m = text.match(re);
+    if (!m) continue;
+    if (key === 'optionPoolTargetPct') { rc[key] = parseFloat(m[1]); }
+    else if (key === 'roundName' || key === 'newInvestorName' || key === 'closingDate') { rc[key] = m[1].trim(); }
+    else { const v = docParseMagnitude(m[1]); if (v) rc[key] = v; }
+  }
+}
+
+function docParseMagnitude(str) {
+  const s = String(str || '').replace(/,/g, '').trim();
+  const n = parseFloat(s);
+  if (!isFinite(n)) return null;
+  if (/b/i.test(s)) return n * 1e9;
+  if (/m/i.test(s)) return n * 1e6;
+  if (/k/i.test(s)) return n * 1e3;
+  return n;
+}
+
+function docExtractStakeholders(text, result) {
+  // Lines of the form: "Name  5,000,000  [type]"
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    const m = line.match(/^([A-Za-z][A-Za-z0-9\s&',.\-]{2,50?}?)\s{2,}([\d,]{4,})\s*(common|preferred|option|warrant|safe|note|options|warrants)?/i);
+    if (!m) continue;
+    const name   = m[1].trim();
+    const shares = parseFloat(m[2].replace(/,/g, ''));
+    const hint   = (m[3] || '').toLowerCase();
+    if (!name || name.length < 2 || !isFinite(shares) || shares <= 0) continue;
+    const type = inferType(name, hint);
+    if (!result.stakeholders.find(s => s.name === name)) result.stakeholders.push({ name, type, shares });
+  }
+}
+
+// ── SHARED HELPERS ────────────────────────────────────────────────
+
+function inferType(name, typeRaw) {
+  const combined = `${name} ${typeRaw}`.toLowerCase();
+  if (/\bsafe\b/.test(combined))                               return 'safe';
+  if (/convertible\s+note|conv\.?\s*note|\bnote\b/.test(combined)) return 'note';
+  if (/option|esop|option\s+pool|reserved|incentive/.test(combined)) return 'option';
+  if (/warrant/.test(combined))                                return 'warrant';
+  if (/preferred|series\s+[a-z]|\bpref\b/.test(combined))     return 'preferred';
+  if (/common|founder|co-?founder/.test(combined))             return 'common';
+  // Fallback from typeRaw alone
+  if (/pref/i.test(typeRaw))   return 'preferred';
+  if (/common/i.test(typeRaw)) return 'common';
+  return 'common'; // default
+}
+
+function parseRawNum(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const s = String(v).replace(/[$,\s%()]/g, '');
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+}
+
+// ── PREVIEW MODAL ─────────────────────────────────────────────────
+
+let _pendingParsed = null;
+
+function showPreviewModal(parsed, filename) {
+  _pendingParsed = parsed;
+
+  const rc = parsed.roundConfig;
+  const fmtC = n => ProFormaEngine.formatCurrency(n, 0);
+
+  // Round config table
+  const configRows = [
+    ['Round Name',           rc.roundName],
+    ['Pre-Money Valuation',  rc.preMoneyValuation  ? fmtC(rc.preMoneyValuation)  : null],
+    ['New Investment',       rc.newInvestment      ? fmtC(rc.newInvestment)      : null],
+    ['Option Pool Target',   rc.optionPoolTargetPct ? rc.optionPoolTargetPct + '%' : null],
+    ['New Investor Name',    rc.newInvestorName],
+    ['Closing Date',         rc.closingDate],
+  ].filter(([, v]) => v);
+
+  document.getElementById('modal-config').innerHTML = configRows.length
+    ? `<table style="width:100%;font-size:12px;border-collapse:collapse;">
+        ${configRows.map(([k, v]) =>
+          `<tr>
+            <td style="padding:4px 8px;color:var(--muted);width:48%;border-bottom:1px solid var(--border)">${escHtml(k)}</td>
+            <td style="padding:4px 8px;font-weight:500;border-bottom:1px solid var(--border)">${escHtml(String(v))}</td>
+           </tr>`
+        ).join('')}
+      </table>`
+    : '<p style="font-size:12px;color:var(--muted);font-style:italic">No round configuration values found in document.</p>';
+
+  // Stakeholder table
+  document.getElementById('modal-count').textContent = parsed.stakeholders.length;
+  const BADGE = { common:'badge-common', preferred:'badge-preferred', option:'badge-option', warrant:'badge-warrant', safe:'badge-safe', note:'badge-note' };
+  document.getElementById('modal-stakes').innerHTML = parsed.stakeholders.length
+    ? `<div style="overflow-y:auto;max-height:220px;border:1px solid var(--border);border-radius:4px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:var(--black);color:#fff;position:sticky;top:0">
+            <th style="padding:6px 10px;text-align:left">Name</th>
+            <th style="padding:6px 10px;text-align:left">Type</th>
+            <th style="padding:6px 10px;text-align:right">Shares / Principal</th>
+          </tr></thead>
+          <tbody>
+            ${parsed.stakeholders.map(s => `
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:6px 10px">${escHtml(s.name)}</td>
+                <td style="padding:6px 10px"><span class="row-type-badge ${BADGE[s.type]||'badge-common'}" style="font-size:10px">${s.type}</span></td>
+                <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums">
+                  ${(s.type === 'safe' || s.type === 'note')
+                    ? (s.principal ? fmtC(s.principal) : '—')
+                    : ProFormaEngine.formatNumber(s.shares || 0)}
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`
+    : '<p style="font-size:12px;color:var(--muted);font-style:italic">No stakeholders detected.</p>';
+
+  // Warnings
+  document.getElementById('modal-warnings').innerHTML = parsed.warnings
+    .map(w => `<div style="margin-top:8px">&#9888; ${escHtml(w)}</div>`)
+    .join('');
+
+  document.getElementById('modal-title').textContent = `Parsed: ${filename}`;
+  document.getElementById('preview-modal').style.display = 'flex';
+}
+
+function closePreviewModal() {
+  document.getElementById('preview-modal').style.display = 'none';
+  _pendingParsed = null;
+}
+
+function applyParsedData() {
+  if (!_pendingParsed) return;
+  const parsed = _pendingParsed;
+  const rc     = parsed.roundConfig;
+
+  // Apply round config (only overwrite if value was detected)
+  if (rc.roundName)           document.getElementById('roundName').value           = rc.roundName;
+  if (rc.preMoneyValuation)   document.getElementById('preMoneyValuation').value   = rc.preMoneyValuation;
+  if (rc.newInvestment)       document.getElementById('newInvestment').value       = rc.newInvestment;
+  if (rc.optionPoolTargetPct) document.getElementById('optionPoolTargetPct').value = rc.optionPoolTargetPct;
+  if (rc.newInvestorName)     document.getElementById('newInvestorName').value     = rc.newInvestorName;
+  if (rc.closingDate)         document.getElementById('closingDate').value         = rc.closingDate;
+
+  // Replace cap table rows only if stakeholders were found
+  if (parsed.stakeholders.length > 0) {
+    document.getElementById('cap-table-rows').innerHTML = '';
+    rowCounter = 0;
+    parsed.stakeholders.forEach(s => addRow(s.type, s));
+  }
+
+  closePreviewModal();
+  setUploadStatus('success', `&#10003; Applied: ${parsed.stakeholders.length} stakeholder(s) and ${Object.keys(rc).length} config value(s) imported. Review and click <strong>Build Pro Forma</strong>.`);
+}
 </script>
 </body>
 </html>
