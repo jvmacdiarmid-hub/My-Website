@@ -7,9 +7,13 @@ on:
       - 'master'
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -21,10 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
-      - name: Upload site artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
