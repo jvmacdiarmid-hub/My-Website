@@ -180,6 +180,48 @@
     .tab-pane { display: none; padding: 16px; }
     .tab-pane.active { display: block; }
 
+    /* ── Page-level tab nav ──────────────────────────────────── */
+    .page-tab-nav { background: var(--white); border-bottom: 2px solid var(--black); display: flex; padding: 0 20px; }
+    .page-tab-btn { padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--mid); border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: var(--sans); transition: color .15s; }
+    .page-tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
+    .page-tab-btn:hover { color: var(--black); }
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* ── Conformance layout ───────────────────────────────────── */
+    .conform-layout { max-width: 1400px; margin: 0 auto; padding: 16px 20px; display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 900px) { .conform-layout { grid-template-columns: 1fr; } }
+
+    /* ── Conformance checks ───────────────────────────────────── */
+    .check-list { display: flex; flex-direction: column; gap: 6px; }
+    .check-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); }
+    .check-row.pass        { background: #f0fdf4; border-color: #bbf7d0; }
+    .check-row.fail-error  { background: #fff5f5; border-color: #fecaca; }
+    .check-row.fail-warn   { background: #fffbeb; border-color: #fde68a; }
+    .check-icon  { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
+    .check-body  { flex: 1; min-width: 0; }
+    .check-label { font-size: 13px; font-weight: 500; color: var(--black); }
+    .check-vals  { font-size: 11px; color: var(--mid); margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .check-note  { font-size: 11px; color: var(--red); margin-top: 3px; }
+    .check-severity { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; text-transform: uppercase; margin-left: 6px; }
+    .sev-error   { background: #fecaca; color: #7f1d1d; }
+    .sev-warn    { background: #fde68a; color: #78350f; }
+
+    /* ── SAFE/Note rows in term sheet ─────────────────────────── */
+    .ts-instrument-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 26px; gap: 6px; align-items: end; padding: 8px; background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; }
+    .ts-instrument-row input { font-size: 12px; padding: 5px 8px; }
+    .ts-instrument-row label { font-size: 11px; font-weight: 500; color: var(--mid); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; display: block; }
+
+    /* ── Conformance score ────────────────────────────────────── */
+    .conform-score { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 14px 16px; border-radius: var(--radius); }
+    .conform-score.pass { background: #f0fdf4; border: 1px solid #86efac; }
+    .conform-score.fail { background: #fff5f5; border: 1px solid #fca5a5; }
+    .score-circle { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(0,0,0,.1); }
+    .score-circle.pass { background: #dcfce7; color: var(--green); }
+    .score-circle.fail { background: #fee2e2; color: var(--red); }
+    .score-text h3 { font-family: var(--serif); font-size: 16px; }
+    .score-text p  { font-size: 12px; color: var(--mid); margin-top: 3px; }
+
     /* ── Misc ─────────────────────────────────────────────────── */
     .text-muted { color: var(--muted); }
     .text-right { text-align: right; }
@@ -273,7 +315,14 @@
   </div>
 </div>
 
-<!-- ══ MAIN LAYOUT ═════════════════════════════════════════════ -->
+<!-- ══ PAGE-LEVEL TAB NAV ═══════════════════════════════════════ -->
+<div class="page-tab-nav">
+  <button class="page-tab-btn active" onclick="switchPageTab(this,'page-builder')">Pro Forma Builder</button>
+  <button class="page-tab-btn" onclick="switchPageTab(this,'page-conformance')">Term Sheet Conformance</button>
+</div>
+
+<!-- ══ BUILDER SECTION ══════════════════════════════════════════ -->
+<div id="page-builder" class="page-section active">
 <div class="main-layout">
 
   <!-- ─── LEFT: INPUT PANEL ──────────────────────────────────── -->
@@ -471,6 +520,166 @@
   </div>
 
 </div><!-- /main-layout -->
+</div><!-- /page-builder -->
+
+<!-- ══ CONFORMANCE SECTION ══════════════════════════════════════ -->
+<div id="page-conformance" class="page-section">
+  <div class="conform-layout">
+
+    <!-- LEFT: TERM SHEET INPUTS -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Core Term Sheet -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Term Sheet</span>
+          <span class="text-muted" style="font-size:11px;">Negotiated terms to check against</span>
+        </div>
+        <div class="panel-body">
+          <div class="field-group">
+            <div class="field">
+              <label>Deal Name</label>
+              <input type="text" id="ts-dealName" value="Series A" />
+            </div>
+            <div class="section-divider"></div>
+            <div class="section-label">Core Economics</div>
+            <div class="field-row">
+              <div class="field">
+                <label>Pre-Money Valuation ($)</label>
+                <input type="number" id="ts-preMoneyValuation" placeholder="10000000" min="0" />
+              </div>
+              <div class="field">
+                <label>Investment Amount ($)</label>
+                <input type="number" id="ts-investmentAmount" placeholder="2000000" min="0" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Option Pool Target %</label>
+                <input type="number" id="ts-targetOptionPool" placeholder="15" min="0" max="50" step="0.5" />
+                <span class="field-hint">As percentage, e.g. 15 = 15%</span>
+              </div>
+              <div class="field">
+                <label>Pool Method</label>
+                <select id="ts-optionPoolMethod">
+                  <option value="pre-money">Pre-money (pool shuffle)</option>
+                  <option value="post-money">Post-money</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Stated PPS ($) <span style="font-weight:400;color:var(--muted);text-transform:none;">(optional)</span></label>
+              <input type="number" id="ts-statedPPS" placeholder="Leave blank if not specified in term sheet" step="0.0001" min="0" />
+            </div>
+            <div class="section-divider"></div>
+            <div class="section-label">Preferred Stock Terms</div>
+            <div class="field-row">
+              <div class="field">
+                <label>Liquidation Multiple</label>
+                <input type="number" id="ts-liquidationMultiple" value="1" min="1" step="0.25" />
+              </div>
+              <div class="field">
+                <label>Participating Preferred?</label>
+                <select id="ts-participating" onchange="tsUpdateParticipation()">
+                  <option value="">Not specified</option>
+                  <option value="false">No — non-participating</option>
+                  <option value="true">Yes — participating</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-row" id="ts-participation-cap-row" style="display:none">
+              <div class="field">
+                <label>Participation Cap (multiple)</label>
+                <input type="number" id="ts-participationCap" placeholder="Leave blank = uncapped" step="0.25" min="0" />
+                <span class="field-hint">e.g. 3 = 3× cap; blank = uncapped</span>
+              </div>
+            </div>
+            <div class="section-divider"></div>
+            <div class="section-label">Ownership Targets <span style="font-weight:400;color:var(--muted);text-transform:none;">(optional)</span></div>
+            <div class="field-row">
+              <div class="field">
+                <label>Investor Ownership Target %</label>
+                <input type="number" id="ts-investorOwnershipTarget" placeholder="e.g. 20" min="0" max="100" step="0.5" />
+                <span class="field-hint">As percentage, e.g. 20 = 20%</span>
+              </div>
+              <div class="field">
+                <label>Founder Ownership Floor %</label>
+                <input type="number" id="ts-founderOwnershipFloor" placeholder="e.g. 50" min="0" max="100" step="0.5" />
+                <span class="field-hint">Minimum % for common holders</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAFE Conversions -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">SAFE Conversions</span>
+          <button class="btn btn-sm btn-secondary" onclick="tsAddSafe()">+ Add SAFE</button>
+        </div>
+        <div class="panel-body">
+          <div id="ts-safe-rows">
+            <p class="text-muted" id="ts-safe-empty" style="font-size:12px;">No SAFEs — click <strong>Add SAFE</strong> to include conversion terms from the term sheet.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Note Conversions -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Note Conversions</span>
+          <button class="btn btn-sm btn-secondary" onclick="tsAddNote()">+ Add Note</button>
+        </div>
+        <div class="panel-body">
+          <div id="ts-note-rows">
+            <p class="text-muted" id="ts-note-empty" style="font-size:12px;">No notes — click <strong>Add Note</strong> to include conversion terms from the term sheet.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- RIGHT: PRO FORMA SOURCE + REPORT -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Pro Forma Source -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Pro Forma to Check</span>
+          <span class="text-muted" style="font-size:11px;">Select source for the pro forma data</span>
+        </div>
+        <div class="panel-body">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn btn-primary" onclick="tsUseCurrentProForma()">&#8617; Use Pro Forma from Builder</button>
+            <button class="btn btn-secondary" onclick="tsToggleJsonInput()">{ } Paste JSON</button>
+          </div>
+          <div id="ts-proforma-status"></div>
+          <div id="ts-json-input-wrap" style="display:none;margin-top:10px;">
+            <label style="font-size:12px;font-weight:500;color:var(--mid);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.04em;">Pro Forma Result JSON</label>
+            <textarea id="ts-proforma-json" rows="8" style="width:100%;font-size:11px;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:var(--radius);resize:vertical;" placeholder="Paste the JSON output of ProFormaEngine.buildProForma() here..."></textarea>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="tsRunConformance()">&#9654; Check Conformance</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conformance Report -->
+      <div id="ts-report-panel">
+        <div class="panel">
+          <div class="empty-state">
+            <h3>Conformance Report</h3>
+            <p>Enter your term sheet terms on the left, load a pro forma, then click <strong>Check Conformance</strong>.</p>
+            <p style="margin-top:8px;font-size:12px;">Build a pro forma in the <a href="#" onclick="switchPageTabByName('page-builder');return false" style="color:var(--blue)">Pro Forma Builder</a> tab first, then use <em>Use Pro Forma from Builder</em> to load it here.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right -->
+
+  </div><!-- /conform-layout -->
+</div><!-- /page-conformance -->
 
 <!-- ══ PREVIEW MODAL ════════════════════════════════════════════ -->
 <div class="modal-overlay" id="preview-modal" onclick="if(event.target===this)closePreviewModal()">
@@ -502,6 +711,7 @@
 </div>
 
 <script src="proforma-engine.js"></script>
+<script src="proforma-comparator.js"></script>
 <!-- SheetJS for Excel parsing (MIT licence) -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <!-- mammoth.js for Word parsing (MIT licence) -->
@@ -511,6 +721,8 @@
 <script>
 // ══ STATE ═══════════════════════════════════════════════════════
 let rowCounter = 0;
+let _lastProFormaResult = null;   // stored after every successful build
+let tsInstrumentCounter = 0;
 
 // ══ ROW MANAGEMENT ══════════════════════════════════════════════
 const TYPE_LABELS = { common:'Common', preferred:'Preferred', option:'Option', warrant:'Warrant', safe:'SAFE', note:'Conv. Note' };
@@ -667,6 +879,7 @@ function buildAndRender() {
     return;
   }
 
+  _lastProFormaResult = result;   // make available to conformance tab
   renderOutput(result, analysis);
 }
 
@@ -1366,6 +1579,268 @@ function applyParsedData() {
 
   closePreviewModal();
   setUploadStatus('success', `&#10003; Applied: ${parsed.stakeholders.length} stakeholder(s) and ${Object.keys(rc).length} config value(s) imported. Review and click <strong>Build Pro Forma</strong>.`);
+}
+
+// ══ PAGE-LEVEL TAB SWITCHING ═════════════════════════════════════
+
+function switchPageTab(btn, sectionId) {
+  document.querySelectorAll('.page-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(sectionId).classList.add('active');
+}
+
+function switchPageTabByName(sectionId) {
+  const idx = sectionId === 'page-builder' ? 0 : 1;
+  const btn = document.querySelectorAll('.page-tab-btn')[idx];
+  if (btn) switchPageTab(btn, sectionId);
+}
+
+// ══ CONFORMANCE ANALYZER ════════════════════════════════════════
+
+function tsUpdateParticipation() {
+  const val = document.getElementById('ts-participating').value;
+  document.getElementById('ts-participation-cap-row').style.display = val === 'true' ? '' : 'none';
+}
+
+// ── Dynamic SAFE/Note rows ────────────────────────────────────────
+
+function tsAddSafe() {
+  document.getElementById('ts-safe-empty').style.display = 'none';
+  const id = tsInstrumentCounter++;
+  const div = document.createElement('div');
+  div.className = 'ts-instrument-row';
+  div.dataset.tsId = id;
+  div.innerHTML = `
+    <div><label>Holder Name</label><input type="text" class="ts-holder" placeholder="e.g. Angel SAFE" /></div>
+    <div><label>Val. Cap ($)</label><input type="number" class="ts-valcap" placeholder="e.g. 8000000" min="0" /></div>
+    <div><label>Discount Rate (0–1)</label><input type="number" class="ts-discount" placeholder="e.g. 0.80" step="0.01" min="0" max="1" /></div>
+    <button class="remove-row-btn" onclick="tsRemoveRow(${id},'ts-safe-rows','ts-safe-empty')" title="Remove">&#10005;</button>`;
+  document.getElementById('ts-safe-rows').appendChild(div);
+}
+
+function tsAddNote() {
+  document.getElementById('ts-note-empty').style.display = 'none';
+  const id = tsInstrumentCounter++;
+  const div = document.createElement('div');
+  div.className = 'ts-instrument-row';
+  div.dataset.tsId = id;
+  div.innerHTML = `
+    <div><label>Holder Name</label><input type="text" class="ts-holder" placeholder="e.g. Convertible Note" /></div>
+    <div><label>Interest Rate (0–1)</label><input type="number" class="ts-rate" placeholder="e.g. 0.06" step="0.001" min="0" max="1" /></div>
+    <div></div>
+    <button class="remove-row-btn" onclick="tsRemoveRow(${id},'ts-note-rows','ts-note-empty')" title="Remove">&#10005;</button>`;
+  document.getElementById('ts-note-rows').appendChild(div);
+}
+
+function tsRemoveRow(id, containerId, emptyId) {
+  const el = document.querySelector(`[data-ts-id="${id}"]`);
+  if (el) el.remove();
+  const container = document.getElementById(containerId);
+  if (container.querySelectorAll('.ts-instrument-row').length === 0) {
+    document.getElementById(emptyId).style.display = '';
+  }
+}
+
+// ── Pro forma source ──────────────────────────────────────────────
+
+let _tsProFormaResult = null;
+
+function tsUseCurrentProForma() {
+  if (!_lastProFormaResult) {
+    tsSetStatus('warning', '&#9888; No pro forma built yet. Go to the <strong>Pro Forma Builder</strong> tab, build a pro forma, then return here.');
+    return;
+  }
+  _tsProFormaResult = _lastProFormaResult;
+  const rc = _tsProFormaResult.roundConfig || {};
+  tsSetStatus('success', `&#10003; Loaded pro forma: <strong>${escHtml(rc.roundName || 'Pro Forma')}</strong> &mdash; PPS ${ProFormaEngine.formatCurrency(_tsProFormaResult.pps, 4)}, post-money ${ProFormaEngine.formatCurrency(_tsProFormaResult.postMoneyValuation, 0)}`);
+  // Pre-fill term sheet from round config if fields are empty
+  tsPrefillFromProForma(rc);
+}
+
+function tsPrefillFromProForma(rc) {
+  if (!document.getElementById('ts-preMoneyValuation').value && rc.preMoneyValuation)
+    document.getElementById('ts-preMoneyValuation').value = rc.preMoneyValuation;
+  if (!document.getElementById('ts-investmentAmount').value && rc.newInvestment)
+    document.getElementById('ts-investmentAmount').value = rc.newInvestment;
+  if (!document.getElementById('ts-targetOptionPool').value && rc.optionPoolTargetPct)
+    document.getElementById('ts-targetOptionPool').value = (rc.optionPoolTargetPct * 100).toFixed(1);
+  if (rc.optionPoolMethod)
+    document.getElementById('ts-optionPoolMethod').value = rc.optionPoolMethod;
+  if (document.getElementById('ts-liquidationMultiple').value === '1' && rc.liquidationMultiple)
+    document.getElementById('ts-liquidationMultiple').value = rc.liquidationMultiple;
+  if (rc.participating != null && !document.getElementById('ts-participating').value) {
+    document.getElementById('ts-participating').value = String(rc.participating);
+    tsUpdateParticipation();
+  }
+  if (rc.roundName && document.getElementById('ts-dealName').value === 'Series A')
+    document.getElementById('ts-dealName').value = rc.roundName;
+}
+
+function tsToggleJsonInput() {
+  const wrap = document.getElementById('ts-json-input-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+}
+
+function tsSetStatus(type, html) {
+  const el = document.getElementById('ts-proforma-status');
+  const bg = { success: '#f0fdf4', warning: '#fffbeb', error: '#fff5f5' }[type] || '#f0f9ff';
+  const border = { success: '#bbf7d0', warning: '#fde68a', error: '#fecaca' }[type] || '#bae6fd';
+  const color = { success: 'var(--green)', warning: 'var(--amber)', error: 'var(--red)' }[type] || 'var(--blue)';
+  el.style.cssText = `display:block;padding:8px 12px;border-radius:var(--radius);font-size:12px;background:${bg};border:1px solid ${border};color:${color};margin-bottom:6px;`;
+  el.innerHTML = html;
+}
+
+// ── Read term sheet ────────────────────────────────────────────────
+
+function tsReadTermSheet() {
+  const getNum = id => parseNum(document.getElementById(id).value);
+  const getPct = id => { const v = getNum(id); return v != null ? v / 100 : null; };
+
+  const participating = document.getElementById('ts-participating').value;
+
+  const safeConversions = [];
+  document.querySelectorAll('#ts-safe-rows .ts-instrument-row').forEach(row => {
+    const name = row.querySelector('.ts-holder')?.value.trim();
+    if (!name) return;
+    const entry = { holderName: name };
+    const cap = parseNum(row.querySelector('.ts-valcap')?.value);
+    const disc = parseNum(row.querySelector('.ts-discount')?.value);
+    if (cap  != null) entry.valuationCap = cap;
+    if (disc != null) entry.discountRate = disc;
+    safeConversions.push(entry);
+  });
+
+  const noteConversions = [];
+  document.querySelectorAll('#ts-note-rows .ts-instrument-row').forEach(row => {
+    const name = row.querySelector('.ts-holder')?.value.trim();
+    if (!name) return;
+    const entry = { holderName: name };
+    const rate = parseNum(row.querySelector('.ts-rate')?.value);
+    if (rate != null) entry.interestRate = rate;
+    noteConversions.push(entry);
+  });
+
+  return {
+    dealName:               document.getElementById('ts-dealName').value.trim() || 'Deal',
+    preMoneyValuation:      getNum('ts-preMoneyValuation'),
+    investmentAmount:       getNum('ts-investmentAmount'),
+    targetOptionPool:       getPct('ts-targetOptionPool'),
+    optionPoolMethod:       document.getElementById('ts-optionPoolMethod').value || null,
+    statedPPS:              getNum('ts-statedPPS'),
+    liquidationMultiple:    getNum('ts-liquidationMultiple') ?? 1,
+    participating:          participating === '' ? null : participating === 'true',
+    participationCap:       participating === 'true' ? getNum('ts-participationCap') : null,
+    investorOwnershipTarget: getPct('ts-investorOwnershipTarget'),
+    founderOwnershipFloor:   getPct('ts-founderOwnershipFloor'),
+    safeConversions,
+    noteConversions,
+  };
+}
+
+// ── Run conformance ────────────────────────────────────────────────
+
+function tsRunConformance() {
+  // Resolve pro forma source
+  let pfResult = _tsProFormaResult;
+
+  // Try JSON textarea if no loaded result
+  if (!pfResult) {
+    const jsonText = document.getElementById('ts-proforma-json').value.trim();
+    if (jsonText) {
+      try {
+        pfResult = JSON.parse(jsonText);
+      } catch (e) {
+        tsSetStatus('error', '&#10005; Invalid JSON — could not parse the pro forma. Check the JSON and try again.');
+        return;
+      }
+    }
+  }
+
+  if (!pfResult) {
+    tsSetStatus('error', '&#10005; No pro forma loaded. Click <strong>Use Pro Forma from Builder</strong> or paste JSON.');
+    return;
+  }
+
+  const termSheet = tsReadTermSheet();
+
+  let report;
+  try {
+    report = ProFormaComparator.checkConformance(pfResult, termSheet);
+  } catch (err) {
+    document.getElementById('ts-report-panel').innerHTML = `
+      <div class="panel"><div class="panel-body">
+        <div class="issue-item error" style="border-radius:4px;">
+          <span class="issue-icon">&#9888;</span>
+          <div class="issue-text"><strong>Conformance Error:</strong> ${escHtml(err.message)}</div>
+        </div>
+      </div></div>`;
+    return;
+  }
+
+  tsRenderReport(report, pfResult);
+}
+
+// ── Render conformance report ─────────────────────────────────────
+
+function tsRenderReport(report, pf) {
+  const fmtScore = Math.round(report.score * 100);
+  const isPassing = report.conformant;
+  const fmtC4 = n => ProFormaEngine.formatCurrency(n, 4);
+  const fmtC  = n => ProFormaEngine.formatCurrency(n, 0);
+  const fmtP  = n => ProFormaEngine.formatPct(n, 2);
+
+  // Score circle
+  const scoreHtml = `
+    <div class="conform-score ${isPassing ? 'pass' : 'fail'}">
+      <div class="score-circle ${isPassing ? 'pass' : 'fail'}">${fmtScore}%</div>
+      <div class="score-text">
+        <h3>${isPassing ? '&#10003; Conformant' : '&#9888; Non-Conformant'}</h3>
+        <p>${report.passed.length} of ${report.checks.length} checks passed
+          ${report.criticalFailures.length ? ` &mdash; <strong>${report.criticalFailures.length} critical error(s)</strong>` : ''}
+          ${report.warningFailures.length  ? ` &mdash; ${report.warningFailures.length} warning(s)` : ''}
+        </p>
+        <p style="margin-top:4px;">Pro forma: PPS ${fmtC4(pf.pps)} &nbsp;|&nbsp; Post-money ${fmtC(pf.postMoneyValuation)}</p>
+      </div>
+    </div>`;
+
+  // Check rows
+  function renderCheck(c) {
+    const cls  = c.pass ? 'pass' : (c.severity === 'error' ? 'fail-error' : 'fail-warn');
+    const icon = c.pass ? '&#10003;' : (c.severity === 'error' ? '&#9889;' : '&#9888;');
+    const sevBadge = c.pass ? '' : `<span class="check-severity ${c.severity === 'error' ? 'sev-error' : 'sev-warn'}">${c.severity}</span>`;
+    return `
+      <div class="check-row ${cls}">
+        <span class="check-icon">${icon}</span>
+        <div class="check-body">
+          <div class="check-label">${escHtml(c.label)}${sevBadge}</div>
+          <div class="check-vals">Expected: <strong>${escHtml(c.expectedFmt)}</strong> &nbsp;|&nbsp; Actual: <strong>${escHtml(c.actualFmt)}</strong></div>
+          ${c.note ? `<div class="check-note">&#8594; ${escHtml(c.note)}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // Separate errors, warnings, passes
+  const errChecks  = report.checks.filter(c => !c.pass && c.severity === 'error');
+  const warnChecks = report.checks.filter(c => !c.pass && c.severity === 'warning');
+  const passChecks = report.checks.filter(c => c.pass);
+
+  let checksHtml = '';
+  if (errChecks.length)  checksHtml += `<div class="analysis-section"><h3>Critical Errors (${errChecks.length})</h3><div class="check-list">${errChecks.map(renderCheck).join('')}</div></div>`;
+  if (warnChecks.length) checksHtml += `<div class="analysis-section"><h3>Warnings (${warnChecks.length})</h3><div class="check-list">${warnChecks.map(renderCheck).join('')}</div></div>`;
+  if (passChecks.length) checksHtml += `<div class="analysis-section"><h3>Passing Checks (${passChecks.length})</h3><div class="check-list">${passChecks.map(renderCheck).join('')}</div></div>`;
+  if (!report.checks.length) checksHtml = '<p class="text-muted" style="font-size:13px;">No checks were applicable — verify that your term sheet has at least one field populated.</p>';
+
+  document.getElementById('ts-report-panel').innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Conformance Report: ${escHtml(report.dealName)}</span>
+      </div>
+      <div class="panel-body">
+        ${scoreHtml}
+        ${checksHtml}
+      </div>
+    </div>`;
 }
 </script>
 </body>
