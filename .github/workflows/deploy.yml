@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - 'claude/nvca-proforma-analyzer-t7Q4N'
+      - 'claude/**'
   workflow_dispatch:
 
 permissions:
