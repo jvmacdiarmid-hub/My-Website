@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Term Sheet Conformance Analyzer — Victor Macdiarmid</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #1a1a1a; --dark: #2c2c2c; --mid: #555; --muted: #888;
+      --border: #d9d9d9; --bg: #f8f6f2; --white: #ffffff;
+      --red: #c41e3a; --green: #2e7d32; --amber: #b45309; --blue: #1565c0;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'Inter', system-ui, sans-serif;
+      --radius: 4px;
+    }
+    body { font-family: var(--sans); background: var(--bg); color: var(--black); font-size: 14px; line-height: 1.5; }
+
+    /* Nav */
+    .site-nav { background: var(--white); border-bottom: 2px solid var(--black); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 24px; height: 48px; }
+    .nav-logo { font-family: var(--serif); font-weight: 700; font-size: 18px; text-decoration: none; color: var(--black); white-space: nowrap; }
+    .nav-links { display: flex; gap: 16px; }
+    .nav-links a { font-size: 12px; font-weight: 500; color: var(--mid); text-decoration: none; text-transform: uppercase; letter-spacing: .04em; }
+    .nav-links a:hover { color: var(--black); }
+    .nav-links a.active { color: var(--black); border-bottom: 2px solid var(--black); padding-bottom: 2px; }
+
+    /* Page header */
+    .page-header { background: var(--white); border-bottom: 1px solid var(--border); padding: 32px 20px; text-align: center; }
+    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 700; }
+    .page-header p { color: var(--mid); font-size: 14px; margin-top: 8px; max-width: 560px; margin-left: auto; margin-right: auto; }
+
+    /* Main layout */
+    .main { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
+
+    /* Upload cards */
+    .uploads-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+    @media (max-width: 680px) { .uploads-row { grid-template-columns: 1fr; } }
+
+    .upload-card { background: var(--white); border: 2px solid var(--border); border-radius: 6px; overflow: hidden; transition: border-color .2s; }
+    .upload-card.loaded { border-color: var(--green); }
+
+    .upload-card-head { padding: 16px 20px; border-bottom: 1px solid var(--border); background: #fafafa; display: flex; align-items: center; gap: 10px; }
+    .upload-card-head h2 { font-family: var(--serif); font-size: 18px; font-weight: 600; flex: 1; }
+    .doc-type { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: .05em; }
+    .doc-type-ts { background: #dbeafe; color: #1d4ed8; }
+    .doc-type-pf { background: #dcfce7; color: #15803d; }
+
+    .upload-card-body { padding: 20px; }
+
+    /* Drop zone */
+    .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; position: relative; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--black); background: #f0ede8; }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .drop-icon { font-size: 36px; line-height: 1; margin-bottom: 10px; }
+    .drop-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .drop-sub { font-size: 12px; color: var(--muted); }
+    .drop-formats { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+    .fmt-chip { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; border: 1px solid; }
+    .fmt-docx { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .fmt-xlsx { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .fmt-zip  { background: #fefce8; color: #854d0e; border-color: #fde68a; }
+
+    .card-status { margin-top: 14px; padding: 10px 14px; border-radius: var(--radius); font-size: 13px; display: none; }
+    .card-status.show { display: block; }
+    .card-status.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+    .card-status.error   { background: #fff5f5; color: var(--red);   border: 1px solid #fecaca; }
+    .card-status.loading { background: #eff6ff; color: var(--blue);  border: 1px solid #bfdbfe; }
+    .card-status.warning { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
+
+    /* Run button */
+    .run-row { text-align: center; margin-bottom: 36px; }
+    .btn-run { display: inline-flex; align-items: center; gap: 10px; padding: 14px 48px; background: var(--black); color: var(--white); border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background .15s; }
+    .btn-run:hover { background: var(--dark); }
+    .run-hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+    /* Results wall */
+    .wall-summary { display: flex; align-items: center; gap: 20px; padding: 24px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .score-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; flex-shrink: 0; border: 3px solid; }
+    .score-circle.pass { background: #dcfce7; color: var(--green); border-color: #86efac; }
+    .score-circle.fail { background: #fee2e2; color: var(--red);   border-color: #fca5a5; }
+    .summary-text h2 { font-family: var(--serif); font-size: 22px; }
+    .summary-text p  { font-size: 13px; color: var(--mid); margin-top: 5px; }
+    .summary-counts { margin-left: auto; display: flex; gap: 24px; text-align: center; }
+    .count-block .num   { display: block; font-size: 28px; font-weight: 700; }
+    .count-block .label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+    .c-pass { color: var(--green); }
+    .c-err  { color: var(--red); }
+    .c-warn { color: var(--amber); }
+
+    .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+
+    .wall-card { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .wall-card.wc-pass  { border-left-color: var(--green); }
+    .wall-card.wc-error { border-left-color: var(--red); }
+    .wall-card.wc-warn  { border-left-color: var(--amber); }
+
+    .card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .card-icon { font-size: 18px; flex-shrink: 0; line-height: 1.3; }
+    .card-field { font-size: 13px; font-weight: 600; flex: 1; }
+    .card-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .cb-pass  { background: #dcfce7; color: #166534; }
+    .cb-error { background: #fee2e2; color: #991b1b; }
+    .cb-warn  { background: #fef9c3; color: #854d0e; }
+
+    .card-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .val-block { background: #fafafa; border: 1px solid var(--border); border-radius: 3px; padding: 10px 12px; }
+    .val-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+    .val-num   { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .val-num.mismatch { color: var(--red); }
+
+    .card-note { margin-top: 10px; font-size: 11px; padding: 6px 8px; border-radius: 3px; }
+    .card-note.err-note  { background: #fff5f5; color: var(--red); }
+    .card-note.warn-note { background: #fffbeb; color: var(--amber); }
+
+    .wall-empty { text-align: center; padding: 48px 20px; color: var(--muted); background: var(--white); border: 1px solid var(--border); border-radius: 6px; }
+    .wall-empty h3 { font-family: var(--serif); font-size: 18px; color: var(--mid); margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Victor Macdiarmid</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="proforma.html">Pro Forma Builder</a>
+      <a href="conformance.html" class="active">Conformance Analyzer</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <h1>Term Sheet Conformance Analyzer</h1>
+  <p>Upload a term sheet and a pro forma. The tool compares every negotiated term against the actual numbers and flags any discrepancies.</p>
+</div>
+
+<div class="main">
+
+  <!-- ── Step 1: Upload ──────────────────────────────────────── -->
+  <div class="uploads-row">
+
+    <div class="upload-card" id="ts-card">
+      <div class="upload-card-head">
+        <h2>Term Sheet</h2>
+        <span class="doc-type doc-type-ts">Negotiated Terms</span>
+      </div>
+      <div class="upload-card-body">
+        <div class="drop-zone" id="ts-zone"
+             ondragover="onDragOver(event,'ts-zone')" ondragleave="onDragLeave('ts-zone')" ondrop="onDrop(event,'ts')">
+          <input type="file" id="ts-input" accept=".docx,.doc,.xlsx,.xls" onchange="onSelect(event,'ts')" />
+          <div class="drop-icon">📄</div>
+          <div class="drop-title">Drop term sheet here or click to browse</div>
+          <div class="drop-sub">Word or Excel document with your negotiated terms</div>
+          <div class="drop-formats">
+            <span class="fmt-chip fmt-docx">.docx</span>
+            <span class="fmt-chip fmt-xlsx">.xlsx</span>
+          </div>
+        </div>
+        <div class="card-status" id="ts-status"></div>
+      </div>
+    </div>
+
+    <div class="upload-card" id="pf-card">
+      <div class="upload-card-head">
+        <h2>Pro Forma</h2>
+        <span class="doc-type doc-type-pf">Actual Numbers</span>
+      </div>
+      <div class="upload-card-body">
+        <div class="drop-zone" id="pf-zone"
+             ondragover="onDragOver(event,'pf-zone')" ondragleave="onDragLeave('pf-zone')" ondrop="onDrop(event,'pf')">
+          <input type="file" id="pf-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="onSelect(event,'pf')" />
+          <div class="drop-icon">📊</div>
+          <div class="drop-title">Drop pro forma here or click to browse</div>
+          <div class="drop-sub">Excel cap table or Word pro forma document</div>
+          <div class="drop-formats">
+            <span class="fmt-chip fmt-xlsx">.xlsx</span>
+            <span class="fmt-chip fmt-docx">.docx</span>
+            <span class="fmt-chip fmt-zip">.zip</span>
+          </div>
+        </div>
+        <div class="card-status" id="pf-status"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Step 2: Run ─────────────────────────────────────────── -->
+  <div class="run-row">
+    <button class="btn-run" onclick="runAnalysis()">&#9654; Run Analysis</button>
+    <p class="run-hint">Upload both documents above, then click Run Analysis</p>
+  </div>
+
+  <!-- ── Step 3: Results ─────────────────────────────────────── -->
+  <div id="results">
+    <div class="wall-empty">
+      <h3>Results will appear here</h3>
+      <p>Upload a term sheet and pro forma above, then click <strong>Run Analysis</strong>.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- SheetJS, mammoth, JSZip -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="proforma-engine.js?v=20260312160027"></script>
+<script src="proforma-comparator.js?v=20260312160027"></script>
+<script>
+
+let tsData = null;   // parsed term sheet object
+let pfData = null;   // built pro forma result
+
+// ── Drag & drop ───────────────────────────────────────────────────
+function onDragOver(e, zoneId) { e.preventDefault(); document.getElementById(zoneId).classList.add('drag-over'); }
+function onDragLeave(zoneId)   { document.getElementById(zoneId).classList.remove('drag-over'); }
+function onDrop(e, side)       { e.preventDefault(); onDragLeave(side+'-zone'); const f=e.dataTransfer.files[0]; if(f) handleFile(f, side); }
+function onSelect(e, side)     { const f=e.target.files[0]; if(f) handleFile(f, side); e.target.value=''; }
+
+// ── File handler ──────────────────────────────────────────────────
+async function handleFile(file, side) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  setStatus(side, 'loading', '⏳ Parsing ' + file.name + '…');
+
+  try {
+    if (side === 'ts') {
+      let text = '';
+      if (ext === 'docx' || ext === 'doc') {
+        const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        text = r.value;
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        wb.SheetNames.forEach(n => { text += XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n'; });
+      } else {
+        setStatus(side, 'error', 'Unsupported format — upload .docx or .xlsx'); return;
+      }
+      tsData = parseTermSheet(text, file.name);
+      const fieldCount = Object.values(tsData).filter(v => v != null && v !== '' && !Array.isArray(v)).length;
+      if (fieldCount < 2) {
+        setStatus(side, 'warning', '⚠ Parsed but found few labelled terms. Ensure values like "Pre-money: $10M" appear in the document.');
+      } else {
+        setStatus(side, 'success', '✓ ' + (tsData.dealName||file.name) + ' — ' + fieldCount + ' term(s) extracted');
+        document.getElementById('ts-card').classList.add('loaded');
+      }
+
+    } else {
+      // Pro forma
+      let parsed;
+      if (ext === 'zip') {
+        parsed = await parseZip(file, side);
+        if (!parsed) return;
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        parsed = await parseExcelDoc(file);
+      } else if (ext === 'docx' || ext === 'doc') {
+        parsed = await parseWordDoc(file);
+      } else {
+        setStatus(side, 'error', 'Unsupported format — upload .xlsx, .docx, or .zip'); return;
+      }
+
+      const rc = buildRoundConfig(parsed.roundConfig);
+      try {
+        pfData = ProFormaEngine.buildProForma(parsed.stakeholders, rc);
+      } catch(e) {
+        pfData = syntheticPf(rc, parsed.stakeholders);
+      }
+      const n = parsed.stakeholders.length;
+      setStatus(side, 'success', '✓ ' + file.name + ' — ' + n + ' stakeholder(s), pre-money $' + ((rc.preMoneyValuation||0)/1e6).toFixed(1) + 'M');
+      document.getElementById('pf-card').classList.add('loaded');
+    }
+  } catch(err) {
+    setStatus(side, 'error', '✗ Parse error: ' + err.message);
+  }
+}
+
+function setStatus(side, type, msg) {
+  const el = document.getElementById(side+'-status');
+  el.className = 'card-status show ' + type;
+  el.textContent = msg;
+}
+
+// ── Term sheet parser ─────────────────────────────────────────────
+function parseTermSheet(text, filename) {
+  const ts = { dealName: '', safeConversions: [], noteConversions: [] };
+
+  const roundM = text.match(/series\s+[a-z]\b|seed\s+round|bridge\s+round|series\s+[a-z]\s+preferred/i);
+  ts.dealName = roundM ? roundM[0].trim() : filename.replace(/\.[^.]+$/, '');
+
+  function money(pat) {
+    const m = text.match(new RegExp(pat + '[^\\n]{0,100}\\$?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?)', 'i'));
+    if (!m) return null;
+    let s = m[1].replace(/,/g,'').trim();
+    const last = s.split(/\s+/).pop();
+    const mult = /million|^m$/i.test(last) ? 1e6 : /billion|^b$/i.test(last) ? 1e9 : 1;
+    const v = parseFloat(s);
+    return isNaN(v) ? null : v * mult;
+  }
+  function pct(pat) {
+    const m = text.match(new RegExp(pat + '[^\\n]{0,80}([0-9]+(?:\\.[0-9]+)?)\\s*%', 'i'));
+    return m ? parseFloat(m[1]) : null;
+  }
+  function mult(pat) {
+    const m = text.match(new RegExp(pat + '[^\\n]{0,40}([0-9]+(?:\\.[0-9]+)?)\\s*[xX×]', 'i'));
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  ts.preMoneyValuation = money('pre[\\s\\-]?money(?:\\s+valuation)?(?:\\s*[:=])?(?:\\s*of)?');
+  ts.investmentAmount  = money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)(?:\\s*[:=])?(?:\\s*of)?')
+                      || money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?');
+  const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
+  if (p != null) ts.targetOptionPool = p / 100;
+  if (/pre[\s-]?money\s+option\s+pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
+  else if (/post[\s-]?money\s+option\s+pool/i.test(text)) ts.optionPoolMethod = 'post-money';
+  ts.statedPPS = money('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|purchase\\s+price\\s+per\\s+share|oip');
+  const lm = mult('liquidation\\s+(?:preference|multiple)(?:\\s*[:=])?');
+  if (lm != null) ts.liquidationMultiple = lm;
+  if (/non[\s-]participating/i.test(text)) ts.participating = false;
+  else if (/participating\s+preferred|participating\s+liquidation/i.test(text)) ts.participating = true;
+  const cm = mult('participation\\s+cap(?:\\s*[:=])?');
+  if (cm != null) ts.participationCap = cm;
+  const io = pct('investor\\s+(?:ownership|percentage)|lead\\s+investor\\s+(?:receives|ownership)');
+  if (io != null) ts.investorOwnershipTarget = io / 100;
+
+  return ts;
+}
+
+// ── Excel / Word parsers (reused from proforma.html logic) ────────
+async function parseExcelDoc(file) {
+  const wb   = XLSX.read(await file.arrayBuffer(), { type:'array', cellDates:true });
+  const res  = { stakeholders:[], roundConfig:{}, warnings:[] };
+  for (const sn of wb.SheetNames) {
+    const ws   = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+    xlRoundConfig(rows, res);
+    xlCapTable(rows, res);
+  }
+  return res;
+}
+
+function xlRoundConfig(rows, res) {
+  const rc = res.roundConfig;
+  rows.forEach(row => {
+    for (let c = 0; c < Math.min(row.length,5); c++) {
+      const cell = String(row[c]||'').trim();
+      if (!cell) continue;
+      if (!rc.preMoneyValuation && /pre[\s-]?money/i.test(cell)) { const v=xlNum(row,c+1); if(v>0) rc.preMoneyValuation=v; }
+      if (!rc.newInvestment && /investment|aggregate.proceeds|round.size|new.money/i.test(cell)) { const v=xlNum(row,c+1); if(v>0) rc.newInvestment=v; }
+      if (!rc.optionPoolTargetPct && /option.pool|esop|equity.incentive/i.test(cell)) { const v=xlNum(row,c+1); if(v>0) rc.optionPoolTargetPct=v>1?v:+(v*100).toFixed(2); }
+      if (!rc.roundName && /round.(?:name|type)/i.test(cell)) { const v=xlStr(row,c+1); if(v) rc.roundName=v; }
+    }
+  });
+}
+
+function xlNum(row,start) { for(let c=start;c<row.length;c++){const n=parseRaw(row[c]);if(n!=null&&n>0)return n;} return null; }
+function xlStr(row,start) { for(let c=start;c<row.length;c++){const v=String(row[c]||'').trim();if(v)return v;} return null; }
+function parseRaw(v) {
+  if(v==null||v==='')return null;
+  const s=String(v).replace(/[$,%\s]/g,'').replace(/,/g,'');
+  const n=parseFloat(s); return isNaN(n)?null:n;
+}
+
+function xlCapTable(rows, res) {
+  const hIdx = xlHeader(rows);
+  if (hIdx===-1) return;
+  const hdrs = rows[hIdx].map(h=>String(h||'').trim().toLowerCase());
+  const col=(opts)=>{ for(const o of opts){const i=hdrs.findIndex(h=>h.includes(o));if(i!==-1)return i;} return -1; };
+  const cName=col(['name','holder','stockholder','investor','party']), cShares=col(['shares','# shares','number','count']),
+        cType=col(['type','class','security','instrument']),          cPrinc=col(['principal','amount','safe amount']);
+  if(cName===-1)return;
+  for(let r=hIdx+1;r<rows.length;r++){
+    const row=rows[r]; const name=String(row[cName]||'').trim(); if(!name||name.toLowerCase()==='total')continue;
+    const shares=cShares>=0?parseRaw(row[cShares]):0;
+    const rawType=cType>=0?String(row[cType]||'').toLowerCase():'';
+    const type=rawType.includes('safe')?'safe':rawType.includes('note')||rawType.includes('conv')?'note':rawType.includes('option')||rawType.includes('warrant')?'option':rawType.includes('pref')?'preferred':'common';
+    const s={name,type,shares:shares||0};
+    if(type==='safe'||type==='note'){s.shares=0;if(cPrinc>=0)s.principal=parseRaw(row[cPrinc])||0;}
+    res.stakeholders.push(s);
+  }
+}
+
+function xlHeader(rows) {
+  const keys=['name','shares','type','class','holder','investor','security','principal'];
+  for(let i=0;i<Math.min(rows.length,20);i++){
+    const row=rows[i]; let hits=0;
+    for(const cell of row){const s=String(cell||'').toLowerCase().trim();if(keys.some(k=>s.includes(k)))hits++;}
+    if(hits>=2)return i;
+  }
+  return -1;
+}
+
+async function parseWordDoc(file) {
+  const r    = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+  const text = r.value;
+  const res  = { stakeholders:[], roundConfig:{}, warnings:[] };
+  const rc   = res.roundConfig;
+  const money = pat => { const m=text.match(new RegExp(pat+'[^\\n]{0,80}\\$?([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m))?)', 'i')); if(!m)return null; const s=m[1].replace(/,/g,'').trim(); const mult=/million|^m$/i.test(s.split(/\s+/).pop())?1e6:1; return parseFloat(s)*mult||null; };
+  const pctV  = pat => { const m=text.match(new RegExp(pat+'[^\\n]{0,60}([0-9]+(?:\\.[0-9]+)?)\\s*%','i')); return m?parseFloat(m[1]):null; };
+  rc.preMoneyValuation = money('pre[\\s-]?money');
+  rc.newInvestment     = money('(?:investment|proceeds|round.size)');
+  const pool = pctV('option.pool|esop'); if(pool!=null) rc.optionPoolTargetPct=pool;
+  // Parse stakeholder lines: "Name  Shares  Type"
+  const lines = text.split('\n');
+  for(const line of lines){
+    const m=line.match(/^([A-Za-z][\w\s&,.-]{2,40})\s+([\d,]+)\s+(common|preferred|option|safe|note|warrant)/i);
+    if(m) res.stakeholders.push({name:m[1].trim(),shares:parseInt(m[2].replace(/,/g,'')),type:m[3].toLowerCase()});
+  }
+  return res;
+}
+
+async function parseZip(file, side) {
+  const zip     = await JSZip.loadAsync(await file.arrayBuffer());
+  const entries = [];
+  zip.forEach((path,entry)=>{
+    if(entry.dir||path.startsWith('__MACOSX/'))return;
+    const ext=path.split('.').pop().toLowerCase();
+    if(['xlsx','xls','docx','doc'].includes(ext))entries.push({path,entry,ext});
+  });
+  if(!entries.length){setStatus(side,'error','No Excel or Word file found in ZIP.');return null;}
+  entries.sort((a,b)=>(['xlsx','xls'].includes(a.ext)?0:1)-(['xlsx','xls'].includes(b.ext)?0:1));
+  const chosen=entries[0];
+  const blob=await chosen.entry.async('blob');
+  const inner=new File([blob],chosen.path);
+  return chosen.ext==='xlsx'||chosen.ext==='xls'?parseExcelDoc(inner):parseWordDoc(inner);
+}
+
+function buildRoundConfig(rc) {
+  return {
+    roundName:          rc.roundName||'Pro Forma',
+    preMoneyValuation:  rc.preMoneyValuation||0,
+    newInvestment:      rc.newInvestment||0,
+    optionPoolTargetPct:rc.optionPoolTargetPct?(rc.optionPoolTargetPct>1?rc.optionPoolTargetPct/100:rc.optionPoolTargetPct):0,
+    optionPoolMethod:   rc.optionPoolMethod||'pre-money',
+    newShareClass:      rc.newShareClass||'New Preferred',
+    newInvestorName:    rc.newInvestorName||'New Investors',
+    liquidationMultiple:rc.liquidationMultiple||1,
+    participating:      rc.participating||false,
+    closingDate:        rc.closingDate||new Date().toISOString().slice(0,10),
+  };
+}
+
+function syntheticPf(rc, stakeholders) {
+  return {
+    preMoneyValuation:  rc.preMoneyValuation,
+    newInvestment:      rc.newInvestment,
+    postMoneyValuation: rc.preMoneyValuation + rc.newInvestment,
+    pps:                null,
+    actualOptionPoolPct:rc.optionPoolTargetPct||null,
+    roundConfig:        rc,
+    convertedInstruments:[],
+    postRoundCap:       stakeholders||[],
+    postFD:             null,
+  };
+}
+
+// ── Run analysis ──────────────────────────────────────────────────
+function runAnalysis() {
+  if (!tsData || !pfData) {
+    showError(!tsData ? 'Upload a term sheet first.' : 'Upload a pro forma first.');
+    return;
+  }
+  let report;
+  try {
+    report = ProFormaComparator.checkConformance(pfData, tsData);
+  } catch(e) {
+    showError('Analysis failed: ' + e.message);
+    return;
+  }
+  renderWall(report, pfData);
+}
+
+function showError(msg) {
+  document.getElementById('results').innerHTML =
+    '<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:4px;padding:16px 20px;color:#c41e3a;font-size:13px;">⚠ ' + msg + '</div>';
+}
+
+// ── Render wall ───────────────────────────────────────────────────
+function renderWall(report, pf) {
+  const score  = Math.round(report.score * 100);
+  const pass   = report.passed.length;
+  const errors = report.criticalFailures.length;
+  const warns  = report.warningFailures.length;
+  const isPass = report.conformant;
+
+  const summary = `
+    <div class="wall-summary">
+      <div class="score-circle ${isPass?'pass':'fail'}">${score}%</div>
+      <div class="summary-text">
+        <h2>${isPass ? '✓ Conformant' : '⚠ Non-Conformant'} — ${esc(report.dealName)}</h2>
+        <p>${report.checks.length} checks · ${pass} passed · ${errors} error(s) · ${warns} warning(s)</p>
+      </div>
+      <div class="summary-counts">
+        <div class="count-block"><span class="num c-pass">${pass}</span><span class="label">Passed</span></div>
+        <div class="count-block"><span class="num c-err">${errors}</span><span class="label">Errors</span></div>
+        <div class="count-block"><span class="num c-warn">${warns}</span><span class="label">Warnings</span></div>
+      </div>
+    </div>`;
+
+  const sorted = [
+    ...report.checks.filter(c=>!c.pass&&c.severity==='error'),
+    ...report.checks.filter(c=>!c.pass&&c.severity==='warning'),
+    ...report.checks.filter(c=>c.pass),
+  ];
+
+  const cards = sorted.map(c => {
+    const cls   = c.pass?'wc-pass':c.severity==='error'?'wc-error':'wc-warn';
+    const icon  = c.pass?'✓':c.severity==='error'?'⚡':'⚠';
+    const badge = c.pass
+      ? '<span class="card-badge cb-pass">Pass</span>'
+      : c.severity==='error'
+        ? '<span class="card-badge cb-error">Error</span>'
+        : '<span class="card-badge cb-warn">Warning</span>';
+    const mismatch = c.pass ? '' : ' mismatch';
+    const note = c.note
+      ? `<div class="card-note ${c.severity==='warning'?'warn-note':'err-note'}">→ ${esc(c.note)}</div>`
+      : '';
+    return `
+      <div class="wall-card ${cls}">
+        <div class="card-top">
+          <span class="card-icon">${icon}</span>
+          <span class="card-field">${esc(c.label)}</span>
+          ${badge}
+        </div>
+        <div class="card-vals">
+          <div class="val-block">
+            <div class="val-label">Term Sheet</div>
+            <div class="val-num">${esc(c.expectedFmt)}</div>
+          </div>
+          <div class="val-block">
+            <div class="val-label">Pro Forma</div>
+            <div class="val-num${mismatch}">${esc(c.actualFmt)}</div>
+          </div>
+        </div>
+        ${note}
+      </div>`;
+  }).join('');
+
+  const grid = sorted.length
+    ? `<div class="wall-grid">${cards}</div>`
+    : '<div class="wall-empty"><h3>No comparable fields found</h3><p>Ensure both documents contain labelled financial figures.</p></div>';
+
+  document.getElementById('results').innerHTML = summary + grid;
+  document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+</script>
+</body>
+</html>
