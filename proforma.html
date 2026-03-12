@@ -191,6 +191,65 @@
     .page-section { display: none; }
     .page-section.active { display: block; }
 
+    /* ── Analyze layout ───────────────────────────────────────── */
+    .analyze-layout { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+    .uploads-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    @media (max-width: 700px) { .uploads-row { grid-template-columns: 1fr; } }
+    .upload-zone-card { background: var(--white); border: 2px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color .15s; }
+    .upload-zone-card.loaded { border-color: var(--green); }
+    .upload-zone-card.error-state { border-color: var(--red); }
+    .upload-zone-card-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #fafafa; }
+    .upload-zone-card-header h3 { font-family: var(--serif); font-size: 16px; font-weight: 600; flex: 1; }
+    .upload-zone-card-header .doc-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; }
+    .badge-ts { background: #e3f2fd; color: #1565c0; }
+    .badge-pf { background: #e8f5e9; color: #2e7d32; }
+    .upload-zone-card .drop-zone { margin: 16px; border-radius: var(--radius); }
+    .upload-zone-card-status { margin: 0 16px 16px; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; display: none; }
+    .upload-zone-card-status.show { display: block; }
+    .upload-zone-card-status.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+    .upload-zone-card-status.error   { background: #fff5f5; color: var(--red);   border: 1px solid #fecaca; }
+    .upload-zone-card-status.loading { background: #f0f9ff; color: var(--blue);  border: 1px solid #bae6fd; }
+    .upload-zone-card-status.warning { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
+
+    /* ── Run button ───────────────────────────────────────────── */
+    .analyze-run { text-align: center; margin-bottom: 28px; }
+    .btn-lg { padding: 12px 40px; font-size: 15px; font-weight: 600; border-radius: 4px; }
+
+    /* ── Results wall ─────────────────────────────────────────── */
+    .wall-summary { display: flex; align-items: center; gap: 20px; padding: 20px 24px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; }
+    .wall-score-circle { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; border: 3px solid rgba(0,0,0,.08); }
+    .wall-score-circle.pass { background: #dcfce7; color: var(--green); border-color: #86efac; }
+    .wall-score-circle.fail { background: #fee2e2; color: var(--red);   border-color: #fca5a5; }
+    .wall-summary-text h2 { font-family: var(--serif); font-size: 20px; }
+    .wall-summary-text p  { font-size: 13px; color: var(--mid); margin-top: 4px; }
+    .wall-summary-counts { margin-left: auto; display: flex; gap: 16px; text-align: center; }
+    .wall-count-item span { display: block; }
+    .wall-count-num  { font-size: 22px; font-weight: 700; }
+    .wall-count-label{ font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .c-pass { color: var(--green); }
+    .c-err  { color: var(--red); }
+    .c-warn { color: var(--amber); }
+
+    .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    .wall-card { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .wall-card.wc-pass  { border-left-color: var(--green); }
+    .wall-card.wc-error { border-left-color: var(--red); }
+    .wall-card.wc-warn  { border-left-color: var(--amber); }
+    .wall-card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .wall-card-icon { font-size: 18px; line-height: 1.2; flex-shrink: 0; }
+    .wall-card-field { font-size: 13px; font-weight: 600; color: var(--black); flex: 1; }
+    .wall-card-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .wb-pass  { background: #dcfce7; color: #166534; }
+    .wb-error { background: #fee2e2; color: #991b1b; }
+    .wb-warn  { background: #fef9c3; color: #854d0e; }
+    .wall-card-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .wall-val-block { background: #fafafa; border: 1px solid var(--border); border-radius: 3px; padding: 8px 10px; }
+    .wall-val-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 3px; }
+    .wall-val-num   { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--black); }
+    .wall-val-num.mismatch { color: var(--red); }
+    .wall-card-note { margin-top: 8px; font-size: 11px; color: var(--red); }
+    .wall-card-note.warn-note { color: var(--amber); }
+
     /* ── Conformance layout ───────────────────────────────────── */
     .conform-layout { max-width: 1400px; margin: 0 auto; padding: 16px 20px; display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
     @media (max-width: 900px) { .conform-layout { grid-template-columns: 1fr; } }
@@ -527,226 +586,63 @@
 
 <!-- ══ CONFORMANCE SECTION ══════════════════════════════════════ -->
 <div id="page-conformance" class="page-section">
-  <div class="conform-layout">
+  <div class="analyze-layout">
 
-    <!-- LEFT: TERM SHEET INPUTS -->
-    <div style="display:flex;flex-direction:column;gap:16px;">
+    <!-- ── Upload row ─────────────────────────────────────────── -->
+    <div class="uploads-row">
 
-      <!-- Core Term Sheet -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Term Sheet</span>
-          <span class="text-muted" style="font-size:11px;">Negotiated terms to check against</span>
+      <!-- Term Sheet upload -->
+      <div class="upload-zone-card" id="ts-card">
+        <div class="upload-zone-card-header">
+          <h3>Term Sheet</h3>
+          <span class="doc-badge badge-ts">Negotiated Terms</span>
         </div>
-        <div class="panel-body">
-          <div class="field-group">
-            <div class="field">
-              <label>Deal Name</label>
-              <input type="text" id="ts-dealName" value="Series A" />
-            </div>
-            <div class="section-divider"></div>
-            <div class="section-label">Core Economics</div>
-            <div class="field-row">
-              <div class="field">
-                <label>Pre-Money Valuation ($)</label>
-                <input type="number" id="ts-preMoneyValuation" placeholder="10000000" min="0" />
-              </div>
-              <div class="field">
-                <label>Investment Amount ($)</label>
-                <input type="number" id="ts-investmentAmount" placeholder="2000000" min="0" />
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label>Option Pool Target %</label>
-                <input type="number" id="ts-targetOptionPool" placeholder="15" min="0" max="50" step="0.5" />
-                <span class="field-hint">As percentage, e.g. 15 = 15%</span>
-              </div>
-              <div class="field">
-                <label>Pool Method</label>
-                <select id="ts-optionPoolMethod">
-                  <option value="pre-money">Pre-money (pool shuffle)</option>
-                  <option value="post-money">Post-money</option>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <label>Stated PPS ($) <span style="font-weight:400;color:var(--muted);text-transform:none;">(optional)</span></label>
-              <input type="number" id="ts-statedPPS" placeholder="Leave blank if not specified in term sheet" step="0.0001" min="0" />
-            </div>
-            <div class="section-divider"></div>
-            <div class="section-label">Preferred Stock Terms</div>
-            <div class="field-row">
-              <div class="field">
-                <label>Liquidation Multiple</label>
-                <input type="number" id="ts-liquidationMultiple" value="1" min="1" step="0.25" />
-              </div>
-              <div class="field">
-                <label>Participating Preferred?</label>
-                <select id="ts-participating" onchange="tsUpdateParticipation()">
-                  <option value="">Not specified</option>
-                  <option value="false">No — non-participating</option>
-                  <option value="true">Yes — participating</option>
-                </select>
-              </div>
-            </div>
-            <div class="field-row" id="ts-participation-cap-row" style="display:none">
-              <div class="field">
-                <label>Participation Cap (multiple)</label>
-                <input type="number" id="ts-participationCap" placeholder="Leave blank = uncapped" step="0.25" min="0" />
-                <span class="field-hint">e.g. 3 = 3× cap; blank = uncapped</span>
-              </div>
-            </div>
-            <div class="section-divider"></div>
-            <div class="section-label">Ownership Targets <span style="font-weight:400;color:var(--muted);text-transform:none;">(optional)</span></div>
-            <div class="field-row">
-              <div class="field">
-                <label>Investor Ownership Target %</label>
-                <input type="number" id="ts-investorOwnershipTarget" placeholder="e.g. 20" min="0" max="100" step="0.5" />
-                <span class="field-hint">As percentage, e.g. 20 = 20%</span>
-              </div>
-              <div class="field">
-                <label>Founder Ownership Floor %</label>
-                <input type="number" id="ts-founderOwnershipFloor" placeholder="e.g. 50" min="0" max="100" step="0.5" />
-                <span class="field-hint">Minimum % for common holders</span>
-              </div>
-            </div>
-          </div>
+        <div class="drop-zone" id="ts-drop-zone"
+             ondragover="handleDocDragOver(event,'ts-drop-zone')"
+             ondragleave="handleDocDragLeave('ts-drop-zone')"
+             ondrop="handleDocDrop(event,'ts')">
+          <input type="file" id="ts-file-input" accept=".docx,.doc,.xlsx,.xls"
+                 onchange="handleDocSelect(event,'ts')" />
+          <div class="drop-zone-icon">&#128196;</div>
+          <div class="drop-zone-title">Drop term sheet here or click to browse</div>
+          <div class="drop-zone-sub">.docx Word document or .xlsx Excel file</div>
         </div>
+        <div class="upload-zone-card-status" id="ts-card-status"></div>
       </div>
 
-      <!-- SAFE Conversions -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">SAFE Conversions</span>
-          <button class="btn btn-sm btn-secondary" onclick="tsAddSafe()">+ Add SAFE</button>
+      <!-- Pro Forma upload -->
+      <div class="upload-zone-card" id="pf-card">
+        <div class="upload-zone-card-header">
+          <h3>Pro Forma</h3>
+          <span class="doc-badge badge-pf">Actual Numbers</span>
         </div>
-        <div class="panel-body">
-          <div id="ts-safe-rows">
-            <p class="text-muted" id="ts-safe-empty" style="font-size:12px;">No SAFEs — click <strong>Add SAFE</strong> to include conversion terms from the term sheet.</p>
-          </div>
+        <div class="drop-zone" id="pf-drop-zone"
+             ondragover="handleDocDragOver(event,'pf-drop-zone')"
+             ondragleave="handleDocDragLeave('pf-drop-zone')"
+             ondrop="handleDocDrop(event,'pf')">
+          <input type="file" id="pf-file-input" accept=".docx,.doc,.xlsx,.xls,.zip"
+                 onchange="handleDocSelect(event,'pf')" />
+          <div class="drop-zone-icon">&#128202;</div>
+          <div class="drop-zone-title">Drop pro forma here or click to browse</div>
+          <div class="drop-zone-sub">.xlsx Excel, .docx Word, or .zip archive</div>
         </div>
+        <div class="upload-zone-card-status" id="pf-card-status"></div>
       </div>
 
-      <!-- Note Conversions -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Note Conversions</span>
-          <button class="btn btn-sm btn-secondary" onclick="tsAddNote()">+ Add Note</button>
-        </div>
-        <div class="panel-body">
-          <div id="ts-note-rows">
-            <p class="text-muted" id="ts-note-empty" style="font-size:12px;">No notes — click <strong>Add Note</strong> to include conversion terms from the term sheet.</p>
-          </div>
-        </div>
-      </div>
+    </div><!-- /uploads-row -->
 
-    </div><!-- /left -->
+    <!-- ── Run Analysis ────────────────────────────────────────── -->
+    <div class="analyze-run">
+      <button class="btn btn-primary btn-lg" onclick="tsRunAnalysis()">&#9654; Run Analysis</button>
+      <p style="margin-top:8px;font-size:12px;color:var(--muted);">Upload both documents above, then click Run Analysis to check conformance.</p>
+    </div>
 
-    <!-- RIGHT: PRO FORMA SOURCE + REPORT -->
-    <div style="display:flex;flex-direction:column;gap:16px;">
+    <!-- ── Results wall ────────────────────────────────────────── -->
+    <div id="ts-wall">
+      <!-- Populated by tsRenderWall() -->
+    </div>
 
-      <!-- Pro Forma Source -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Pro Forma to Check</span>
-          <span class="text-muted" style="font-size:11px;">The actual numbers from the pro forma document</span>
-        </div>
-        <div class="panel-body">
-          <!-- Source selector tabs -->
-          <div class="pf-source-tabs" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;">
-            <button class="pf-src-btn active" id="pf-src-direct" onclick="tsSwitchSource('direct')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:#f0ede8;color:var(--black);font-family:var(--sans);border-right:1px solid var(--border);">&#9998; Enter Values</button>
-            <button class="pf-src-btn" id="pf-src-builder" onclick="tsSwitchSource('builder')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--white);color:var(--mid);font-family:var(--sans);border-right:1px solid var(--border);">&#8617; From Builder</button>
-            <button class="pf-src-btn" id="pf-src-json" onclick="tsSwitchSource('json')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--white);color:var(--mid);font-family:var(--sans);">{ } Paste JSON</button>
-          </div>
-
-          <!-- Direct entry form -->
-          <div id="ts-direct-wrap">
-            <div class="field-group">
-              <div class="field-row">
-                <div class="field">
-                  <label>Pre-Money Valuation ($)</label>
-                  <input type="number" id="pf-preMoneyValuation" placeholder="e.g. 10000000" min="0" />
-                </div>
-                <div class="field">
-                  <label>New Investment ($)</label>
-                  <input type="number" id="pf-newInvestment" placeholder="e.g. 2000000" min="0" />
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field">
-                  <label>Price Per Share ($)</label>
-                  <input type="number" id="pf-pps" placeholder="e.g. 1.2345" step="0.0001" min="0" />
-                  <span class="field-hint">As shown on the pro forma</span>
-                </div>
-                <div class="field">
-                  <label>Option Pool % (actual)</label>
-                  <input type="number" id="pf-optionPoolPct" placeholder="e.g. 15" min="0" max="50" step="0.5" />
-                  <span class="field-hint">Post-money, as percentage</span>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field">
-                  <label>Liquidation Multiple</label>
-                  <input type="number" id="pf-liquidationMultiple" value="1" min="1" step="0.25" />
-                </div>
-                <div class="field">
-                  <label>Participating Preferred?</label>
-                  <select id="pf-participating">
-                    <option value="false">No — non-participating</option>
-                    <option value="true">Yes — participating</option>
-                  </select>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field">
-                  <label>Pool Method</label>
-                  <select id="pf-optionPoolMethod">
-                    <option value="pre-money">Pre-money (pool shuffle)</option>
-                    <option value="post-money">Post-money</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label>New Investor Ownership %</label>
-                  <input type="number" id="pf-investorOwnershipPct" placeholder="e.g. 16.67" min="0" max="100" step="0.01" />
-                  <span class="field-hint">As percentage, post-money FD</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- From Builder -->
-          <div id="ts-builder-wrap" style="display:none;">
-            <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;" onclick="tsUseCurrentProForma()">&#8617; Load Pro Forma from Builder Tab</button>
-            <p style="font-size:11px;color:var(--muted);">Build a pro forma in the <a href="#" onclick="switchPageTabByName('page-builder');return false" style="color:var(--blue)">Pro Forma Builder</a> tab first, then click above to load it here.</p>
-          </div>
-
-          <!-- JSON paste -->
-          <div id="ts-json-input-wrap" style="display:none;">
-            <label style="font-size:12px;font-weight:500;color:var(--mid);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.04em;">Pro Forma Result JSON</label>
-            <textarea id="ts-proforma-json" rows="8" style="width:100%;font-size:11px;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:var(--radius);resize:vertical;" placeholder="Paste the JSON output of ProFormaEngine.buildProForma() here..."></textarea>
-          </div>
-
-          <div id="ts-proforma-status" style="margin-top:8px;"></div>
-          <div style="margin-top:12px;">
-            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="tsRunConformance()">&#9654; Check Conformance</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Conformance Report -->
-      <div id="ts-report-panel">
-        <div class="panel">
-          <div class="empty-state">
-            <h3>Conformance Report</h3>
-            <p>Enter the term sheet terms on the left and the pro forma values above, then click <strong>Check Conformance</strong>.</p>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /right -->
-
-  </div><!-- /conform-layout -->
+  </div><!-- /analyze-layout -->
 </div><!-- /page-conformance -->
 
 <!-- ══ PREVIEW MODAL ════════════════════════════════════════════ -->
@@ -790,7 +686,6 @@
 // ══ STATE ═══════════════════════════════════════════════════════
 let rowCounter = 0;
 let _lastProFormaResult = null;   // stored after every successful build
-let tsInstrumentCounter = 0;
 
 // ══ ROW MANAGEMENT ══════════════════════════════════════════════
 const TYPE_LABELS = { common:'Common', preferred:'Preferred', option:'Option', warrant:'Warrant', safe:'SAFE', note:'Conv. Note' };
@@ -1666,318 +1561,327 @@ function switchPageTabByName(sectionId) {
 
 // ══ CONFORMANCE ANALYZER ════════════════════════════════════════
 
-function tsUpdateParticipation() {
-  const val = document.getElementById('ts-participating').value;
-  document.getElementById('ts-participation-cap-row').style.display = val === 'true' ? '' : 'none';
+
+// ══ CONFORMANCE TAB — FILE UPLOAD & ANALYSIS ════════════════════
+
+let _analysisTsData  = null;   // parsed term sheet object
+let _analysisPfData  = null;   // parsed pro forma (built result)
+
+// ── Drag & drop helpers ───────────────────────────────────────────
+
+function handleDocDragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.add('drag-over');
+}
+function handleDocDragLeave(zoneId) {
+  document.getElementById(zoneId).classList.remove('drag-over');
+}
+function handleDocDrop(e, side) {
+  e.preventDefault();
+  const zoneId = side + '-drop-zone';
+  document.getElementById(zoneId).classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processDocFile(file, side);
+}
+function handleDocSelect(e, side) {
+  const file = e.target.files[0];
+  if (file) processDocFile(file, side);
+  e.target.value = '';
 }
 
-// ── Dynamic SAFE/Note rows ────────────────────────────────────────
+// ── File processor ────────────────────────────────────────────────
 
-function tsAddSafe() {
-  document.getElementById('ts-safe-empty').style.display = 'none';
-  const id = tsInstrumentCounter++;
-  const div = document.createElement('div');
-  div.className = 'ts-instrument-row';
-  div.dataset.tsId = id;
-  div.innerHTML = `
-    <div><label>Holder Name</label><input type="text" class="ts-holder" placeholder="e.g. Angel SAFE" /></div>
-    <div><label>Val. Cap ($)</label><input type="number" class="ts-valcap" placeholder="e.g. 8000000" min="0" /></div>
-    <div><label>Discount Rate (0–1)</label><input type="number" class="ts-discount" placeholder="e.g. 0.80" step="0.01" min="0" max="1" /></div>
-    <button class="remove-row-btn" onclick="tsRemoveRow(${id},'ts-safe-rows','ts-safe-empty')" title="Remove">&#10005;</button>`;
-  document.getElementById('ts-safe-rows').appendChild(div);
-}
+async function processDocFile(file, side) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  setDocStatus(side, 'loading', `&#8987; Parsing ${escHtml(file.name)}\u2026`);
 
-function tsAddNote() {
-  document.getElementById('ts-note-empty').style.display = 'none';
-  const id = tsInstrumentCounter++;
-  const div = document.createElement('div');
-  div.className = 'ts-instrument-row';
-  div.dataset.tsId = id;
-  div.innerHTML = `
-    <div><label>Holder Name</label><input type="text" class="ts-holder" placeholder="e.g. Convertible Note" /></div>
-    <div><label>Interest Rate (0–1)</label><input type="number" class="ts-rate" placeholder="e.g. 0.06" step="0.001" min="0" max="1" /></div>
-    <div></div>
-    <button class="remove-row-btn" onclick="tsRemoveRow(${id},'ts-note-rows','ts-note-empty')" title="Remove">&#10005;</button>`;
-  document.getElementById('ts-note-rows').appendChild(div);
-}
-
-function tsRemoveRow(id, containerId, emptyId) {
-  const el = document.querySelector(`[data-ts-id="${id}"]`);
-  if (el) el.remove();
-  const container = document.getElementById(containerId);
-  if (container.querySelectorAll('.ts-instrument-row').length === 0) {
-    document.getElementById(emptyId).style.display = '';
-  }
-}
-
-// ── Pro forma source ──────────────────────────────────────────────
-
-let _tsProFormaResult = null;
-
-function tsUseCurrentProForma() {
-  if (!_lastProFormaResult) {
-    tsSetStatus('warning', '&#9888; No pro forma built yet. Go to the <strong>Pro Forma Builder</strong> tab, build a pro forma, then return here.');
-    return;
-  }
-  _tsProFormaResult = _lastProFormaResult;
-  const rc = _tsProFormaResult.roundConfig || {};
-  tsSetStatus('success', `&#10003; Loaded pro forma: <strong>${escHtml(rc.roundName || 'Pro Forma')}</strong> &mdash; PPS ${ProFormaEngine.formatCurrency(_tsProFormaResult.pps, 4)}, post-money ${ProFormaEngine.formatCurrency(_tsProFormaResult.postMoneyValuation, 0)}`);
-  // Pre-fill term sheet from round config if fields are empty
-  tsPrefillFromProForma(rc);
-}
-
-function tsPrefillFromProForma(rc) {
-  if (!document.getElementById('ts-preMoneyValuation').value && rc.preMoneyValuation)
-    document.getElementById('ts-preMoneyValuation').value = rc.preMoneyValuation;
-  if (!document.getElementById('ts-investmentAmount').value && rc.newInvestment)
-    document.getElementById('ts-investmentAmount').value = rc.newInvestment;
-  if (!document.getElementById('ts-targetOptionPool').value && rc.optionPoolTargetPct)
-    document.getElementById('ts-targetOptionPool').value = (rc.optionPoolTargetPct * 100).toFixed(1);
-  if (rc.optionPoolMethod)
-    document.getElementById('ts-optionPoolMethod').value = rc.optionPoolMethod;
-  if (document.getElementById('ts-liquidationMultiple').value === '1' && rc.liquidationMultiple)
-    document.getElementById('ts-liquidationMultiple').value = rc.liquidationMultiple;
-  if (rc.participating != null && !document.getElementById('ts-participating').value) {
-    document.getElementById('ts-participating').value = String(rc.participating);
-    tsUpdateParticipation();
-  }
-  if (rc.roundName && document.getElementById('ts-dealName').value === 'Series A')
-    document.getElementById('ts-dealName').value = rc.roundName;
-}
-
-function tsSwitchSource(mode) {
-  // Update button styles
-  ['direct','builder','json'].forEach(m => {
-    const btn = document.getElementById('pf-src-' + m);
-    if (m === mode) {
-      btn.style.background = '#f0ede8'; btn.style.color = 'var(--black)';
+  try {
+    if (side === 'ts') {
+      // Term sheet: extract deal terms
+      let text = '';
+      if (ext === 'docx' || ext === 'doc') {
+        if (typeof mammoth === 'undefined') { setDocStatus(side,'error','mammoth.js not loaded — check connection.'); return; }
+        const buf = await file.arrayBuffer();
+        const r   = await mammoth.extractRawText({ arrayBuffer: buf });
+        text = r.value;
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        if (typeof XLSX === 'undefined') { setDocStatus(side,'error','SheetJS not loaded — check connection.'); return; }
+        const buf = await file.arrayBuffer();
+        const wb  = XLSX.read(buf, { type:'array' });
+        wb.SheetNames.forEach(n => {
+          text += XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n';
+        });
+      } else {
+        setDocStatus(side,'error',`Unsupported type .${escHtml(ext)} — upload .docx or .xlsx`); return;
+      }
+      _analysisTsData = parseTermSheetText(text, file.name);
+      const fields = Object.keys(_analysisTsData).filter(k => k !== 'dealName' && _analysisTsData[k] != null && _analysisTsData[k] !== '' && !Array.isArray(_analysisTsData[k]));
+      if (!fields.length) {
+        setDocStatus(side,'warning','&#9888; Recognised term sheet but could not extract numeric terms. Ensure the document contains labelled values like "Pre-money: $10M".');
+      } else {
+        setDocStatus(side,'success',`&#10003; <strong>${escHtml(_analysisTsData.dealName || file.name)}</strong> — ${fields.length} term(s) extracted`);
+        document.getElementById('ts-card').classList.add('loaded');
+      }
     } else {
-      btn.style.background = 'var(--white)'; btn.style.color = 'var(--mid)';
+      // Pro forma: parse cap table + round config, then build
+      let parsed;
+      if (ext === 'zip') {
+        if (typeof JSZip === 'undefined') { setDocStatus(side,'error','JSZip not loaded — check connection.'); return; }
+        parsed = await parseZipForConformance(file, side);
+        if (!parsed) return;
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        if (typeof XLSX === 'undefined') { setDocStatus(side,'error','SheetJS not loaded.'); return; }
+        parsed = await parseExcel(file);
+      } else if (ext === 'docx' || ext === 'doc') {
+        if (typeof mammoth === 'undefined') { setDocStatus(side,'error','mammoth.js not loaded.'); return; }
+        parsed = await parseWord(file);
+      } else {
+        setDocStatus(side,'error',`Unsupported type .${escHtml(ext)} — upload .xlsx, .docx, or .zip`); return;
+      }
+      if (!parsed.stakeholders.length && !Object.keys(parsed.roundConfig).length) {
+        setDocStatus(side,'warning','&#9888; No cap table or round config detected in this file.'); return;
+      }
+      // Build the pro forma
+      const rc = {
+        roundName: parsed.roundConfig.roundName || 'Pro Forma',
+        preMoneyValuation: parsed.roundConfig.preMoneyValuation || 0,
+        newInvestment:     parsed.roundConfig.newInvestment || 0,
+        optionPoolTargetPct: parsed.roundConfig.optionPoolTargetPct
+          ? (parsed.roundConfig.optionPoolTargetPct > 1 ? parsed.roundConfig.optionPoolTargetPct/100 : parsed.roundConfig.optionPoolTargetPct)
+          : 0,
+        optionPoolMethod:    parsed.roundConfig.optionPoolMethod || 'pre-money',
+        newShareClass:       parsed.roundConfig.newShareClass || 'New Preferred',
+        newInvestorName:     parsed.roundConfig.newInvestorName || 'New Investors',
+        liquidationMultiple: parsed.roundConfig.liquidationMultiple || 1,
+        participating:       parsed.roundConfig.participating || false,
+        closingDate:         parsed.roundConfig.closingDate || new Date().toISOString().slice(0,10),
+      };
+      try {
+        _analysisPfData = ProFormaEngine.buildProForma(parsed.stakeholders, rc);
+      } catch(e) {
+        // If build fails, store raw parsed data as synthetic result
+        _analysisPfData = {
+          preMoneyValuation:   rc.preMoneyValuation,
+          newInvestment:       rc.newInvestment,
+          postMoneyValuation:  rc.preMoneyValuation + rc.newInvestment,
+          pps:                 null,
+          actualOptionPoolPct: rc.optionPoolTargetPct || null,
+          roundConfig:         rc,
+          convertedInstruments: [],
+          postRoundCap: parsed.stakeholders || [],
+          postFD: null,
+        };
+      }
+      const stakeCount = parsed.stakeholders.length;
+      setDocStatus(side,'success',`&#10003; <strong>${escHtml(file.name)}</strong> — ${stakeCount} stakeholder(s), pre-money $${((rc.preMoneyValuation||0)/1e6).toFixed(1)}M`);
+      document.getElementById('pf-card').classList.add('loaded');
     }
+  } catch(err) {
+    setDocStatus(side,'error',`&#10005; Parse error: ${escHtml(err.message)}`);
+  }
+}
+
+async function parseZipForConformance(zipFile, side) {
+  const zip     = await JSZip.loadAsync(await zipFile.arrayBuffer());
+  const entries = [];
+  zip.forEach((path, entry) => {
+    if (entry.dir || path.startsWith('__MACOSX/')) return;
+    const ext = path.split('.').pop().toLowerCase();
+    if (['xlsx','xls','docx','doc'].includes(ext)) entries.push({ path, entry, ext });
   });
-  document.getElementById('ts-direct-wrap').style.display  = mode === 'direct'  ? '' : 'none';
-  document.getElementById('ts-builder-wrap').style.display = mode === 'builder' ? '' : 'none';
-  document.getElementById('ts-json-input-wrap').style.display = mode === 'json' ? '' : 'none';
+  if (!entries.length) { setDocStatus(side,'error','No Excel or Word file found in ZIP.'); return null; }
+  entries.sort((a,b) => (['xlsx','xls'].includes(a.ext)?0:1) - (['xlsx','xls'].includes(b.ext)?0:1));
+  const chosen = entries[0];
+  const blob   = await chosen.entry.async('blob');
+  const inner  = new File([blob], chosen.path);
+  return chosen.ext === 'xlsx' || chosen.ext === 'xls' ? parseExcel(inner) : parseWord(inner);
 }
 
-function tsToggleJsonInput() {
-  tsSwitchSource('json');
-}
-
-function tsSetStatus(type, html) {
-  const el = document.getElementById('ts-proforma-status');
-  const bg = { success: '#f0fdf4', warning: '#fffbeb', error: '#fff5f5' }[type] || '#f0f9ff';
-  const border = { success: '#bbf7d0', warning: '#fde68a', error: '#fecaca' }[type] || '#bae6fd';
-  const color = { success: 'var(--green)', warning: 'var(--amber)', error: 'var(--red)' }[type] || 'var(--blue)';
-  el.style.cssText = `display:block;padding:8px 12px;border-radius:var(--radius);font-size:12px;background:${bg};border:1px solid ${border};color:${color};margin-bottom:6px;`;
+function setDocStatus(side, type, html) {
+  const el = document.getElementById(side + '-card-status');
+  el.className = 'upload-zone-card-status show ' + type;
   el.innerHTML = html;
 }
 
-// ── Read term sheet ────────────────────────────────────────────────
+// ── Term sheet text parser ────────────────────────────────────────
 
-function tsReadTermSheet() {
-  const getNum = id => parseNum(document.getElementById(id).value);
-  const getPct = id => { const v = getNum(id); return v != null ? v / 100 : null; };
+function parseTermSheetText(text, filename) {
+  const result = { dealName: '', safeConversions: [], noteConversions: [] };
 
-  const participating = document.getElementById('ts-participating').value;
+  // Deal name: look for round name in common positions
+  const roundMatch = text.match(/(?:series\s+[a-z]\b|seed\s+round|series\s+[a-z]\s+preferred|bridge\s+round)/i);
+  result.dealName = roundMatch ? roundMatch[0].replace(/\s+/g,' ').trim() : (filename || 'Deal');
 
-  const safeConversions = [];
-  document.querySelectorAll('#ts-safe-rows .ts-instrument-row').forEach(row => {
-    const name = row.querySelector('.ts-holder')?.value.trim();
-    if (!name) return;
-    const entry = { holderName: name };
-    const cap = parseNum(row.querySelector('.ts-valcap')?.value);
-    const disc = parseNum(row.querySelector('.ts-discount')?.value);
-    if (cap  != null) entry.valuationCap = cap;
-    if (disc != null) entry.discountRate = disc;
-    safeConversions.push(entry);
-  });
-
-  const noteConversions = [];
-  document.querySelectorAll('#ts-note-rows .ts-instrument-row').forEach(row => {
-    const name = row.querySelector('.ts-holder')?.value.trim();
-    if (!name) return;
-    const entry = { holderName: name };
-    const rate = parseNum(row.querySelector('.ts-rate')?.value);
-    if (rate != null) entry.interestRate = rate;
-    noteConversions.push(entry);
-  });
-
-  return {
-    dealName:               document.getElementById('ts-dealName').value.trim() || 'Deal',
-    preMoneyValuation:      getNum('ts-preMoneyValuation'),
-    investmentAmount:       getNum('ts-investmentAmount'),
-    targetOptionPool:       getPct('ts-targetOptionPool'),
-    optionPoolMethod:       document.getElementById('ts-optionPoolMethod').value || null,
-    statedPPS:              getNum('ts-statedPPS'),
-    liquidationMultiple:    getNum('ts-liquidationMultiple') ?? 1,
-    participating:          participating === '' ? null : participating === 'true',
-    participationCap:       participating === 'true' ? getNum('ts-participationCap') : null,
-    investorOwnershipTarget: getPct('ts-investorOwnershipTarget'),
-    founderOwnershipFloor:   getPct('ts-founderOwnershipFloor'),
-    safeConversions,
-    noteConversions,
-  };
-}
-
-// ── Run conformance ────────────────────────────────────────────────
-
-function tsBuildDirectProForma() {
-  const preM  = parseNum(document.getElementById('pf-preMoneyValuation').value);
-  const inv   = parseNum(document.getElementById('pf-newInvestment').value);
-  const pps   = parseNum(document.getElementById('pf-pps').value);
-  const poolP = parseNum(document.getElementById('pf-optionPoolPct').value);
-  const liqM  = parseNum(document.getElementById('pf-liquidationMultiple').value) || 1;
-  const part  = document.getElementById('pf-participating').value === 'true';
-  const poolM = document.getElementById('pf-optionPoolMethod').value;
-  const invOwn= parseNum(document.getElementById('pf-investorOwnershipPct').value);
-
-  if (!preM && !inv && !pps) return null; // nothing entered yet
-
-  const postM = (preM != null && inv != null) ? preM + inv : null;
-  const poolPct = poolP != null ? poolP / 100 : null;
-
-  // Build a synthetic pfResult compatible with ProFormaComparator.checkConformance
-  const result = {
-    preMoneyValuation:  preM,
-    newInvestment:      inv,
-    postMoneyValuation: postM,
-    pps:                pps,
-    actualOptionPoolPct: poolPct,
-    roundConfig: {
-      roundName:           document.getElementById('ts-dealName').value.trim() || 'Pro Forma',
-      optionPoolMethod:    poolM,
-      liquidationMultiple: liqM,
-      participating:       part,
-    },
-    convertedInstruments: [],
-    postRoundCap: [],
-    postFD: null,
-    premoneyFD: null,
-    newInvestorShares: null,
-    _investorOwnershipPct: invOwn != null ? invOwn / 100 : null,
-  };
-
-  // If PPS and investment are known, derive investor shares and FD
-  if (pps && inv) {
-    result.newInvestorShares = Math.round(inv / pps);
-    if (invOwn) result.postFD = Math.round(result.newInvestorShares / (invOwn / 100));
+  function extractMoney(pattern) {
+    const re = new RegExp(pattern + '[^\\n]{0,80}?\\$?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?)', 'i');
+    const m  = text.match(re);
+    if (!m) return null;
+    let v = m[1].replace(/,/g,'').trim();
+    const mult = /million|^m$/i.test(v.split(/\s+/).pop()) ? 1e6 : /billion|^b$/i.test(v.split(/\s+/).pop()) ? 1e9 : 1;
+    v = parseFloat(v);
+    return isNaN(v) ? null : v * mult;
   }
+
+  function extractPct(pattern) {
+    const re = new RegExp(pattern + '[^\\n]{0,80}?([0-9]+(?:\\.[0-9]+)?)\\s*%', 'i');
+    const m  = text.match(re);
+    if (!m) return null;
+    const v = parseFloat(m[1]);
+    return isNaN(v) ? null : v;
+  }
+
+  function extractMultiple(pattern) {
+    const re = new RegExp(pattern + '[^\\n]{0,40}?([0-9]+(?:\\.[0-9]+)?)\\s*[xX×]', 'i');
+    const m  = text.match(re);
+    if (!m) return null;
+    const v = parseFloat(m[1]);
+    return isNaN(v) ? null : v;
+  }
+
+  // Core economics
+  result.preMoneyValuation  = extractMoney('pre[\\s\\-]?money(?:\\s+valuation)?(?:\\s*:)?(?:\\s*of)?');
+  result.investmentAmount   = extractMoney('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|financing\\s+amount|gross\\s+proceeds)(?:\\s*:)?(?:\\s*of)?');
+  if (!result.investmentAmount)
+    result.investmentAmount = extractMoney('(?:series\\s+[a-z]|seed)\\s+(?:investment|financing|round)(?:\\s*:)?(?:\\s*of)?');
+
+  // Option pool
+  const poolPct = extractPct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive\\s+plan');
+  if (poolPct != null) result.targetOptionPool = poolPct / 100;
+
+  // Pool method
+  if (/pre[\s-]?money\s+option\s+pool|pool\s+shuffle|option\s+pool.*pre[\s-]?money/i.test(text))
+    result.optionPoolMethod = 'pre-money';
+  else if (/post[\s-]?money\s+option\s+pool/i.test(text))
+    result.optionPoolMethod = 'post-money';
+
+  // Price per share
+  result.statedPPS = extractMoney('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|purchase\\s+price\\s+per\\s+share|oip|conversion\\s+price(?:\\s*:)?(?:\\s*of)?');
+
+  // Liquidation preference
+  const liqM = extractMultiple('liquidation\\s+(?:preference|multiple)(?:\\s*:)?');
+  if (liqM != null) result.liquidationMultiple = liqM;
+
+  // Participating preferred
+  if (/non[\s-]participating/i.test(text)) result.participating = false;
+  else if (/participating\s+preferred|participating\s+liquidation/i.test(text)) result.participating = true;
+
+  // Participation cap
+  const capM = extractMultiple('participation\\s+cap(?:\\s*:)?');
+  if (capM != null) result.participationCap = capM;
+
+  // Anti-dilution
+  if (/broad[\s-]based\s+weighted[\s-]average/i.test(text)) result.antiDilution = 'broad-based-wa';
+  else if (/weighted[\s-]average/i.test(text)) result.antiDilution = 'weighted-average';
+  else if (/full\s+ratchet/i.test(text)) result.antiDilution = 'full-ratchet';
+
+  // Investor ownership target
+  const invOwn = extractPct('investor\\s+(?:ownership|percentage)|lead\\s+investor\\s+(?:receives|ownership)');
+  if (invOwn != null) result.investorOwnershipTarget = invOwn / 100;
 
   return result;
 }
 
-function tsRunConformance() {
-  // Determine active source
-  const directVisible  = document.getElementById('ts-direct-wrap').style.display  !== 'none';
-  const builderVisible = document.getElementById('ts-builder-wrap').style.display !== 'none';
+// ── Run Analysis ──────────────────────────────────────────────────
 
-  let pfResult = null;
-
-  if (directVisible) {
-    pfResult = tsBuildDirectProForma();
-    if (!pfResult) {
-      tsSetStatus('error', '&#10005; Enter at least one pro forma value (pre-money valuation, investment, or PPS) above.');
-      return;
-    }
-  } else if (builderVisible) {
-    pfResult = _tsProFormaResult;
-    if (!pfResult) {
-      tsSetStatus('error', '&#9888; No pro forma built yet. Go to the <strong>Pro Forma Builder</strong> tab, build a pro forma, then return here.');
-      return;
-    }
-  } else {
-    // JSON mode
-    const jsonText = document.getElementById('ts-proforma-json').value.trim();
-    if (jsonText) {
-      try { pfResult = JSON.parse(jsonText); }
-      catch (e) { tsSetStatus('error', '&#10005; Invalid JSON — could not parse the pro forma.'); return; }
-    }
-    if (!pfResult) {
-      tsSetStatus('error', '&#10005; Paste the pro forma JSON above, then click Check Conformance.');
-      return;
-    }
+function tsRunAnalysis() {
+  if (!_analysisTsData && !_analysisPfData) {
+    tsShowWallError('Upload both documents above to run the analysis.');
+    return;
   }
-
-  const termSheet = tsReadTermSheet();
-
-  let report;
-  try {
-    report = ProFormaComparator.checkConformance(pfResult, termSheet);
-  } catch (err) {
-    document.getElementById('ts-report-panel').innerHTML = `
-      <div class="panel"><div class="panel-body">
-        <div class="issue-item error" style="border-radius:4px;">
-          <span class="issue-icon">&#9888;</span>
-          <div class="issue-text"><strong>Conformance Error:</strong> ${escHtml(err.message)}</div>
-        </div>
-      </div></div>`;
+  if (!_analysisTsData) {
+    tsShowWallError('Upload a term sheet document (left) to continue.');
+    return;
+  }
+  if (!_analysisPfData) {
+    tsShowWallError('Upload a pro forma document (right) to continue.');
     return;
   }
 
-  tsRenderReport(report, pfResult);
+  let report;
+  try {
+    report = ProFormaComparator.checkConformance(_analysisPfData, _analysisTsData);
+  } catch(err) {
+    tsShowWallError('Analysis error: ' + err.message);
+    return;
+  }
+  tsRenderWall(report, _analysisPfData, _analysisTsData);
 }
 
-// ── Render conformance report ─────────────────────────────────────
+function tsShowWallError(msg) {
+  document.getElementById('ts-wall').innerHTML = `
+    <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:4px;padding:16px 20px;color:var(--red);font-size:13px;">
+      &#9888; ${escHtml(msg)}
+    </div>`;
+}
 
-function tsRenderReport(report, pf) {
+// ── Render wall ───────────────────────────────────────────────────
+
+function tsRenderWall(report, pf, ts) {
   const fmtScore = Math.round(report.score * 100);
   const isPassing = report.conformant;
-  const fmtC4 = n => ProFormaEngine.formatCurrency(n, 4);
-  const fmtC  = n => ProFormaEngine.formatCurrency(n, 0);
-  const fmtP  = n => ProFormaEngine.formatPct(n, 2);
+  const errCount  = report.criticalFailures.length;
+  const warnCount = report.warningFailures.length;
+  const passCount = report.passed.length;
 
-  // Score circle
-  const scoreHtml = `
-    <div class="conform-score ${isPassing ? 'pass' : 'fail'}">
-      <div class="score-circle ${isPassing ? 'pass' : 'fail'}">${fmtScore}%</div>
-      <div class="score-text">
-        <h3>${isPassing ? '&#10003; Conformant' : '&#9888; Non-Conformant'}</h3>
-        <p>${report.passed.length} of ${report.checks.length} checks passed
-          ${report.criticalFailures.length ? ` &mdash; <strong>${report.criticalFailures.length} critical error(s)</strong>` : ''}
-          ${report.warningFailures.length  ? ` &mdash; ${report.warningFailures.length} warning(s)` : ''}
-        </p>
-        <p style="margin-top:4px;">Pro forma: PPS ${fmtC4(pf.pps)} &nbsp;|&nbsp; Post-money ${fmtC(pf.postMoneyValuation)}</p>
+  const summaryHtml = `
+    <div class="wall-summary">
+      <div class="wall-score-circle ${isPassing ? 'pass' : 'fail'}">${fmtScore}%</div>
+      <div class="wall-summary-text">
+        <h2>${isPassing ? '&#10003; Conformant' : '&#9888; Non-Conformant'} &mdash; ${escHtml(report.dealName)}</h2>
+        <p>${report.checks.length} checks run &nbsp;|&nbsp; ${passCount} passed, ${errCount} error(s), ${warnCount} warning(s)</p>
+      </div>
+      <div class="wall-summary-counts">
+        <div class="wall-count-item"><span class="wall-count-num c-pass">${passCount}</span><span class="wall-count-label">Passed</span></div>
+        <div class="wall-count-item"><span class="wall-count-num c-err">${errCount}</span><span class="wall-count-label">Errors</span></div>
+        <div class="wall-count-item"><span class="wall-count-num c-warn">${warnCount}</span><span class="wall-count-label">Warnings</span></div>
       </div>
     </div>`;
 
-  // Check rows
-  function renderCheck(c) {
-    const cls  = c.pass ? 'pass' : (c.severity === 'error' ? 'fail-error' : 'fail-warn');
+  // Sort: errors first, then warnings, then passes
+  const sorted = [
+    ...report.checks.filter(c => !c.pass && c.severity === 'error'),
+    ...report.checks.filter(c => !c.pass && c.severity === 'warning'),
+    ...report.checks.filter(c => c.pass),
+  ];
+
+  const cardsHtml = sorted.length ? sorted.map(c => {
+    const cls  = c.pass ? 'wc-pass' : (c.severity === 'error' ? 'wc-error' : 'wc-warn');
     const icon = c.pass ? '&#10003;' : (c.severity === 'error' ? '&#9889;' : '&#9888;');
-    const sevBadge = c.pass ? '' : `<span class="check-severity ${c.severity === 'error' ? 'sev-error' : 'sev-warn'}">${c.severity}</span>`;
+    const badge = c.pass
+      ? '<span class="wall-card-badge wb-pass">Pass</span>'
+      : c.severity === 'error'
+        ? '<span class="wall-card-badge wb-error">Error</span>'
+        : '<span class="wall-card-badge wb-warn">Warning</span>';
+    const mismatch = !c.pass ? ' mismatch' : '';
+    const noteHtml = c.note
+      ? `<div class="wall-card-note${c.severity === 'warning' ? ' warn-note' : ''}">&#8594; ${escHtml(c.note)}</div>`
+      : '';
     return `
-      <div class="check-row ${cls}">
-        <span class="check-icon">${icon}</span>
-        <div class="check-body">
-          <div class="check-label">${escHtml(c.label)}${sevBadge}</div>
-          <div class="check-vals">Expected: <strong>${escHtml(c.expectedFmt)}</strong> &nbsp;|&nbsp; Actual: <strong>${escHtml(c.actualFmt)}</strong></div>
-          ${c.note ? `<div class="check-note">&#8594; ${escHtml(c.note)}</div>` : ''}
+      <div class="wall-card ${cls}">
+        <div class="wall-card-top">
+          <span class="wall-card-icon">${icon}</span>
+          <span class="wall-card-field">${escHtml(c.label)}</span>
+          ${badge}
         </div>
+        <div class="wall-card-vals">
+          <div class="wall-val-block">
+            <div class="wall-val-label">Term Sheet</div>
+            <div class="wall-val-num">${escHtml(c.expectedFmt)}</div>
+          </div>
+          <div class="wall-val-block">
+            <div class="wall-val-label">Pro Forma</div>
+            <div class="wall-val-num${mismatch}">${escHtml(c.actualFmt)}</div>
+          </div>
+        </div>
+        ${noteHtml}
       </div>`;
-  }
+  }).join('') : '<p style="color:var(--muted);font-size:13px;">No comparable fields found — ensure both documents contain labelled financial figures.</p>';
 
-  // Separate errors, warnings, passes
-  const errChecks  = report.checks.filter(c => !c.pass && c.severity === 'error');
-  const warnChecks = report.checks.filter(c => !c.pass && c.severity === 'warning');
-  const passChecks = report.checks.filter(c => c.pass);
+  document.getElementById('ts-wall').innerHTML = `
+    ${summaryHtml}
+    <div class="wall-grid">${cardsHtml}</div>`;
 
-  let checksHtml = '';
-  if (errChecks.length)  checksHtml += `<div class="analysis-section"><h3>Critical Errors (${errChecks.length})</h3><div class="check-list">${errChecks.map(renderCheck).join('')}</div></div>`;
-  if (warnChecks.length) checksHtml += `<div class="analysis-section"><h3>Warnings (${warnChecks.length})</h3><div class="check-list">${warnChecks.map(renderCheck).join('')}</div></div>`;
-  if (passChecks.length) checksHtml += `<div class="analysis-section"><h3>Passing Checks (${passChecks.length})</h3><div class="check-list">${passChecks.map(renderCheck).join('')}</div></div>`;
-  if (!report.checks.length) checksHtml = '<p class="text-muted" style="font-size:13px;">No checks were applicable — verify that your term sheet has at least one field populated.</p>';
-
-  document.getElementById('ts-report-panel').innerHTML = `
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Conformance Report: ${escHtml(report.dealName)}</span>
-      </div>
-      <div class="panel-body">
-        ${scoreHtml}
-        ${checksHtml}
-      </div>
-    </div>`;
+  document.getElementById('ts-wall').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>
