@@ -650,18 +650,84 @@
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">Pro Forma to Check</span>
-          <span class="text-muted" style="font-size:11px;">Select source for the pro forma data</span>
+          <span class="text-muted" style="font-size:11px;">The actual numbers from the pro forma document</span>
         </div>
         <div class="panel-body">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-            <button class="btn btn-primary" onclick="tsUseCurrentProForma()">&#8617; Use Pro Forma from Builder</button>
-            <button class="btn btn-secondary" onclick="tsToggleJsonInput()">{ } Paste JSON</button>
+          <!-- Source selector tabs -->
+          <div class="pf-source-tabs" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;">
+            <button class="pf-src-btn active" id="pf-src-direct" onclick="tsSwitchSource('direct')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:#f0ede8;color:var(--black);font-family:var(--sans);border-right:1px solid var(--border);">&#9998; Enter Values</button>
+            <button class="pf-src-btn" id="pf-src-builder" onclick="tsSwitchSource('builder')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--white);color:var(--mid);font-family:var(--sans);border-right:1px solid var(--border);">&#8617; From Builder</button>
+            <button class="pf-src-btn" id="pf-src-json" onclick="tsSwitchSource('json')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--white);color:var(--mid);font-family:var(--sans);">{ } Paste JSON</button>
           </div>
-          <div id="ts-proforma-status"></div>
-          <div id="ts-json-input-wrap" style="display:none;margin-top:10px;">
+
+          <!-- Direct entry form -->
+          <div id="ts-direct-wrap">
+            <div class="field-group">
+              <div class="field-row">
+                <div class="field">
+                  <label>Pre-Money Valuation ($)</label>
+                  <input type="number" id="pf-preMoneyValuation" placeholder="e.g. 10000000" min="0" />
+                </div>
+                <div class="field">
+                  <label>New Investment ($)</label>
+                  <input type="number" id="pf-newInvestment" placeholder="e.g. 2000000" min="0" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>Price Per Share ($)</label>
+                  <input type="number" id="pf-pps" placeholder="e.g. 1.2345" step="0.0001" min="0" />
+                  <span class="field-hint">As shown on the pro forma</span>
+                </div>
+                <div class="field">
+                  <label>Option Pool % (actual)</label>
+                  <input type="number" id="pf-optionPoolPct" placeholder="e.g. 15" min="0" max="50" step="0.5" />
+                  <span class="field-hint">Post-money, as percentage</span>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>Liquidation Multiple</label>
+                  <input type="number" id="pf-liquidationMultiple" value="1" min="1" step="0.25" />
+                </div>
+                <div class="field">
+                  <label>Participating Preferred?</label>
+                  <select id="pf-participating">
+                    <option value="false">No — non-participating</option>
+                    <option value="true">Yes — participating</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>Pool Method</label>
+                  <select id="pf-optionPoolMethod">
+                    <option value="pre-money">Pre-money (pool shuffle)</option>
+                    <option value="post-money">Post-money</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>New Investor Ownership %</label>
+                  <input type="number" id="pf-investorOwnershipPct" placeholder="e.g. 16.67" min="0" max="100" step="0.01" />
+                  <span class="field-hint">As percentage, post-money FD</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- From Builder -->
+          <div id="ts-builder-wrap" style="display:none;">
+            <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;" onclick="tsUseCurrentProForma()">&#8617; Load Pro Forma from Builder Tab</button>
+            <p style="font-size:11px;color:var(--muted);">Build a pro forma in the <a href="#" onclick="switchPageTabByName('page-builder');return false" style="color:var(--blue)">Pro Forma Builder</a> tab first, then click above to load it here.</p>
+          </div>
+
+          <!-- JSON paste -->
+          <div id="ts-json-input-wrap" style="display:none;">
             <label style="font-size:12px;font-weight:500;color:var(--mid);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.04em;">Pro Forma Result JSON</label>
             <textarea id="ts-proforma-json" rows="8" style="width:100%;font-size:11px;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:var(--radius);resize:vertical;" placeholder="Paste the JSON output of ProFormaEngine.buildProForma() here..."></textarea>
           </div>
+
+          <div id="ts-proforma-status" style="margin-top:8px;"></div>
           <div style="margin-top:12px;">
             <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="tsRunConformance()">&#9654; Check Conformance</button>
           </div>
@@ -673,8 +739,7 @@
         <div class="panel">
           <div class="empty-state">
             <h3>Conformance Report</h3>
-            <p>Enter your term sheet terms on the left, load a pro forma, then click <strong>Check Conformance</strong>.</p>
-            <p style="margin-top:8px;font-size:12px;">Build a pro forma in the <a href="#" onclick="switchPageTabByName('page-builder');return false" style="color:var(--blue)">Pro Forma Builder</a> tab first, then use <em>Use Pro Forma from Builder</em> to load it here.</p>
+            <p>Enter the term sheet terms on the left and the pro forma values above, then click <strong>Check Conformance</strong>.</p>
           </div>
         </div>
       </div>
@@ -1680,9 +1745,23 @@ function tsPrefillFromProForma(rc) {
     document.getElementById('ts-dealName').value = rc.roundName;
 }
 
+function tsSwitchSource(mode) {
+  // Update button styles
+  ['direct','builder','json'].forEach(m => {
+    const btn = document.getElementById('pf-src-' + m);
+    if (m === mode) {
+      btn.style.background = '#f0ede8'; btn.style.color = 'var(--black)';
+    } else {
+      btn.style.background = 'var(--white)'; btn.style.color = 'var(--mid)';
+    }
+  });
+  document.getElementById('ts-direct-wrap').style.display  = mode === 'direct'  ? '' : 'none';
+  document.getElementById('ts-builder-wrap').style.display = mode === 'builder' ? '' : 'none';
+  document.getElementById('ts-json-input-wrap').style.display = mode === 'json' ? '' : 'none';
+}
+
 function tsToggleJsonInput() {
-  const wrap = document.getElementById('ts-json-input-wrap');
-  wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+  tsSwitchSource('json');
 }
 
 function tsSetStatus(type, html) {
@@ -1743,26 +1822,81 @@ function tsReadTermSheet() {
 
 // ── Run conformance ────────────────────────────────────────────────
 
-function tsRunConformance() {
-  // Resolve pro forma source
-  let pfResult = _tsProFormaResult;
+function tsBuildDirectProForma() {
+  const preM  = parseNum(document.getElementById('pf-preMoneyValuation').value);
+  const inv   = parseNum(document.getElementById('pf-newInvestment').value);
+  const pps   = parseNum(document.getElementById('pf-pps').value);
+  const poolP = parseNum(document.getElementById('pf-optionPoolPct').value);
+  const liqM  = parseNum(document.getElementById('pf-liquidationMultiple').value) || 1;
+  const part  = document.getElementById('pf-participating').value === 'true';
+  const poolM = document.getElementById('pf-optionPoolMethod').value;
+  const invOwn= parseNum(document.getElementById('pf-investorOwnershipPct').value);
 
-  // Try JSON textarea if no loaded result
-  if (!pfResult) {
-    const jsonText = document.getElementById('ts-proforma-json').value.trim();
-    if (jsonText) {
-      try {
-        pfResult = JSON.parse(jsonText);
-      } catch (e) {
-        tsSetStatus('error', '&#10005; Invalid JSON — could not parse the pro forma. Check the JSON and try again.');
-        return;
-      }
-    }
+  if (!preM && !inv && !pps) return null; // nothing entered yet
+
+  const postM = (preM != null && inv != null) ? preM + inv : null;
+  const poolPct = poolP != null ? poolP / 100 : null;
+
+  // Build a synthetic pfResult compatible with ProFormaComparator.checkConformance
+  const result = {
+    preMoneyValuation:  preM,
+    newInvestment:      inv,
+    postMoneyValuation: postM,
+    pps:                pps,
+    actualOptionPoolPct: poolPct,
+    roundConfig: {
+      roundName:           document.getElementById('ts-dealName').value.trim() || 'Pro Forma',
+      optionPoolMethod:    poolM,
+      liquidationMultiple: liqM,
+      participating:       part,
+    },
+    convertedInstruments: [],
+    postRoundCap: [],
+    postFD: null,
+    premoneyFD: null,
+    newInvestorShares: null,
+    _investorOwnershipPct: invOwn != null ? invOwn / 100 : null,
+  };
+
+  // If PPS and investment are known, derive investor shares and FD
+  if (pps && inv) {
+    result.newInvestorShares = Math.round(inv / pps);
+    if (invOwn) result.postFD = Math.round(result.newInvestorShares / (invOwn / 100));
   }
 
-  if (!pfResult) {
-    tsSetStatus('error', '&#10005; No pro forma loaded. Click <strong>Use Pro Forma from Builder</strong> or paste JSON.');
-    return;
+  return result;
+}
+
+function tsRunConformance() {
+  // Determine active source
+  const directVisible  = document.getElementById('ts-direct-wrap').style.display  !== 'none';
+  const builderVisible = document.getElementById('ts-builder-wrap').style.display !== 'none';
+
+  let pfResult = null;
+
+  if (directVisible) {
+    pfResult = tsBuildDirectProForma();
+    if (!pfResult) {
+      tsSetStatus('error', '&#10005; Enter at least one pro forma value (pre-money valuation, investment, or PPS) above.');
+      return;
+    }
+  } else if (builderVisible) {
+    pfResult = _tsProFormaResult;
+    if (!pfResult) {
+      tsSetStatus('error', '&#9888; No pro forma built yet. Go to the <strong>Pro Forma Builder</strong> tab, build a pro forma, then return here.');
+      return;
+    }
+  } else {
+    // JSON mode
+    const jsonText = document.getElementById('ts-proforma-json').value.trim();
+    if (jsonText) {
+      try { pfResult = JSON.parse(jsonText); }
+      catch (e) { tsSetStatus('error', '&#10005; Invalid JSON — could not parse the pro forma.'); return; }
+    }
+    if (!pfResult) {
+      tsSetStatus('error', '&#10005; Paste the pro forma JSON above, then click Check Conformance.');
+      return;
+    }
   }
 
   const termSheet = tsReadTermSheet();

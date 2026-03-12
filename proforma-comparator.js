@@ -212,12 +212,21 @@ const ProFormaComparator = (function () {
     }
 
     // 10. Investor ownership target
-    if (ts.investorOwnershipTarget && pf.ownershipTable) {
-      const investorName = rc.newInvestorName || '';
-      const investorRows = pf.ownershipTable.filter(r => r.name === investorName);
-      const totalPct     = investorRows.reduce((s, r) => s + r.pct, 0);
-      numCheck('investorOwnership', `Investor ownership (${investorName || 'new investor'})`,
-        ts.investorOwnershipTarget, totalPct, 'warning', fmtPct, PCT_TOL);
+    if (ts.investorOwnershipTarget) {
+      let actualOwnership = null;
+      if (pf._investorOwnershipPct != null) {
+        actualOwnership = pf._investorOwnershipPct;
+      } else if (pf.ownershipTable) {
+        const investorName = rc.newInvestorName || '';
+        const investorRows = pf.ownershipTable.filter(r => r.name === investorName);
+        actualOwnership = investorRows.reduce((s, r) => s + r.pct, 0);
+      } else if (pf.newInvestorShares && pf.postFD) {
+        actualOwnership = pf.newInvestorShares / pf.postFD;
+      }
+      if (actualOwnership != null) {
+        numCheck('investorOwnership', 'Investor ownership',
+          ts.investorOwnershipTarget, actualOwnership, 'warning', fmtPct, PCT_TOL);
+      }
     }
 
     // 11. Founder ownership floor
