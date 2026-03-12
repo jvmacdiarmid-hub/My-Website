@@ -1,1888 +1,672 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NVCA Pro Forma Builder — Victor Macdiarmid</title>
+  <title>NVCA Pro Forma Tools — Victor Macdiarmid</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
-    /* ── Reset & base ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --black: #1a1a1a;
-      --dark:  #2c2c2c;
-      --mid:   #555;
-      --muted: #888;
-      --border:#d9d9d9;
-      --bg:    #f8f6f2;
-      --white: #ffffff;
-      --red:   #c41e3a;
-      --green: #2e7d32;
-      --amber: #b45309;
-      --blue:  #1565c0;
+      --black: #1a1a1a; --dark: #2c2c2c; --mid: #555; --muted: #888;
+      --border: #d9d9d9; --bg: #f8f6f2; --white: #fff;
+      --green: #2e7d32; --red: #c41e3a; --amber: #b45309; --blue: #1565c0;
       --serif: 'Playfair Display', Georgia, serif;
-      --sans:  'Inter', system-ui, sans-serif;
-      --radius: 4px;
+      --sans: 'Inter', system-ui, sans-serif;
     }
-    body { font-family: var(--sans); background: var(--bg); color: var(--black); font-size: 14px; line-height: 1.5; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--black); font-size: 15px; }
 
-    /* ── Navigation ───────────────────────────────────────────── */
-    .site-nav { background: var(--white); border-bottom: 2px solid var(--black); position: sticky; top: 0; z-index: 100; }
-    .nav-inner { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 24px; height: 48px; }
-    .nav-logo { font-family: var(--serif); font-weight: 700; font-size: 18px; text-decoration: none; color: var(--black); white-space: nowrap; }
-    .nav-links { display: flex; gap: 16px; }
-    .nav-links a { font-size: 12px; font-weight: 500; color: var(--mid); text-decoration: none; text-transform: uppercase; letter-spacing: .04em; }
-    .nav-links a:hover { color: var(--black); }
-    .nav-links a.active { color: var(--black); border-bottom: 2px solid var(--black); }
+    /* ── Nav ── */
+    nav { background: var(--white); border-bottom: 2px solid var(--black); padding: 0 24px; display: flex; align-items: center; gap: 24px; height: 48px; position: sticky; top: 0; z-index: 10; }
+    nav a { font-size: 12px; font-weight: 500; color: var(--mid); text-decoration: none; text-transform: uppercase; letter-spacing: .04em; }
+    nav a:hover { color: var(--black); }
+    nav a.active { color: var(--black); border-bottom: 2px solid var(--black); }
+    .logo { font-family: var(--serif); font-weight: 700; font-size: 18px; color: var(--black); text-decoration: none; margin-right: 8px; }
 
-    /* ── Page header ──────────────────────────────────────────── */
-    .page-header { background: var(--white); border-bottom: 1px solid var(--border); padding: 20px; text-align: center; }
-    .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 700; }
-    .page-header p  { color: var(--mid); font-size: 13px; margin-top: 4px; }
-    .header-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    /* ── Page header ── */
+    .page-head { background: var(--white); border-bottom: 1px solid var(--border); padding: 32px 24px 28px; text-align: center; }
+    .page-head h1 { font-family: var(--serif); font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    .page-head p  { color: var(--mid); font-size: 14px; max-width: 560px; margin: 0 auto; }
 
-    /* ── Buttons ──────────────────────────────────────────────── */
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: background .15s, border-color .15s; font-family: var(--sans); }
-    .btn-primary   { background: var(--black); color: var(--white); }
-    .btn-primary:hover { background: var(--dark); }
-    .btn-secondary { background: var(--white); color: var(--black); border-color: var(--border); }
-    .btn-secondary:hover { border-color: #aaa; }
-    .btn-danger    { background: var(--white); color: var(--red); border-color: #f0b0b0; }
-    .btn-danger:hover { background: #fff0f0; }
-    .btn-sm { padding: 4px 10px; font-size: 12px; }
-    .btn-icon { padding: 5px 8px; font-size: 13px; }
-
-    /* ── Layout ───────────────────────────────────────────────── */
-    .main-layout { max-width: 1400px; margin: 0 auto; padding: 16px 20px; display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
-    @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
-
-    /* ── Panels ───────────────────────────────────────────────── */
-    .panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
-    .panel-title  { font-family: var(--serif); font-size: 15px; font-weight: 600; }
-    .panel-body   { padding: 16px; }
-
-    /* ── Forms ────────────────────────────────────────────────── */
-    .field-group { display: grid; gap: 12px; }
-    .field-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .field { display: flex; flex-direction: column; gap: 4px; }
-    label { font-size: 12px; font-weight: 500; color: var(--mid); text-transform: uppercase; letter-spacing: .04em; }
-    input[type="text"], input[type="number"], select {
-      font-family: var(--sans); font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--black); background: var(--white); width: 100%;
+    /* ── Two-column grid ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0;
+      min-height: calc(100vh - 140px);
     }
-    input:focus, select:focus { outline: none; border-color: var(--black); }
-    input[type="number"] { font-variant-numeric: tabular-nums; }
-    .field-hint { font-size: 11px; color: var(--muted); }
-    select { cursor: pointer; }
-
-    /* ── Divider ──────────────────────────────────────────────── */
-    .section-divider { height: 1px; background: var(--border); margin: 16px 0; }
-    .section-label   { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
-
-    /* ── Cap table input ──────────────────────────────────────── */
-    #cap-table-rows { display: flex; flex-direction: column; gap: 6px; }
-    .stakeholder-row {
-      display: grid; grid-template-columns: minmax(0,1.8fr) 100px minmax(0,1.2fr) 26px; gap: 6px; align-items: center;
-      padding: 8px; background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius);
+    @media (max-width: 860px) {
+      .tools-grid { grid-template-columns: 1fr; }
+      .col-rule { display: none; }
     }
-    .stakeholder-row .row-type-badge {
-      display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; white-space: nowrap;
+    .col-rule { background: var(--border); }
+
+    /* ── Tool column ── */
+    .tool-col { padding: 32px 36px 48px; display: flex; flex-direction: column; gap: 0; }
+
+    .col-head { margin-bottom: 28px; }
+    .col-head h2 { font-family: var(--serif); font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .col-head p  { font-size: 13px; color: var(--mid); line-height: 1.6; }
+
+    .col-badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 10px; border-radius: 12px; margin-bottom: 10px; }
+    .badge-build   { background: #dcfce7; color: #166534; }
+    .badge-analyze { background: #dbeafe; color: #1d4ed8; }
+
+    /* ── Upload slots ── */
+    .upload-slots { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+
+    .upload-slot { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; transition: border-color .2s; }
+    .upload-slot.loaded { border-color: var(--green); }
+
+    .slot-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .slot-num { width: 26px; height: 26px; border-radius: 50%; background: var(--black); color: var(--white); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .upload-slot.loaded .slot-num { background: var(--green); }
+    .slot-label { font-size: 14px; font-weight: 600; }
+    .slot-desc  { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+    .file-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+    .choose-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; background: var(--black); color: var(--white);
+      border-radius: 4px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: var(--sans); transition: background .15s;
+      white-space: nowrap; border: none;
     }
-    .badge-common   { background: #e8f5e9; color: #2e7d32; }
-    .badge-preferred{ background: #e3f2fd; color: #1565c0; }
-    .badge-option   { background: #fff3e0; color: #b45309; }
-    .badge-warrant  { background: #f3e5f5; color: #6a1b9a; }
-    .badge-safe     { background: #fce4ec; color: #c62828; }
-    .badge-note     { background: #f9fbe7; color: #558b2f; }
-    .remove-row-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; padding: 2px; border-radius: 2px; }
-    .remove-row-btn:hover { color: var(--red); background: #fff0f0; }
+    .choose-btn:hover { background: var(--dark); }
+    .choose-btn input[type="file"] { display: none; }
 
-    /* Expandable extra fields for SAFE/note */
-    .extra-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--border); }
-    .extra-fields input { font-size: 12px; padding: 5px 8px; }
+    .file-status { font-size: 12px; color: var(--muted); font-style: italic; }
+    .file-status.ok { color: var(--green); font-style: normal; font-weight: 500; }
 
-    /* ── Add row type bar ─────────────────────────────────────── */
-    .add-row-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .slot-msg { margin-top: 10px; font-size: 12px; padding: 8px 12px; border-radius: 4px; display: none; }
+    .slot-msg.show { display: block; }
+    .slot-msg.busy { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+    .slot-msg.ok   { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+    .slot-msg.err  { background: #fff5f5; color: var(--red); border: 1px solid #fecaca; }
 
-    /* ── Templates ────────────────────────────────────────────── */
-    .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .template-card { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border-color .15s, background .15s; }
-    .template-card:hover { border-color: var(--black); background: #f0ede8; }
-    .template-card h4 { font-size: 13px; font-weight: 600; }
-    .template-card p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    /* ── Action button ── */
+    .action-wrap { text-align: center; padding: 8px 0 4px; }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 48px; background: var(--black); color: var(--white);
+      border: none; border-radius: 4px; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: var(--sans); transition: background .15s;
+    }
+    .action-btn:hover { background: var(--dark); }
+    .action-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
-    /* ── Output ───────────────────────────────────────────────── */
-    .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    @media (max-width: 700px) { .metrics-grid { grid-template-columns: 1fr 1fr; } }
-    .metric-card  { background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
-    .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .metric-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; color: var(--black); }
+    /* ── Results ── */
+    .results-area { margin-top: 32px; }
+
+    /* metrics */
+    .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 600px) { .metrics-row { grid-template-columns: 1fr 1fr; } }
+    .metric { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+    .metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .metric-val   { font-size: 22px; font-weight: 700; margin-top: 4px; }
     .metric-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* ── Cap table display ────────────────────────────────────── */
-    .cap-table-wrap { overflow-x: auto; margin-bottom: 16px; }
+    /* cap table */
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead tr { background: var(--black); color: var(--white); }
-    thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    thead th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    thead th.r { text-align: right; }
     tbody tr { border-bottom: 1px solid var(--border); }
     tbody tr:hover { background: #f5f3ef; }
-    tbody tr.group-header td { background: #f0ede8; font-weight: 600; font-size: 12px; color: var(--mid); padding: 4px 10px; text-transform: uppercase; letter-spacing: .04em; }
-    tbody td { padding: 8px 10px; }
-    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    tbody td.pct { text-align: right; color: var(--mid); font-size: 12px; }
-    tfoot tr { background: #f0ede8; font-weight: 600; }
-    tfoot td { padding: 8px 10px; }
-    tfoot td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .change-badge { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 4px; }
-    .badge-new     { background: #e3f2fd; color: var(--blue); }
-    .badge-converted { background: #e8f5e9; color: var(--green); }
-    .badge-expanded { background: #fff3e0; color: var(--amber); }
-    .bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 3px; }
-    .bar-fill { height: 100%; border-radius: 2px; background: var(--black); }
+    tbody tr.group-hdr td { background: #f0ede8; font-weight: 600; font-size: 11px; color: var(--mid); padding: 5px 12px; text-transform: uppercase; letter-spacing: .06em; }
+    tbody tr.new-row td { background: #f0fdf4; }
+    tbody tr.pool-row td { background: #fffbeb; }
+    tbody td { padding: 9px 12px; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.pct { text-align: right; color: var(--mid); font-size: 12px; }
+    tfoot tr { background: #f0ede8; }
+    tfoot td { padding: 9px 12px; font-weight: 700; font-size: 13px; }
+    .type-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; }
+    .tb-common    { background: #e8f5e9; color: #2e7d32; }
+    .tb-preferred { background: #e3f2fd; color: #1565c0; }
+    .tb-option    { background: #fff3e0; color: #b45309; }
+    .tb-safe      { background: #fce4ec; color: #c62828; }
+    .tb-note      { background: #f9fbe7; color: #558b2f; }
+    .tb-new       { background: #dcfce7; color: #166534; }
 
-    /* ── Analysis panel ───────────────────────────────────────── */
-    .analysis-section { margin-bottom: 16px; }
-    .analysis-section:last-child { margin-bottom: 0; }
-    .analysis-section h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
-    .issue-list { display: flex; flex-direction: column; gap: 6px; }
-    .issue-item { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border-left: 3px solid transparent; }
-    .issue-item.error   { background: #fff5f5; border-color: var(--red);   color: #7f1d1d; }
-    .issue-item.warning { background: #fffbeb; border-color: var(--amber);  color: #78350f; }
-    .issue-item.note    { background: #f0f9ff; border-color: var(--blue);   color: #1e3a5f; }
-    .issue-icon { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
-    .issue-text { font-size: 12px; line-height: 1.5; }
-    .issue-code { font-weight: 600; font-size: 11px; margin-right: 6px; opacity: .7; font-family: monospace; }
+    /* conformance wall */
+    .conf-summary { display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+    .score-circle { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; flex-shrink: 0; border: 3px solid; }
+    .score-circle.pass { background: #dcfce7; color: var(--green); border-color: #86efac; }
+    .score-circle.fail { background: #fee2e2; color: var(--red);   border-color: #fca5a5; }
+    .sum-text h3 { font-family: var(--serif); font-size: 17px; }
+    .sum-text p  { font-size: 12px; color: var(--mid); margin-top: 3px; }
+    .sum-counts { margin-left: auto; display: flex; gap: 18px; text-align: center; }
+    .cnt .n { display: block; font-size: 22px; font-weight: 700; }
+    .cnt .l { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .c-pass { color: var(--green); } .c-err { color: var(--red); } .c-warn { color: var(--amber); }
 
-    /* ── Status banner ────────────────────────────────────────── */
-    .status-banner { padding: 10px 14px; border-radius: var(--radius); display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500; }
-    .status-ok      { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
-    .status-warning { background: #fffbeb; color: var(--amber);  border: 1px solid #fde68a; }
-    .status-error   { background: #fff5f5; color: var(--red);    border: 1px solid #fecaca; }
+    .conf-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .ccard { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 4px; padding: 14px; }
+    .ccard.p { border-left-color: var(--green); }
+    .ccard.e { border-left-color: var(--red); }
+    .ccard.w { border-left-color: var(--amber); }
+    .ccard-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+    .ccard-icon { font-size: 14px; flex-shrink: 0; }
+    .ccard-label { font-size: 12px; font-weight: 600; flex: 1; line-height: 1.3; }
+    .ccard-bdg { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; white-space: nowrap; }
+    .bp { background: #dcfce7; color: #166534; } .be { background: #fee2e2; color: #991b1b; } .bw { background: #fef9c3; color: #854d0e; }
+    .ccard-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .cv { background: #fafafa; border: 1px solid var(--border); border-radius: 3px; padding: 7px 9px; }
+    .cv-l { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 2px; }
+    .cv-n { font-size: 13px; font-weight: 600; }
+    .cv-n.bad { color: var(--red); }
+    .ccard-note { margin-top: 8px; font-size: 11px; padding: 5px 8px; border-radius: 3px; }
+    .cn-e { background: #fff5f5; color: var(--red); }
+    .cn-w { background: #fffbeb; color: var(--amber); }
 
-    /* ── Conversion table ─────────────────────────────────────── */
-    .conv-table td.conv-basis { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 10px; }
-    .basis-cap      { background: #e3f2fd; color: var(--blue); }
-    .basis-discount { background: #f3e5f5; color: #6a1b9a; }
-    .basis-pps      { background: #e8f5e9; color: var(--green); }
-
-    /* ── Empty state ──────────────────────────────────────────── */
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-    .empty-state h3 { font-size: 16px; color: var(--mid); margin-bottom: 8px; }
-    .empty-state p  { font-size: 13px; }
-
-    /* ── Tab nav ──────────────────────────────────────────────── */
-    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 16px; background: #fafafa; }
-    .tab-btn { padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--mid); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; font-family: var(--sans); }
-    .tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
-    .tab-btn:hover  { color: var(--black); }
-    .tab-pane { display: none; padding: 16px; }
-    .tab-pane.active { display: block; }
-
-    /* ── Page-level tab nav ──────────────────────────────────── */
-    .page-tab-nav { background: var(--white); border-bottom: 2px solid var(--black); display: flex; padding: 0 20px; }
-    .page-tab-btn { padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--mid); border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: var(--sans); transition: color .15s; }
-    .page-tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
-    .page-tab-btn:hover { color: var(--black); }
-    .page-section { display: none; }
-    .page-section.active { display: block; }
-
-    /* ── Analyze layout ───────────────────────────────────────── */
-    .analyze-layout { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
-    .uploads-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-    @media (max-width: 700px) { .uploads-row { grid-template-columns: 1fr; } }
-    .upload-zone-card { background: var(--white); border: 2px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color .15s; }
-    .upload-zone-card.loaded { border-color: var(--green); }
-    .upload-zone-card.error-state { border-color: var(--red); }
-    .upload-zone-card-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #fafafa; }
-    .upload-zone-card-header h3 { font-family: var(--serif); font-size: 16px; font-weight: 600; flex: 1; }
-    .upload-zone-card-header .doc-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; }
-    .badge-ts { background: #e3f2fd; color: #1565c0; }
-    .badge-pf { background: #e8f5e9; color: #2e7d32; }
-    .upload-zone-card .drop-zone { margin: 16px; border-radius: var(--radius); }
-    .upload-zone-card-status { margin: 0 16px 16px; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; display: none; }
-    .upload-zone-card-status.show { display: block; }
-    .upload-zone-card-status.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
-    .upload-zone-card-status.error   { background: #fff5f5; color: var(--red);   border: 1px solid #fecaca; }
-    .upload-zone-card-status.loading { background: #f0f9ff; color: var(--blue);  border: 1px solid #bae6fd; }
-    .upload-zone-card-status.warning { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
-
-    /* ── Run button ───────────────────────────────────────────── */
-    .analyze-run { text-align: center; margin-bottom: 28px; }
-    .btn-lg { padding: 12px 40px; font-size: 15px; font-weight: 600; border-radius: 4px; }
-
-    /* ── Results wall ─────────────────────────────────────────── */
-    .wall-summary { display: flex; align-items: center; gap: 20px; padding: 20px 24px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; }
-    .wall-score-circle { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; border: 3px solid rgba(0,0,0,.08); }
-    .wall-score-circle.pass { background: #dcfce7; color: var(--green); border-color: #86efac; }
-    .wall-score-circle.fail { background: #fee2e2; color: var(--red);   border-color: #fca5a5; }
-    .wall-summary-text h2 { font-family: var(--serif); font-size: 20px; }
-    .wall-summary-text p  { font-size: 13px; color: var(--mid); margin-top: 4px; }
-    .wall-summary-counts { margin-left: auto; display: flex; gap: 16px; text-align: center; }
-    .wall-count-item span { display: block; }
-    .wall-count-num  { font-size: 22px; font-weight: 700; }
-    .wall-count-label{ font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .c-pass { color: var(--green); }
-    .c-err  { color: var(--red); }
-    .c-warn { color: var(--amber); }
-
-    .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-    .wall-card { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-    .wall-card.wc-pass  { border-left-color: var(--green); }
-    .wall-card.wc-error { border-left-color: var(--red); }
-    .wall-card.wc-warn  { border-left-color: var(--amber); }
-    .wall-card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
-    .wall-card-icon { font-size: 18px; line-height: 1.2; flex-shrink: 0; }
-    .wall-card-field { font-size: 13px; font-weight: 600; color: var(--black); flex: 1; }
-    .wall-card-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
-    .wb-pass  { background: #dcfce7; color: #166534; }
-    .wb-error { background: #fee2e2; color: #991b1b; }
-    .wb-warn  { background: #fef9c3; color: #854d0e; }
-    .wall-card-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .wall-val-block { background: #fafafa; border: 1px solid var(--border); border-radius: 3px; padding: 8px 10px; }
-    .wall-val-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 3px; }
-    .wall-val-num   { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--black); }
-    .wall-val-num.mismatch { color: var(--red); }
-    .wall-card-note { margin-top: 8px; font-size: 11px; color: var(--red); }
-    .wall-card-note.warn-note { color: var(--amber); }
-
-    /* ── Conformance layout ───────────────────────────────────── */
-    .conform-layout { max-width: 1400px; margin: 0 auto; padding: 16px 20px; display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
-    @media (max-width: 900px) { .conform-layout { grid-template-columns: 1fr; } }
-
-    /* ── Conformance checks ───────────────────────────────────── */
-    .check-list { display: flex; flex-direction: column; gap: 6px; }
-    .check-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); }
-    .check-row.pass        { background: #f0fdf4; border-color: #bbf7d0; }
-    .check-row.fail-error  { background: #fff5f5; border-color: #fecaca; }
-    .check-row.fail-warn   { background: #fffbeb; border-color: #fde68a; }
-    .check-icon  { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
-    .check-body  { flex: 1; min-width: 0; }
-    .check-label { font-size: 13px; font-weight: 500; color: var(--black); }
-    .check-vals  { font-size: 11px; color: var(--mid); margin-top: 3px; font-variant-numeric: tabular-nums; }
-    .check-note  { font-size: 11px; color: var(--red); margin-top: 3px; }
-    .check-severity { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; text-transform: uppercase; margin-left: 6px; }
-    .sev-error   { background: #fecaca; color: #7f1d1d; }
-    .sev-warn    { background: #fde68a; color: #78350f; }
-
-    /* ── SAFE/Note rows in term sheet ─────────────────────────── */
-    .ts-instrument-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 26px; gap: 6px; align-items: end; padding: 8px; background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; }
-    .ts-instrument-row input { font-size: 12px; padding: 5px 8px; }
-    .ts-instrument-row label { font-size: 11px; font-weight: 500; color: var(--mid); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; display: block; }
-
-    /* ── Conformance score ────────────────────────────────────── */
-    .conform-score { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 14px 16px; border-radius: var(--radius); }
-    .conform-score.pass { background: #f0fdf4; border: 1px solid #86efac; }
-    .conform-score.fail { background: #fff5f5; border: 1px solid #fca5a5; }
-    .score-circle { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(0,0,0,.1); }
-    .score-circle.pass { background: #dcfce7; color: var(--green); }
-    .score-circle.fail { background: #fee2e2; color: var(--red); }
-    .score-text h3 { font-family: var(--serif); font-size: 16px; }
-    .score-text p  { font-size: 12px; color: var(--mid); margin-top: 3px; }
-
-    /* ── Misc ─────────────────────────────────────────────────── */
-    .text-muted { color: var(--muted); }
-    .text-right { text-align: right; }
-    .font-mono  { font-family: monospace; }
-    .tooltip { position: relative; }
-    .tooltip[data-tip]:hover::after { content: attr(data-tip); position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 3px; white-space: nowrap; z-index: 999; margin-top: 4px; }
-    .test-link { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--blue); text-decoration: none; }
-    .test-link:hover { text-decoration: underline; }
-
-    /* ── File upload ──────────────────────────────────────────── */
-    .drop-zone {
-      border: 2px dashed var(--border); border-radius: var(--radius);
-      padding: 20px 16px; text-align: center; cursor: pointer;
-      transition: border-color .15s, background .15s; position: relative;
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: var(--black); background: #f0ede8;
-    }
-    .drop-zone input[type="file"] {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      opacity: 0; cursor: pointer;
-    }
-    .drop-zone-icon { font-size: 28px; line-height: 1; margin-bottom: 6px; }
-    .drop-zone-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-    .drop-zone-sub   { font-size: 11px; color: var(--muted); }
-    .file-chips { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
-    .file-chip { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; }
-    .chip-xlsx { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
-    .chip-docx { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
-    .chip-zip  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-    .upload-status { display: none; margin-top: 10px; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; }
-    .upload-status.show { display: flex; gap: 8px; align-items: flex-start; }
-    .upload-status.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
-    .upload-status.error   { background: #fff5f5; color: var(--red);   border: 1px solid #fecaca; }
-    .upload-status.warning { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
-    .upload-status.loading { background: #f0f9ff; color: var(--blue);  border: 1px solid #bae6fd; }
-
-    /* ── Format guide accordion ───────────────────────────────── */
-    .format-guide { margin-top: 10px; }
-    .format-guide summary { font-size: 11px; color: var(--blue); cursor: pointer; list-style: none; }
-    .format-guide summary::before { content: '▶ '; }
-    .format-guide[open] summary::before { content: '▼ '; }
-    .format-guide-body { margin-top: 8px; font-size: 11px; color: var(--mid); line-height: 1.6; }
-    .format-guide-body code { background: #f0ede8; padding: 1px 4px; border-radius: 2px; font-size: 10px; }
-
-    /* ── Preview modal ────────────────────────────────────────── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
-      z-index: 500; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-box {
-      background: var(--white); border-radius: 6px; width: 100%; max-width: 560px;
-      max-height: 90vh; display: flex; flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,.3);
-    }
-    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .modal-header h2 { font-family: var(--serif); font-size: 17px; }
-    .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted); padding: 2px 6px; border-radius: 3px; font-family: var(--sans); }
-    .modal-close:hover { background: #f0ede8; color: var(--black); }
-    .modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
-    .modal-section { margin-bottom: 16px; }
-    .modal-section:last-child { margin-bottom: 0; }
-    .modal-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
-    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; background: #fafafa; }
-    .parse-warning { font-size: 11px; color: var(--amber); margin-top: 6px; }
+    /* results heading */
+    .results-head { font-family: var(--serif); font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
   </style>
 </head>
 <body>
 
-<!-- ══ NAVIGATION ══════════════════════════════════════════════ -->
-<nav class="site-nav">
-  <div class="nav-inner">
-    <a class="nav-logo" href="index.html">Victor Macdiarmid</a>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="technology.html">Books</a>
-      <a href="proforma.html" class="active">Pro Forma</a>
-      <a href="proforma-tests.html">Tests</a>
-    </div>
-  </div>
+<nav>
+  <a class="logo" href="index.html">Victor Macdiarmid</a>
+  <a href="index.html">Home</a>
+  <a href="proforma.html" class="active">Pro Forma Tools</a>
 </nav>
 
-<!-- ══ PAGE HEADER ═════════════════════════════════════════════ -->
-<div class="page-header">
-  <h1>NVCA Pro Forma Builder</h1>
-  <p>Build NVCA-compliant financing pro formas · Analyze equity pool, PPS, rounding, SAFE/note conversions</p>
-  <div class="header-actions">
-    <button class="btn btn-primary" onclick="buildAndRender()">&#9654; Build Pro Forma</button>
-    <button class="btn btn-secondary" onclick="clearAll()">&#10006; Clear All</button>
-    <a href="proforma-tests.html" class="btn btn-secondary">&#128300; Test Runner</a>
-  </div>
+<div class="page-head">
+  <h1>NVCA Pro Forma Tools</h1>
+  <p>Build a new pro forma from your term sheet and cap table, or check whether an existing pro forma correctly reflects your negotiated terms.</p>
 </div>
 
-<!-- ══ PAGE-LEVEL TAB NAV ═══════════════════════════════════════ -->
-<div class="page-tab-nav">
-  <button class="page-tab-btn active" onclick="switchPageTab(this,'page-builder')">Pro Forma Builder</button>
-  <button class="page-tab-btn" onclick="switchPageTab(this,'page-conformance')">Term Sheet Conformance</button>
-</div>
+<div class="tools-grid">
 
-<!-- ══ BUILDER SECTION ══════════════════════════════════════════ -->
-<div id="page-builder" class="page-section active">
-<div class="main-layout">
-
-  <!-- ─── LEFT: INPUT PANEL ──────────────────────────────────── -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
-
-    <!-- File Upload -->
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Upload Document</span>
-        <span class="text-muted" style="font-size:11px;">Import from Excel or Word</span>
-      </div>
-      <div class="panel-body">
-        <div class="drop-zone" id="drop-zone"
-             ondragover="handleDragOver(event)"
-             ondragleave="handleDragLeave(event)"
-             ondrop="handleDrop(event)">
-          <input type="file" id="file-input" accept=".xlsx,.xls,.docx,.doc,.zip"
-                 onchange="handleFileSelect(event)" />
-          <div class="drop-zone-icon">&#128196;</div>
-          <div class="drop-zone-title">Drop file here or click to browse</div>
-          <div class="drop-zone-sub">Parses your existing pro forma and populates the form</div>
-          <div class="file-chips">
-            <span class="file-chip chip-xlsx">.xlsx Excel</span>
-            <span class="file-chip chip-docx">.docx Word</span>
-            <span class="file-chip chip-zip">.zip Archive</span>
-          </div>
-        </div>
-
-        <div class="upload-status" id="upload-status">
-          <span id="upload-status-icon"></span>
-          <span id="upload-status-text"></span>
-        </div>
-
-        <details class="format-guide">
-          <summary>Supported formats &amp; tips</summary>
-          <div class="format-guide-body">
-            <strong>Excel (.xlsx)</strong> — any sheet with a column header row containing
-            words like <code>Name</code>, <code>Shares</code>, <code>Type</code>, or
-            <code>Series</code>. Labeled rows like <code>Pre-Money Valuation: $10,000,000</code>
-            are picked up for round config. Multiple sheets are all scanned.<br><br>
-            <strong>Word (.docx)</strong> — values labelled in the document, e.g.
-            <code>Pre-money valuation: $12,000,000</code>, <code>Option pool: 15%</code>,
-            or lines like <code>Founders  8,000,000  Common</code>.<br><br>
-            <strong>ZIP archive (.zip)</strong> — drop a zip containing an Excel or Word
-            file. If multiple documents are inside, the first Excel file is used (or the
-            first Word file if no Excel file is found).<br><br>
-            <strong>After upload</strong>, review the preview and confirm before the form is
-            populated. You can edit any value afterwards.
-          </div>
-        </details>
-      </div>
+  <!-- ═══════════════════════════════════════════════ LEFT: BUILDER -->
+  <div class="tool-col">
+    <div class="col-head">
+      <div class="col-badge badge-build">Pro Forma Builder</div>
+      <h2>Build a Pro Forma</h2>
+      <p>Upload your term sheet and current cap table. The tool extracts the round parameters and shareholder structure, then generates a complete post-financing pro forma.</p>
     </div>
 
-    <!-- Templates -->
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Load Template</span>
-        <span class="text-muted" style="font-size:11px;">Pre-filled NVCA scenarios</span>
-      </div>
-      <div class="panel-body">
-        <div class="template-grid">
-          <div class="template-card" onclick="loadTemplate('seed-round')">
-            <h4>Seed Round</h4>
-            <p>Two founders, option pool, seed preferred</p>
-          </div>
-          <div class="template-card" onclick="loadTemplate('series-a')">
-            <h4>Series A + SAFE</h4>
-            <p>Prior seed round + SAFE converting in</p>
-          </div>
-          <div class="template-card" onclick="loadTemplate('safe-conversion')">
-            <h4>Multi-SAFE + Note</h4>
-            <p>Cap, discount, cap+discount, and note</p>
-          </div>
-          <div class="template-card" onclick="loadTemplate('down-round')">
-            <h4>Down Round</h4>
-            <p>Series B below Series A price</p>
-          </div>
+    <div class="upload-slots">
+
+      <!-- Slot 1: Term Sheet -->
+      <div class="upload-slot" id="b-ts-slot">
+        <div class="slot-top">
+          <div class="slot-num">1</div>
+          <div class="slot-label">Term Sheet</div>
         </div>
-      </div>
-    </div>
-
-    <!-- Round Configuration -->
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Round Configuration</span>
-      </div>
-      <div class="panel-body">
-        <div class="field-group">
-          <div class="field-row">
-            <div class="field">
-              <label>Round Name</label>
-              <input type="text" id="roundName" value="Series A" />
-            </div>
-            <div class="field">
-              <label>New Share Class</label>
-              <input type="text" id="newShareClass" value="Series A Preferred" />
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Pre-Money Valuation ($)</label>
-              <input type="number" id="preMoneyValuation" value="10000000" min="0" />
-            </div>
-            <div class="field">
-              <label>New Investment ($)</label>
-              <input type="number" id="newInvestment" value="2000000" min="0" />
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>New Investor Name</label>
-              <input type="text" id="newInvestorName" value="New Investors" />
-            </div>
-            <div class="field">
-              <label>Closing Date</label>
-              <input type="text" id="closingDate" value="2024-06-01" placeholder="YYYY-MM-DD" />
-            </div>
-          </div>
-          <div class="section-divider"></div>
-          <div class="section-label">Option Pool</div>
-          <div class="field-row">
-            <div class="field">
-              <label>Target Pool % (post-money)</label>
-              <input type="number" id="optionPoolTargetPct" value="15" min="0" max="50" step="0.5" />
-              <span class="field-hint">Enter as percentage, e.g. 15 = 15%</span>
-            </div>
-            <div class="field">
-              <label>Pool Method</label>
-              <select id="optionPoolMethod">
-                <option value="pre-money">Pre-money (pool shuffle)</option>
-                <option value="post-money">Post-money</option>
-              </select>
-              <span class="field-hint">Pre-money dilutes existing holders</span>
-            </div>
-          </div>
-          <div class="section-divider"></div>
-          <div class="section-label">New Preferred Terms</div>
-          <div class="field-row">
-            <div class="field">
-              <label>Liquidation Multiple</label>
-              <input type="number" id="liquidationMultiple" value="1" min="1" step="0.25" />
-            </div>
-            <div class="field">
-              <label>Participating Preferred?</label>
-              <select id="participating">
-                <option value="false">No — non-participating</option>
-                <option value="true">Yes — participating</option>
-              </select>
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Rounding Method</label>
-              <select id="roundingMethod">
-                <option value="round">Round (standard)</option>
-                <option value="floor">Floor (conservative)</option>
-                <option value="ceil">Ceiling (generous)</option>
-              </select>
-            </div>
-          </div>
+        <p class="slot-desc">The signed or draft agreement containing negotiated terms — pre-money valuation, investment size, option pool, liquidation preference, etc. (.docx or .xlsx)</p>
+        <div class="file-row">
+          <label class="choose-btn">
+            📄 Choose Term Sheet
+            <input type="file" id="b-ts-input" accept=".docx,.doc,.xlsx,.xls" onchange="handleSlot('b','ts',this)">
+          </label>
+          <span class="file-status" id="b-ts-status">No file chosen</span>
         </div>
+        <div class="slot-msg" id="b-ts-msg"></div>
       </div>
-    </div>
 
-    <!-- Cap Table Input -->
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Existing Cap Table</span>
-        <span class="text-muted" style="font-size:11px;">Before this round</span>
-      </div>
-      <div class="panel-body">
-        <div id="cap-table-rows"></div>
-        <div class="add-row-bar">
-          <button class="btn btn-sm btn-secondary" onclick="addRow('common')">+ Common</button>
-          <button class="btn btn-sm btn-secondary" onclick="addRow('preferred')">+ Preferred</button>
-          <button class="btn btn-sm btn-secondary" onclick="addRow('option')">+ Option Pool</button>
-          <button class="btn btn-sm btn-secondary" onclick="addRow('warrant')">+ Warrant</button>
-          <button class="btn btn-sm btn-secondary" onclick="addRow('safe')">+ SAFE</button>
-          <button class="btn btn-sm btn-secondary" onclick="addRow('note')">+ Conv. Note</button>
+      <!-- Slot 2: Cap Table -->
+      <div class="upload-slot" id="b-ct-slot">
+        <div class="slot-top">
+          <div class="slot-num">2</div>
+          <div class="slot-label">Current Cap Table</div>
         </div>
+        <p class="slot-desc">Your existing pre-financing cap table listing current shareholders, share counts, and security types. (.xlsx or .docx)</p>
+        <div class="file-row">
+          <label class="choose-btn">
+            📊 Choose Cap Table
+            <input type="file" id="b-ct-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="handleSlot('b','ct',this)">
+          </label>
+          <span class="file-status" id="b-ct-status">No file chosen</span>
+        </div>
+        <div class="slot-msg" id="b-ct-msg"></div>
       </div>
+
+    </div><!-- /upload-slots -->
+
+    <div class="action-wrap">
+      <button class="action-btn" onclick="runBuilder()">&#9654;&nbsp; Build Pro Forma</button>
+      <p class="action-hint" id="b-hint">Upload both files above to generate the pro forma.</p>
     </div>
 
-  </div><!-- /left -->
-
-  <!-- ─── RIGHT: OUTPUT PANEL ────────────────────────────────── -->
-  <div id="output-panel">
-    <div class="panel">
-      <div class="empty-state">
-        <h3>Pro Forma Output</h3>
-        <p>Fill in your round details and cap table, then click <strong>Build Pro Forma</strong>.</p>
-        <p style="margin-top:8px;">Or <a href="#" onclick="loadTemplate('series-a');buildAndRender();return false" style="color:var(--blue)">load the Series A template</a> to see an example.</p>
-      </div>
-    </div>
+    <div class="results-area" id="builder-results"></div>
   </div>
 
-</div><!-- /main-layout -->
-</div><!-- /page-builder -->
+  <div class="col-rule"></div>
 
-<!-- ══ CONFORMANCE SECTION ══════════════════════════════════════ -->
-<div id="page-conformance" class="page-section">
-  <div class="analyze-layout">
+  <!-- ══════════════════════════════════════════════ RIGHT: ANALYZER -->
+  <div class="tool-col">
+    <div class="col-head">
+      <div class="col-badge badge-analyze">Conformance Analyzer</div>
+      <h2>Analyze a Pro Forma</h2>
+      <p>Upload your term sheet and an already-built pro forma. The tool checks every negotiated term against the actual numbers and flags any discrepancies.</p>
+    </div>
 
-    <!-- ── Upload row ─────────────────────────────────────────── -->
-    <div class="uploads-row">
+    <div class="upload-slots">
 
-      <!-- Term Sheet upload -->
-      <div class="upload-zone-card" id="ts-card">
-        <div class="upload-zone-card-header">
-          <h3>Term Sheet</h3>
-          <span class="doc-badge badge-ts">Negotiated Terms</span>
+      <!-- Slot 1: Term Sheet -->
+      <div class="upload-slot" id="a-ts-slot">
+        <div class="slot-top">
+          <div class="slot-num">1</div>
+          <div class="slot-label">Term Sheet</div>
         </div>
-        <div class="drop-zone" id="ts-drop-zone"
-             ondragover="handleDocDragOver(event,'ts-drop-zone')"
-             ondragleave="handleDocDragLeave('ts-drop-zone')"
-             ondrop="handleDocDrop(event,'ts')">
-          <input type="file" id="ts-file-input" accept=".docx,.doc,.xlsx,.xls"
-                 onchange="handleDocSelect(event,'ts')" />
-          <div class="drop-zone-icon">&#128196;</div>
-          <div class="drop-zone-title">Drop term sheet here or click to browse</div>
-          <div class="drop-zone-sub">.docx Word document or .xlsx Excel file</div>
+        <p class="slot-desc">The signed or draft agreement containing negotiated terms. (.docx or .xlsx)</p>
+        <div class="file-row">
+          <label class="choose-btn">
+            📄 Choose Term Sheet
+            <input type="file" id="a-ts-input" accept=".docx,.doc,.xlsx,.xls" onchange="handleSlot('a','ts',this)">
+          </label>
+          <span class="file-status" id="a-ts-status">No file chosen</span>
         </div>
-        <div class="upload-zone-card-status" id="ts-card-status"></div>
+        <div class="slot-msg" id="a-ts-msg"></div>
       </div>
 
-      <!-- Pro Forma upload -->
-      <div class="upload-zone-card" id="pf-card">
-        <div class="upload-zone-card-header">
-          <h3>Pro Forma</h3>
-          <span class="doc-badge badge-pf">Actual Numbers</span>
+      <!-- Slot 2: Pro Forma -->
+      <div class="upload-slot" id="a-pf-slot">
+        <div class="slot-top">
+          <div class="slot-num">2</div>
+          <div class="slot-label">Pro Forma to Analyze</div>
         </div>
-        <div class="drop-zone" id="pf-drop-zone"
-             ondragover="handleDocDragOver(event,'pf-drop-zone')"
-             ondragleave="handleDocDragLeave('pf-drop-zone')"
-             ondrop="handleDocDrop(event,'pf')">
-          <input type="file" id="pf-file-input" accept=".docx,.doc,.xlsx,.xls,.zip"
-                 onchange="handleDocSelect(event,'pf')" />
-          <div class="drop-zone-icon">&#128202;</div>
-          <div class="drop-zone-title">Drop pro forma here or click to browse</div>
-          <div class="drop-zone-sub">.xlsx Excel, .docx Word, or .zip archive</div>
+        <p class="slot-desc">The cap table or pro forma document you want to verify against the term sheet. (.xlsx, .docx, or .zip)</p>
+        <div class="file-row">
+          <label class="choose-btn">
+            📊 Choose Pro Forma
+            <input type="file" id="a-pf-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="handleSlot('a','pf',this)">
+          </label>
+          <span class="file-status" id="a-pf-status">No file chosen</span>
         </div>
-        <div class="upload-zone-card-status" id="pf-card-status"></div>
+        <div class="slot-msg" id="a-pf-msg"></div>
       </div>
 
-    </div><!-- /uploads-row -->
+    </div><!-- /upload-slots -->
 
-    <!-- ── Run Analysis ────────────────────────────────────────── -->
-    <div class="analyze-run">
-      <button class="btn btn-primary btn-lg" onclick="tsRunAnalysis()">&#9654; Run Analysis</button>
-      <p style="margin-top:8px;font-size:12px;color:var(--muted);">Upload both documents above, then click Run Analysis to check conformance.</p>
-    </div>
-
-    <!-- ── Results wall ────────────────────────────────────────── -->
-    <div id="ts-wall">
-      <!-- Populated by tsRenderWall() -->
+    <div class="action-wrap">
+      <button class="action-btn" onclick="runAnalyzer()">&#9654;&nbsp; Run Analysis</button>
+      <p class="action-hint" id="a-hint">Upload both files above to run the conformance check.</p>
     </div>
 
-  </div><!-- /analyze-layout -->
-</div><!-- /page-conformance -->
-
-<!-- ══ PREVIEW MODAL ════════════════════════════════════════════ -->
-<div class="modal-overlay" id="preview-modal" onclick="if(event.target===this)closePreviewModal()">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h2 id="modal-title">Parsed Document</h2>
-      <button class="modal-close" onclick="closePreviewModal()">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-section">
-        <div class="modal-section-title">Round Configuration Detected</div>
-        <div id="modal-config"></div>
-      </div>
-      <div class="modal-section">
-        <div class="modal-section-title">Stakeholders Detected (<span id="modal-count">0</span>)</div>
-        <div id="modal-stakes"></div>
-      </div>
-      <div id="modal-warnings" class="parse-warning"></div>
-      <p style="font-size:11px;color:var(--muted);margin-top:12px;">
-        Click <strong>Apply to Form</strong> to populate the builder. You can edit any value after import.
-        Existing cap table rows will be replaced by the imported ones.
-      </p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePreviewModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="applyParsedData()">&#10003; Apply to Form</button>
-    </div>
+    <div class="results-area" id="analyzer-results"></div>
   </div>
-</div>
 
-<script src="proforma-engine.js?v=20260312160027"></script>
-<script src="proforma-comparator.js?v=20260312160027"></script>
-<!-- SheetJS for Excel parsing (MIT licence) -->
+</div><!-- /tools-grid -->
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<!-- mammoth.js for Word parsing (MIT licence) -->
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-<!-- JSZip for ZIP archive support (MIT licence) -->
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="proforma-engine.js?v=20260312"></script>
+<script src="proforma-comparator.js?v=20260312"></script>
 <script>
-// ══ STATE ═══════════════════════════════════════════════════════
-let rowCounter = 0;
-let _lastProFormaResult = null;   // stored after every successful build
 
-// ══ ROW MANAGEMENT ══════════════════════════════════════════════
-const TYPE_LABELS = { common:'Common', preferred:'Preferred', option:'Option', warrant:'Warrant', safe:'SAFE', note:'Conv. Note' };
-const BADGE_CLASS = { common:'badge-common', preferred:'badge-preferred', option:'badge-option', warrant:'badge-warrant', safe:'badge-safe', note:'badge-note' };
+// ── Parsed data store ─────────────────────────────────────────────
+const store = { b: { ts: null, ct: null }, a: { ts: null, pf: null } };
 
-function addRow(type, data = {}) {
-  const id = rowCounter++;
-  const container = document.getElementById('cap-table-rows');
-  const div = document.createElement('div');
-  div.className = 'stakeholder-row';
-  div.dataset.id = id;
-  div.dataset.type = type;
+// ── Generic slot handler ──────────────────────────────────────────
+async function handleSlot(tool, slot, input) {
+  const file = input.files[0];
+  if (!file) return;
 
-  const nameVal   = escHtml(data.name   || '');
-  const sharesVal = data.shares  != null ? data.shares  : '';
-  const seriesVal = escHtml(data.series || '');
+  const statusEl = document.getElementById(tool + '-' + slot + '-status');
+  const msgEl    = document.getElementById(tool + '-' + slot + '-msg');
+  const slotEl   = document.getElementById(tool + '-' + slot + '-slot');
 
-  let mainHtml = `
-    <input type="text"   class="row-name"   placeholder="Name" value="${nameVal}" style="font-size:12px;padding:5px 8px;" />
-    <input type="number" class="row-shares" placeholder="Shares" value="${sharesVal}" min="0" style="font-size:12px;padding:5px 8px;" />
-    <span class="row-type-badge ${BADGE_CLASS[type]}">${TYPE_LABELS[type]}</span>
-    <button class="remove-row-btn" onclick="removeRow(${id})" title="Remove">&#10005;</button>
-  `;
+  statusEl.textContent = file.name;
+  statusEl.className = 'file-status';
+  slotEl.classList.remove('loaded');
+  store[tool][slot] = null;
 
-  // Extra fields for SAFE / note / preferred
-  let extraHtml = '';
-  if (type === 'preferred') {
-    extraHtml = `
-      <div class="extra-fields">
-        <div class="field"><label>Series (e.g. A)</label><input type="text" class="row-series" value="${seriesVal}" placeholder="A" /></div>
-        <div class="field"><label>Issue Price ($)</label><input type="number" class="row-oip" value="${data.originalIssuePrice || ''}" placeholder="1.00" step="0.0001" /></div>
-        <div class="field"><label>Liq Multiple</label><input type="number" class="row-liq" value="${data.liquidationMultiple || 1}" min="1" step="0.25" /></div>
-      </div>`;
-  } else if (type === 'safe') {
-    extraHtml = `
-      <div class="extra-fields">
-        <div class="field"><label>Principal ($)</label><input type="number" class="row-principal" value="${data.principal || ''}" placeholder="500000" /></div>
-        <div class="field"><label>Val. Cap ($)</label><input type="number" class="row-valcap" value="${data.valuationCap || ''}" placeholder="8000000" /></div>
-        <div class="field"><label>Discount Rate</label><input type="number" class="row-discount" value="${data.discountRate != null ? data.discountRate : ''}" placeholder="0.80" step="0.01" min="0" max="1" /></div>
-        <div class="field" style="grid-column:span 3"><label>SAFE Type</label>
-          <select class="row-safetype" style="font-size:12px;padding:5px 8px;">
-            <option value="pre-money" ${(data.safeType||'pre-money')==='pre-money'?'selected':''}>Pre-money SAFE</option>
-            <option value="post-money" ${data.safeType==='post-money'?'selected':''}>Post-money SAFE</option>
-          </select>
-        </div>
-      </div>`;
-  } else if (type === 'note') {
-    extraHtml = `
-      <div class="extra-fields">
-        <div class="field"><label>Principal ($)</label><input type="number" class="row-principal" value="${data.principal || ''}" placeholder="1000000" /></div>
-        <div class="field"><label>Val. Cap ($)</label><input type="number" class="row-valcap" value="${data.valuationCap || ''}" placeholder="8000000" /></div>
-        <div class="field"><label>Discount Rate</label><input type="number" class="row-discount" value="${data.discountRate != null ? data.discountRate : ''}" placeholder="0.80" step="0.01" min="0" max="1" /></div>
-        <div class="field"><label>Annual Rate</label><input type="number" class="row-rate" value="${data.interestRate != null ? data.interestRate : ''}" placeholder="0.06" step="0.01" min="0" max="1" /></div>
-        <div class="field"><label>Issue Date</label><input type="text" class="row-issuedate" value="${escHtml(data.issueDate || '')}" placeholder="2023-01-01" /></div>
-      </div>`;
-  }
-
-  div.innerHTML = mainHtml + extraHtml;
-  container.appendChild(div);
-}
-
-function removeRow(id) {
-  const el = document.querySelector(`[data-id="${id}"]`);
-  if (el) el.remove();
-}
-
-function readCapTable() {
-  const rows = document.querySelectorAll('#cap-table-rows .stakeholder-row');
-  const result = [];
-  rows.forEach(row => {
-    const type = row.dataset.type;
-    const name   = row.querySelector('.row-name')?.value.trim()   || 'Unnamed';
-    const shares = parseNum(row.querySelector('.row-shares')?.value) || 0;
-
-    const s = { name, type, shares };
-
-    if (type === 'preferred') {
-      s.series             = row.querySelector('.row-series')?.value.trim() || '';
-      s.originalIssuePrice = parseNum(row.querySelector('.row-oip')?.value);
-      s.liquidationMultiple= parseNum(row.querySelector('.row-liq')?.value) || 1;
-      s.participating      = false;
-    }
-    if (type === 'safe') {
-      s.shares      = 0;
-      s.principal   = parseNum(row.querySelector('.row-principal')?.value)  || 0;
-      s.valuationCap= parseNum(row.querySelector('.row-valcap')?.value)     || null;
-      s.discountRate= parseNum(row.querySelector('.row-discount')?.value)   || null;
-      s.safeType    = row.querySelector('.row-safetype')?.value             || 'pre-money';
-    }
-    if (type === 'note') {
-      s.shares      = 0;
-      s.principal   = parseNum(row.querySelector('.row-principal')?.value)  || 0;
-      s.valuationCap= parseNum(row.querySelector('.row-valcap')?.value)     || null;
-      s.discountRate= parseNum(row.querySelector('.row-discount')?.value)   || null;
-      s.interestRate= parseNum(row.querySelector('.row-rate')?.value)       || null;
-      s.issueDate   = row.querySelector('.row-issuedate')?.value.trim()     || null;
-    }
-    result.push(s);
-  });
-  return result;
-}
-
-function readRoundConfig() {
-  return {
-    roundName:           document.getElementById('roundName').value.trim() || 'New Round',
-    preMoneyValuation:   parseNum(document.getElementById('preMoneyValuation').value) || 0,
-    newInvestment:       parseNum(document.getElementById('newInvestment').value)     || 0,
-    optionPoolTargetPct: (parseNum(document.getElementById('optionPoolTargetPct').value) || 0) / 100,
-    optionPoolMethod:    document.getElementById('optionPoolMethod').value,
-    newShareClass:       document.getElementById('newShareClass').value.trim()  || 'New Preferred',
-    newInvestorName:     document.getElementById('newInvestorName').value.trim()|| 'New Investors',
-    liquidationMultiple: parseNum(document.getElementById('liquidationMultiple').value) || 1,
-    participating:       document.getElementById('participating').value === 'true',
-    closingDate:         document.getElementById('closingDate').value.trim() || new Date().toISOString().slice(0,10),
-  };
-}
-
-// ══ TEMPLATES ═══════════════════════════════════════════════════
-function loadTemplate(scenario) {
-  const t = ProFormaEngine.buildTemplate(scenario);
-  if (!t) return;
-
-  // Round config
-  const rc = t.roundConfig;
-  document.getElementById('roundName').value           = rc.roundName || '';
-  document.getElementById('preMoneyValuation').value   = rc.preMoneyValuation || '';
-  document.getElementById('newInvestment').value       = rc.newInvestment || '';
-  document.getElementById('optionPoolTargetPct').value = ((rc.optionPoolTargetPct || 0) * 100).toFixed(1);
-  document.getElementById('optionPoolMethod').value    = rc.optionPoolMethod || 'pre-money';
-  document.getElementById('newShareClass').value       = rc.newShareClass || '';
-  document.getElementById('newInvestorName').value     = rc.newInvestorName || '';
-  document.getElementById('liquidationMultiple').value = rc.liquidationMultiple || 1;
-  document.getElementById('participating').value       = String(rc.participating || false);
-  document.getElementById('closingDate').value         = rc.closingDate || '';
-
-  // Cap table
-  document.getElementById('cap-table-rows').innerHTML = '';
-  rowCounter = 0;
-  t.stakeholders.forEach(s => addRow(s.type, s));
-}
-
-// ══ BUILD & RENDER ═══════════════════════════════════════════════
-function buildAndRender() {
-  const preRoundCap = readCapTable();
-  const roundConfig = readRoundConfig();
-  const options     = { roundingMethod: document.getElementById('roundingMethod').value };
-
-  let result, analysis;
-  try {
-    result   = ProFormaEngine.buildProForma(preRoundCap, roundConfig, options);
-    analysis = ProFormaEngine.analyzeProForma(result, preRoundCap, roundConfig);
-  } catch (err) {
-    renderError(err.message);
-    return;
-  }
-
-  _lastProFormaResult = result;   // make available to conformance tab
-  renderOutput(result, analysis);
-}
-
-function renderError(msg) {
-  document.getElementById('output-panel').innerHTML = `
-    <div class="panel">
-      <div class="panel-body">
-        <div class="issue-item error" style="border-radius:4px;">
-          <span class="issue-icon">&#9888;</span>
-          <div class="issue-text"><strong>Build Error:</strong> ${escHtml(msg)}</div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderOutput(r, a) {
-  const E = ProFormaEngine;
-  const fmtC  = n => E.formatCurrency(n, 0);
-  const fmtC4 = n => E.formatCurrency(n, 4);
-  const fmtN  = n => E.formatNumber(n, 0);
-  const fmtP  = n => E.formatPct(n, 2);
-
-  // ── Status banner
-  const statusCls = { ok:'status-ok', warning:'status-warning', error:'status-error' }[a.summary.status];
-  const statusIcon= { ok:'&#10003;', warning:'&#9888;', error:'&#9889;' }[a.summary.status];
-  const statusMsg = { ok:'No issues detected. Pro forma looks clean.', warning:`${a.summary.warningCount} warning(s) require attention.`, error:`${a.summary.issueCount} error(s) detected — review before using.` }[a.summary.status];
-
-  // ── Metrics
-  const metricsHtml = `
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-label">Price Per Share</div>
-        <div class="metric-value">${fmtC4(r.pps)}</div>
-        <div class="metric-sub">Pre-money FD: ${fmtN(r.premoneyFD)}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Post-Money Valuation</div>
-        <div class="metric-value">${fmtC(r.postMoneyValuation)}</div>
-        <div class="metric-sub">Pre: ${fmtC(r.preMoneyValuation)} + ${fmtC(r.newInvestment)}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">FD Shares (Post)</div>
-        <div class="metric-value">${fmtN(r.postFD)}</div>
-        <div class="metric-sub">Pre: ${fmtN(r.premoneyFD)}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Option Pool</div>
-        <div class="metric-value">${fmtP(r.actualOptionPoolPct)}</div>
-        <div class="metric-sub">${r.optionExpansion > 0 ? `+${fmtN(r.optionExpansion)} new shares` : 'No expansion'}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">New Investor Shares</div>
-        <div class="metric-value">${fmtN(r.newInvestorShares)}</div>
-        <div class="metric-sub">${fmtP(r.newInvestorShares / r.postFD)} of post-money</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Conversions</div>
-        <div class="metric-value">${r.convertedInstruments.length}</div>
-        <div class="metric-sub">${r.convertedInstruments.length > 0 ? r.convertedInstruments.map(c => c.originalType.toUpperCase()).join(', ') : 'None'}</div>
-      </div>
-    </div>`;
-
-  // ── Cap table rows
-  const typeOrder = ['common', 'option', 'warrant', 'preferred'];
-  const grouped = {};
-  typeOrder.forEach(t => grouped[t] = []);
-  r.postRoundCap.forEach(s => {
-    const t = typeOrder.includes(s.type) ? s.type : 'preferred';
-    grouped[t].push(s);
-  });
-
-  let capRows = '';
-  const sections = [
-    { key:'common',    label:'Common Shares' },
-    { key:'option',    label:'Options & Warrants' },
-    { key:'warrant',   label:'Warrants' },
-    { key:'preferred', label:'Preferred Shares' },
-  ];
-
-  sections.forEach(sec => {
-    const items = grouped[sec.key] || [];
-    if (!items.length) return;
-    capRows += `<tr class="group-header"><td colspan="4">${sec.label}</td></tr>`;
-    items.forEach(s => {
-      const badge = s._expansion ? '<span class="change-badge badge-expanded">expanded</span>'
-                  : r.convertedInstruments.find(c => c.name === s.name) ? '<span class="change-badge badge-converted">converted</span>'
-                  : r.postRoundCap.find(c => c === s && s.series === r.roundConfig.newShareClass) ? '<span class="change-badge badge-new">new</span>'
-                  : '';
-      const bar = `<div class="bar"><div class="bar-fill" style="width:${Math.min(100, s.pct * 100 / (r.postRoundCap.reduce((m,x)=>Math.max(m,(x.shares||0)/r.postFD),0)))}%"></div></div>`;
-      capRows += `<tr>
-        <td>${escHtml(s.name)} ${badge}</td>
-        <td class="num">${fmtN(s.shares || 0)}</td>
-        <td class="pct">${fmtP(s.pct || 0)}</td>
-        <td>${bar}</td>
-      </tr>`;
-    });
-  });
-
-  const capTableHtml = `
-    <div class="cap-table-wrap">
-      <table>
-        <thead><tr>
-          <th>Stakeholder</th><th style="text-align:right">Shares</th><th style="text-align:right">% FD</th><th style="min-width:80px">Ownership</th>
-        </tr></thead>
-        <tbody>${capRows}</tbody>
-        <tfoot><tr>
-          <td><strong>Total Fully Diluted</strong></td>
-          <td class="num"><strong>${fmtN(r.postFD)}</strong></td>
-          <td class="num"><strong>100.00%</strong></td>
-          <td></td>
-        </tr></tfoot>
-      </table>
-    </div>`;
-
-  // ── Conversion details
-  let convHtml = '';
-  if (r.convertedInstruments.length > 0) {
-    let convRows = r.convertedInstruments.map(c => {
-      const basisClass = { cap:'basis-cap', discount:'basis-discount', pps:'basis-pps' }[c.conversionBasis] || '';
-      const noteExtra = c.originalType === 'note'
-        ? `<br><small class="text-muted">Principal ${fmtC(c.principal)} + Interest ${fmtC(c.interest || 0)} = ${fmtC(c.conversionAmount)}</small>`
-        : '';
-      return `<tr>
-        <td>${escHtml(c.name)}</td>
-        <td>${escHtml(c.originalType.toUpperCase())}</td>
-        <td class="num">${fmtC(c.principal || c.conversionAmount || 0)}${noteExtra}</td>
-        <td class="num">${fmtC4(c.conversionPPS)}</td>
-        <td class="num">${fmtP(c.effectiveDiscount || 0)}</td>
-        <td><span class="conv-basis ${basisClass}">${c.conversionBasis}</span></td>
-        <td class="num">${fmtN(c.shares)}</td>
-      </tr>`;
-    }).join('');
-    convHtml = `
-      <div class="cap-table-wrap">
-        <table class="conv-table">
-          <thead><tr>
-            <th>Instrument</th><th>Type</th><th style="text-align:right">Amount</th>
-            <th style="text-align:right">Conv. PPS</th><th style="text-align:right">Discount</th>
-            <th>Basis</th><th style="text-align:right">Shares</th>
-          </tr></thead>
-          <tbody>${convRows}</tbody>
-        </table>
-      </div>`;
-  } else {
-    convHtml = '<p class="text-muted" style="font-size:13px;">No SAFEs or convertible notes in this round.</p>';
-  }
-
-  // ── Analysis
-  function issueHtml(items, cls, icon) {
-    return items.map(i => `
-      <div class="issue-item ${cls}">
-        <span class="issue-icon">${icon}</span>
-        <div class="issue-text"><span class="issue-code">${i.code || ''}</span>${escHtml(i.message)}</div>
-      </div>`).join('');
-  }
-
-  const errorHtml   = issueHtml(a.issues,   'error',   '&#9889;');
-  const warnHtml    = issueHtml(a.warnings, 'warning', '&#9888;');
-  const noteHtml    = issueHtml(a.notes,    'note',    '&#8505;');
-
-  const analysisHtml = `
-    ${a.issues.length   ? `<div class="analysis-section"><h3>Errors (${a.issues.length})</h3><div class="issue-list">${errorHtml}</div></div>` : ''}
-    ${a.warnings.length ? `<div class="analysis-section"><h3>Warnings (${a.warnings.length})</h3><div class="issue-list">${warnHtml}</div></div>` : ''}
-    ${a.notes.length    ? `<div class="analysis-section"><h3>Notes &amp; Observations (${a.notes.length})</h3><div class="issue-list">${noteHtml}</div></div>` : ''}
-    ${!a.issues.length && !a.warnings.length && !a.notes.length ? '<p class="text-muted" style="font-size:13px;">No issues or notes.</p>' : ''}`;
-
-  // ── Assemble
-  document.getElementById('output-panel').innerHTML = `
-    <div class="panel">
-      <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab(this,'tab-captable')">Cap Table</button>
-        <button class="tab-btn" onclick="switchTab(this,'tab-conversions')">Conversions</button>
-        <button class="tab-btn" onclick="switchTab(this,'tab-analysis')">
-          Analysis
-          ${a.summary.issueCount  ? `<span style="background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px">${a.summary.issueCount}</span>` : ''}
-          ${a.summary.warningCount && !a.summary.issueCount ? `<span style="background:var(--amber);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px">${a.summary.warningCount}</span>` : ''}
-        </button>
-      </div>
-
-      <div id="tab-captable" class="tab-pane active">
-        <div class="status-banner ${statusCls}">${statusIcon} ${statusMsg}</div>
-        ${metricsHtml}
-        ${capTableHtml}
-      </div>
-
-      <div id="tab-conversions" class="tab-pane">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-          SAFEs and convertible notes convert at the lower of their cap price or discount price vs the round PPS.
-        </p>
-        ${convHtml}
-      </div>
-
-      <div id="tab-analysis" class="tab-pane">
-        ${analysisHtml}
-        <a href="proforma-tests.html" class="test-link">&#128300; Open Test Runner</a>
-      </div>
-    </div>`;
-}
-
-// ══ TAB SWITCHING ════════════════════════════════════════════════
-function switchTab(btn, tabId) {
-  const panel = btn.closest('.panel');
-  panel.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  panel.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(tabId).classList.add('active');
-}
-
-// ══ UTILITIES ════════════════════════════════════════════════════
-function clearAll() {
-  document.getElementById('cap-table-rows').innerHTML = '';
-  rowCounter = 0;
-  document.getElementById('output-panel').innerHTML = `<div class="panel"><div class="empty-state"><h3>Pro Forma Output</h3><p>Fill in your details and click Build Pro Forma.</p></div></div>`;
-}
-
-function parseNum(v) {
-  if (v === '' || v === null || v === undefined) return null;
-  const n = Number(String(v).replace(/,/g,''));
-  return isFinite(n) ? n : null;
-}
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ══ INIT ═════════════════════════════════════════════════════════
-// Load Series A template on page load for a good first impression
-loadTemplate('series-a');
-
-// ══ FILE UPLOAD ══════════════════════════════════════════════════
-
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) processFile(file);
-  e.target.value = ''; // allow re-uploading same file
-}
-
-function handleDragOver(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.add('drag-over');
-}
-
-function handleDragLeave(e) {
-  document.getElementById('drop-zone').classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
-}
-
-async function processFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  setUploadStatus('loading', `&#8987; Parsing ${escHtml(file.name)}\u2026`);
+  msg(msgEl, 'busy', 'Parsing ' + file.name + '…');
 
   try {
     let parsed;
-    if (ext === 'zip') {
-      if (typeof JSZip === 'undefined') { setUploadStatus('error', 'JSZip library not loaded. Check your internet connection.'); return; }
-      await processZip(file);   // processZip handles its own status + modal
-      return;
-    } else if (ext === 'xlsx' || ext === 'xls') {
-      if (typeof XLSX === 'undefined') { setUploadStatus('error', 'SheetJS library not loaded. Check your internet connection.'); return; }
-      parsed = await parseExcel(file);
-    } else if (ext === 'docx' || ext === 'doc') {
-      if (typeof mammoth === 'undefined') { setUploadStatus('error', 'mammoth.js library not loaded. Check your internet connection.'); return; }
-      parsed = await parseWord(file);
+    if (slot === 'ts') {
+      parsed = await parseTermSheet(file);
+      const count = Object.values(parsed).filter(v => v != null && v !== '' && !Array.isArray(v)).length;
+      if (count < 2) {
+        msg(msgEl, 'err', '⚠ Few terms detected. Make sure the document contains labelled values like "Pre-money valuation: $10M".');
+      } else {
+        msg(msgEl, 'ok', '✓ ' + (parsed.dealName || file.name) + ' — ' + count + ' terms extracted');
+        slotEl.classList.add('loaded');
+        statusEl.className = 'file-status ok';
+      }
     } else {
-      setUploadStatus('error', `Unsupported file type <strong>.${escHtml(ext)}</strong> — upload .xlsx, .docx, or .zip.`);
-      return;
+      parsed = await parseCapTableOrProForma(file);
+      msg(msgEl, 'ok', '✓ ' + file.name + ' — ' + (parsed._stakeholderCount || 0) + ' shareholders, pre-money ' + fmtM(parsed.preMoneyValuation || 0));
+      slotEl.classList.add('loaded');
+      statusEl.className = 'file-status ok';
     }
-
-    const total = parsed.stakeholders.length + Object.keys(parsed.roundConfig).length;
-    if (total === 0) {
-      setUploadStatus('warning', '&#9888; No recognisable data found. See the format guide below.');
-      return;
-    }
-
-    setUploadStatus('success', `&#10003; Parsed \u201c${escHtml(file.name)}\u201d &mdash; ${parsed.stakeholders.length} stakeholder(s) detected. Review before applying.`);
-    showPreviewModal(parsed, file.name);
+    store[tool][slot] = parsed;
+    updateHints();
   } catch (err) {
-    setUploadStatus('error', `&#10005; Parse error: ${escHtml(err.message)}`);
+    msg(msgEl, 'err', '✗ ' + err.message);
   }
 }
 
-// ── ZIP HANDLER ───────────────────────────────────────────────────
-// Unzips the archive, finds the best candidate file, and processes it.
+function msg(el, type, text) {
+  el.className = 'slot-msg show ' + type;
+  el.textContent = text;
+}
 
-async function processZip(zipFile) {
-  const zip      = await JSZip.loadAsync(await zipFile.arrayBuffer());
-  const entries  = [];
+function updateHints() {
+  const bBoth = store.b.ts && store.b.ct;
+  const aBoth = store.a.ts && store.a.pf;
+  document.getElementById('b-hint').textContent = bBoth
+    ? 'Ready — click Build Pro Forma.'
+    : (!store.b.ts ? 'Upload the term sheet first.' : 'Now upload the cap table.');
+  document.getElementById('a-hint').textContent = aBoth
+    ? 'Ready — click Run Analysis.'
+    : (!store.a.ts ? 'Upload the term sheet first.' : 'Now upload the pro forma.');
+}
 
-  zip.forEach((path, entry) => {
-    if (entry.dir) return;
-    const ext = path.split('.').pop().toLowerCase();
-    // Skip macOS resource-fork files (__MACOSX/...)
-    if (path.startsWith('__MACOSX/') || path.startsWith('.')) return;
-    if (['xlsx', 'xls', 'docx', 'doc'].includes(ext)) entries.push({ path, entry, ext });
-  });
-
-  if (!entries.length) {
-    setUploadStatus('error', `&#10005; No Excel or Word files found inside <strong>${escHtml(zipFile.name)}</strong>. The ZIP must contain a .xlsx or .docx file.`);
-    return;
+// ── Term sheet parser ─────────────────────────────────────────────
+async function parseTermSheet(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  let text = '';
+  if (ext === 'docx' || ext === 'doc') {
+    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+    text = r.value;
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    wb.SheetNames.forEach(n => { text += XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n'; });
+  } else {
+    throw new Error('Upload a .docx or .xlsx term sheet.');
   }
 
-  // Prefer xlsx over docx; within each type take the first (alphabetically)
-  entries.sort((a, b) => {
-    const rank = e => (['xlsx','xls'].includes(e.ext) ? 0 : 1);
-    return rank(a) - rank(b) || a.path.localeCompare(b.path);
-  });
+  const ts = { dealName: '', safeConversions: [], noteConversions: [] };
+  const m = text.match(/series\s+[a-z]\b|seed\s+round|bridge\s+round/i);
+  ts.dealName = m ? m[0].trim() : file.name.replace(/\.[^.]+$/, '');
 
-  const chosen = entries[0];
-  const skipped = entries.slice(1);
-
-  setUploadStatus('loading', `&#8987; Found ${entries.length} file(s) in ZIP &mdash; parsing <strong>${escHtml(chosen.path)}</strong>\u2026`);
-
-  let blob;
-  try {
-    blob = await chosen.entry.async('blob');
-  } catch (e) {
-    setUploadStatus('error', `&#10005; Could not read ${escHtml(chosen.path)} from ZIP: ${escHtml(e.message)}`);
-    return;
+  function money(pat) {
+    const r = new RegExp(pat + '[^\\n]{0,100}\\$?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?)', 'i');
+    const x = text.match(r); if (!x) return null;
+    let s = x[1].replace(/,/g, '').trim();
+    const last = s.split(/\s+/).pop();
+    const mult = /million|^m$/i.test(last) ? 1e6 : /billion|^b$/i.test(last) ? 1e9 : 1;
+    const v = parseFloat(s); return isNaN(v) ? null : v * mult;
+  }
+  function pct(pat) {
+    const r = new RegExp(pat + '[^\\n]{0,80}([0-9]+(?:\\.[0-9]+)?)\\s*%', 'i');
+    const x = text.match(r); return x ? parseFloat(x[1]) : null;
+  }
+  function liqMult(pat) {
+    const r = new RegExp(pat + '[^\\n]{0,40}([0-9]+(?:\\.[0-9]+)?)\\s*[xX×]', 'i');
+    const x = text.match(r); return x ? parseFloat(x[1]) : null;
   }
 
-  const innerFile = new File([blob], chosen.path);
+  ts.preMoneyValuation = money('pre[\\s\\-]?money(?:\\s+valuation)?(?:\\s*[:=])?(?:\\s*of)?');
+  ts.investmentAmount  = money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)(?:\\s*[:=])?')
+                      || money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?');
+  const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
+  if (p != null) ts.targetOptionPool = p / 100;
+  if (/pre[\s-]?money\s+option\s+pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
+  else if (/post[\s-]?money\s+option\s+pool/i.test(text)) ts.optionPoolMethod = 'post-money';
+  ts.statedPPS = money('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|oip');
+  const lm = liqMult('liquidation\\s+(?:preference|multiple)(?:\\s*[:=])?');
+  if (lm != null) ts.liquidationMultiple = lm;
+  if (/non[\s-]participating/i.test(text)) ts.participating = false;
+  else if (/participating\s+preferred|participating\s+liquidation/i.test(text)) ts.participating = true;
+  return ts;
+}
 
-  let parsed;
-  try {
-    if (chosen.ext === 'xlsx' || chosen.ext === 'xls') {
-      if (typeof XLSX === 'undefined') { setUploadStatus('error', 'SheetJS library not loaded.'); return; }
-      parsed = await parseExcel(innerFile);
-    } else {
-      if (typeof mammoth === 'undefined') { setUploadStatus('error', 'mammoth.js library not loaded.'); return; }
-      parsed = await parseWord(innerFile);
+// ── Cap table / pro forma parser ──────────────────────────────────
+async function parseCapTableOrProForma(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  let stakeholders = [], rc = {};
+
+  if (ext === 'zip') {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    let inner = null;
+    zip.forEach((path, entry) => {
+      if (inner || entry.dir || path.startsWith('__MACOSX/')) return;
+      const e = path.split('.').pop().toLowerCase();
+      if (['xlsx','xls','docx','doc'].includes(e)) inner = { path, entry, ext: e };
+    });
+    if (!inner) throw new Error('No Excel or Word file found inside the ZIP.');
+    const blob = await inner.entry.async('blob');
+    return parseCapTableOrProForma(new File([blob], inner.path));
+  }
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+    for (const sn of wb.SheetNames) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: false });
+      extractRoundConfig(rows, rc);
+      extractStakeholders(rows, stakeholders);
     }
-  } catch (e) {
-    setUploadStatus('error', `&#10005; Parse error in ${escHtml(chosen.path)}: ${escHtml(e.message)}`);
-    return;
-  }
-
-  // Note any skipped files as a warning
-  if (skipped.length) {
-    parsed.warnings.unshift(`ZIP contained ${skipped.length + 1} file(s). Used: ${chosen.path}. Ignored: ${skipped.map(e => e.path).join(', ')}.`);
-  }
-
-  const total = parsed.stakeholders.length + Object.keys(parsed.roundConfig).length;
-  if (total === 0) {
-    setUploadStatus('warning', `&#9888; No recognisable data found in ${escHtml(chosen.path)}. See format guide.`);
-    return;
-  }
-
-  setUploadStatus('success', `&#10003; Extracted ${escHtml(chosen.path)} from ZIP &mdash; ${parsed.stakeholders.length} stakeholder(s) detected.`);
-  showPreviewModal(parsed, `${zipFile.name} \u2192 ${chosen.path}`);
-}
-
-function setUploadStatus(type, html) {
-  const el   = document.getElementById('upload-status');
-  el.className = `upload-status show ${type}`;
-  el.innerHTML = html;
-}
-
-// ── EXCEL PARSER ─────────────────────────────────────────────────
-
-async function parseExcel(file) {
-  const buffer = await file.arrayBuffer();
-  const wb     = XLSX.read(buffer, { type: 'array', cellDates: true });
-
-  const result = { stakeholders: [], roundConfig: {}, warnings: [], source: 'excel' };
-
-  for (const sheetName of wb.SheetNames) {
-    const ws   = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
-    xlExtractRoundConfig(rows, result);
-    xlExtractCapTable(rows, result, sheetName);
-  }
-
-  if (!result.stakeholders.length)
-    result.warnings.push('No cap table detected. Make sure your sheet has a header row with columns like "Name" and "Shares".');
-
-  return result;
-}
-
-// Scan every row for labelled round-config values
-function xlExtractRoundConfig(rows, result) {
-  const rc = result.roundConfig;
-  rows.forEach(row => {
-    for (let c = 0; c < Math.min(row.length, 5); c++) {
-      const cell = String(row[c] || '').trim();
-      if (!cell) continue;
-
-      if (!rc.preMoneyValuation && /pre[\s-]?money/i.test(cell)) {
-        const v = xlFindNum(row, c + 1); if (v > 0) rc.preMoneyValuation = v;
-      }
-      if (!rc.newInvestment && /(?:new\s+)?investment|aggregate\s+proceeds|round\s+size|new\s+money|gross\s+proceeds/i.test(cell)) {
-        const v = xlFindNum(row, c + 1); if (v > 0) rc.newInvestment = v;
-      }
-      if (!rc.optionPoolTargetPct && /option\s+pool|equity\s+incentive|esop/i.test(cell)) {
-        const v = xlFindNum(row, c + 1);
-        if (v > 0) rc.optionPoolTargetPct = v > 1 ? v : +(v * 100).toFixed(2); // normalize 0.15 → 15
-      }
-      if (!rc.roundName && /round\s+(?:name|type)|financing\s+round/i.test(cell)) {
-        const v = xlFindStr(row, c + 1); if (v) rc.roundName = v;
-      }
-      if (!rc.newInvestorName && /(?:new|lead)\s+investor/i.test(cell)) {
-        const v = xlFindStr(row, c + 1); if (v) rc.newInvestorName = v;
-      }
-      if (!rc.closingDate && /closing\s+date|close\s+date/i.test(cell)) {
-        const v = xlFindStr(row, c + 1); if (v) rc.closingDate = v;
-      }
+  } else if (ext === 'docx' || ext === 'doc') {
+    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+    const text = r.value;
+    const moneyM = pat => { const x=text.match(new RegExp(pat+'[^\\n]{0,80}\\$?([0-9][0-9,]+(?:\\.\\d+)?(?:\\s*m(?:illion)?)?)', 'i')); if(!x)return null; const s=x[1].replace(/,/g,'').trim(); const mult=/m(?:illion)?$/i.test(s.split(/\s+/).pop())?1e6:1; return parseFloat(s)*mult||null; };
+    rc.preMoneyValuation = moneyM('pre[\\s-]?money');
+    rc.newInvestment = moneyM('investment|proceeds|round.size');
+    const pv = text.match(/option.pool[^\\n]{0,60}([0-9]+(?:\.[0-9]+)?)\s*%/i);
+    if (pv) rc.optionPoolTargetPct = parseFloat(pv[1]);
+    for (const line of text.split('\n')) {
+      const x = line.match(/^([A-Za-z][\w\s&,.-]{2,35})\s+([\d,]+)\s+(common|preferred|option|safe|note)/i);
+      if (x) stakeholders.push({ name: x[1].trim(), shares: parseInt(x[2].replace(/,/g,'')), type: x[3].toLowerCase() });
     }
-  });
-}
-
-function xlFindNum(row, startCol) {
-  for (let c = startCol; c < row.length; c++) {
-    const n = parseRawNum(row[c]);
-    if (n !== null && n > 0) return n;
+  } else {
+    throw new Error('Upload .xlsx, .docx, or .zip');
   }
-  return null;
-}
 
-function xlFindStr(row, startCol) {
-  for (let c = startCol; c < row.length; c++) {
-    const v = String(row[c] || '').trim();
-    if (v) return v;
-  }
-  return null;
-}
-
-// Find header row and extract stakeholders
-function xlExtractCapTable(rows, result, sheetName) {
-  const headerIdx = xlFindHeaderRow(rows);
-  if (headerIdx === -1) return;
-
-  const hdrs = rows[headerIdx].map(h => String(h || '').trim().toLowerCase());
-  const cols  = {
-    name:      xlFindCol(hdrs, ['name','holder','stockholder','shareholder','investor','party','owner']),
-    shares:    xlFindCol(hdrs, ['shares','# shares','number of shares','share count','total shares','no. of shares','no of shares']),
-    type:      xlFindCol(hdrs, ['type','class','security','security type','instrument']),
-    series:    xlFindCol(hdrs, ['series','round','preferred series','pref series']),
-    oip:       xlFindCol(hdrs, ['issue price','oip','original issue price','purchase price','price/share','price per share']),
-    liqMult:   xlFindCol(hdrs, ['liquidation','liq multiple','liq pref','multiple','liq. pref']),
-    principal: xlFindCol(hdrs, ['principal','principal amount','note amount','safe amount','amount']),
-    cap:       xlFindCol(hdrs, ['cap','valuation cap','val cap','price cap','val. cap']),
-    discount:  xlFindCol(hdrs, ['discount','discount rate','disc rate','disc.']),
-    rate:      xlFindCol(hdrs, ['interest rate','annual rate','rate','int. rate']),
-    issueDate: xlFindCol(hdrs, ['issue date','date issued','issuance date','note date']),
+  const builtRc = {
+    roundName: rc.roundName || 'Round',
+    preMoneyValuation: rc.preMoneyValuation || 0,
+    newInvestment: rc.newInvestment || 0,
+    optionPoolTargetPct: rc.optionPoolTargetPct ? (rc.optionPoolTargetPct > 1 ? rc.optionPoolTargetPct / 100 : rc.optionPoolTargetPct) : 0,
+    optionPoolMethod: rc.optionPoolMethod || 'pre-money',
+    newShareClass: rc.newShareClass || 'New Preferred',
+    newInvestorName: rc.newInvestorName || 'New Investors',
+    liquidationMultiple: rc.liquidationMultiple || 1,
+    participating: rc.participating || false,
+    closingDate: rc.closingDate || new Date().toISOString().slice(0, 10),
   };
 
-  if (cols.name === -1) return; // must at least have a name column
-
-  for (let r = headerIdx + 1; r < rows.length; r++) {
-    const row  = rows[r];
-    const name = String(row[cols.name] || '').trim();
-    if (!name || name.length < 2) continue;
-    if (/^(total|subtotal|sum|grand total|all|—|-+)$/i.test(name)) continue;
-
-    const s = xlParseRow(row, cols, name);
-    if (s && !result.stakeholders.find(x => x.name === s.name)) result.stakeholders.push(s);
-  }
-}
-
-function xlParseRow(row, cols, name) {
-  const typeRaw = cols.type !== -1 ? String(row[cols.type] || '').trim() : '';
-  const type    = inferType(name, typeRaw);
-  const shares  = cols.shares !== -1 ? (parseRawNum(row[cols.shares]) || 0) : 0;
-
-  const s = { name, type, shares };
-
-  if (type === 'preferred') {
-    s.series             = cols.series  !== -1 ? String(row[cols.series]  || '').trim() : '';
-    s.originalIssuePrice = cols.oip     !== -1 ? parseRawNum(row[cols.oip])    : null;
-    s.liquidationMultiple= cols.liqMult !== -1 ? (parseRawNum(row[cols.liqMult]) || 1) : 1;
-    s.participating      = false;
-  }
-  if (type === 'safe' || type === 'note') {
-    s.shares      = 0;
-    // principal: use dedicated col if present, else treat shares-col value as principal
-    s.principal   = cols.principal !== -1 ? (parseRawNum(row[cols.principal]) || 0)
-                                           : (parseRawNum(row[cols.shares])   || 0);
-    s.valuationCap= cols.cap      !== -1 ? parseRawNum(row[cols.cap])      : null;
-    s.discountRate= cols.discount !== -1 ? parseRawNum(row[cols.discount]) : null;
-    if (s.discountRate && s.discountRate > 1) s.discountRate /= 100; // 80 → 0.80
-
-    if (type === 'note') {
-      s.interestRate = cols.rate     !== -1 ? parseRawNum(row[cols.rate])      : null;
-      if (s.interestRate && s.interestRate > 1) s.interestRate /= 100;
-      s.issueDate    = cols.issueDate !== -1 ? String(row[cols.issueDate] || '').trim() || null : null;
-    } else {
-      s.safeType = 'pre-money';
-    }
-  }
-  return s;
-}
-
-function xlFindHeaderRow(rows) {
-  const keywords = ['name','holder','shares','type','class','common','preferred','options','stockholder','investor'];
-  for (let i = 0; i < Math.min(rows.length, 25); i++) {
-    const txt = rows[i].map(c => String(c || '').toLowerCase()).join(' ');
-    if (keywords.filter(k => txt.includes(k)).length >= 2) return i;
-  }
-  return -1;
-}
-
-function xlFindCol(hdrs, keywords) {
-  for (const kw of keywords) {
-    const idx = hdrs.findIndex(h => h.includes(kw));
-    if (idx !== -1) return idx;
-  }
-  return -1;
-}
-
-// ── WORD PARSER ──────────────────────────────────────────────────
-
-async function parseWord(file) {
-  const buffer     = await file.arrayBuffer();
-  const extracted  = await mammoth.extractRawText({ arrayBuffer: buffer });
-  const text       = extracted.value;
-
-  const result = { stakeholders: [], roundConfig: {}, warnings: [], source: 'word', rawText: text };
-
-  docExtractRoundConfig(text, result);
-  docExtractStakeholders(text, result);
-
-  if (!result.stakeholders.length)
-    result.warnings.push('No structured cap table lines found. Only configuration values were extracted. Add stakeholders manually after import.');
-
-  return result;
-}
-
-function docExtractRoundConfig(text, result) {
-  const rc = result.roundConfig;
-
-  const matchers = [
-    { key: 'preMoneyValuation',   re: /pre[\s-]?money\s+valuation\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
-    { key: 'newInvestment',       re: /(?:aggregate\s+)?(?:gross\s+)?proceeds\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
-    { key: 'newInvestment',       re: /(?:new\s+)?investment\s*(?:amount)?\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
-    { key: 'newInvestment',       re: /round\s+size\s*[:\u2013=]?\s*\$?([\d,\.]+\s*[mMbBkK]?)/i },
-    { key: 'optionPoolTargetPct', re: /option\s+pool\s*[:\u2013=]?\s*([\d\.]+)\s*%/i },
-    { key: 'optionPoolTargetPct', re: /equity\s+incentive\s+plan\s*[:\u2013=]?\s*([\d\.]+)\s*%/i },
-    { key: 'roundName',           re: /(series\s+[a-z](?:\s+preferred)?)\s+(?:financing|preferred|round|stock)/i },
-    { key: 'newInvestorName',     re: /lead\s+investor\s*[:\u2013=]?\s*([A-Za-z][A-Za-z\s&,\.]{2,40}?)(?:\n|$)/i },
-    { key: 'closingDate',         re: /closing\s+date\s*[:\u2013=]?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i },
-  ];
-
-  for (const { key, re } of matchers) {
-    if (rc[key]) continue;
-    const m = text.match(re);
-    if (!m) continue;
-    if (key === 'optionPoolTargetPct') { rc[key] = parseFloat(m[1]); }
-    else if (key === 'roundName' || key === 'newInvestorName' || key === 'closingDate') { rc[key] = m[1].trim(); }
-    else { const v = docParseMagnitude(m[1]); if (v) rc[key] = v; }
-  }
-}
-
-function docParseMagnitude(str) {
-  const s = String(str || '').replace(/,/g, '').trim();
-  const n = parseFloat(s);
-  if (!isFinite(n)) return null;
-  if (/b/i.test(s)) return n * 1e9;
-  if (/m/i.test(s)) return n * 1e6;
-  if (/k/i.test(s)) return n * 1e3;
-  return n;
-}
-
-function docExtractStakeholders(text, result) {
-  // Lines of the form: "Name  5,000,000  [type]"
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  for (const line of lines) {
-    const m = line.match(/^([A-Za-z][A-Za-z0-9\s&',.\-]{2,50?}?)\s{2,}([\d,]{4,})\s*(common|preferred|option|warrant|safe|note|options|warrants)?/i);
-    if (!m) continue;
-    const name   = m[1].trim();
-    const shares = parseFloat(m[2].replace(/,/g, ''));
-    const hint   = (m[3] || '').toLowerCase();
-    if (!name || name.length < 2 || !isFinite(shares) || shares <= 0) continue;
-    const type = inferType(name, hint);
-    if (!result.stakeholders.find(s => s.name === name)) result.stakeholders.push({ name, type, shares });
-  }
-}
-
-// ── SHARED HELPERS ────────────────────────────────────────────────
-
-function inferType(name, typeRaw) {
-  const combined = `${name} ${typeRaw}`.toLowerCase();
-  if (/\bsafe\b/.test(combined))                               return 'safe';
-  if (/convertible\s+note|conv\.?\s*note|\bnote\b/.test(combined)) return 'note';
-  if (/option|esop|option\s+pool|reserved|incentive/.test(combined)) return 'option';
-  if (/warrant/.test(combined))                                return 'warrant';
-  if (/preferred|series\s+[a-z]|\bpref\b/.test(combined))     return 'preferred';
-  if (/common|founder|co-?founder/.test(combined))             return 'common';
-  // Fallback from typeRaw alone
-  if (/pref/i.test(typeRaw))   return 'preferred';
-  if (/common/i.test(typeRaw)) return 'common';
-  return 'common'; // default
-}
-
-function parseRawNum(v) {
-  if (v === null || v === undefined || v === '') return null;
-  const s = String(v).replace(/[$,\s%()]/g, '');
-  const n = parseFloat(s);
-  return isFinite(n) ? n : null;
-}
-
-// ── PREVIEW MODAL ─────────────────────────────────────────────────
-
-let _pendingParsed = null;
-
-function showPreviewModal(parsed, filename) {
-  _pendingParsed = parsed;
-
-  const rc = parsed.roundConfig;
-  const fmtC = n => ProFormaEngine.formatCurrency(n, 0);
-
-  // Round config table
-  const configRows = [
-    ['Round Name',           rc.roundName],
-    ['Pre-Money Valuation',  rc.preMoneyValuation  ? fmtC(rc.preMoneyValuation)  : null],
-    ['New Investment',       rc.newInvestment      ? fmtC(rc.newInvestment)      : null],
-    ['Option Pool Target',   rc.optionPoolTargetPct ? rc.optionPoolTargetPct + '%' : null],
-    ['New Investor Name',    rc.newInvestorName],
-    ['Closing Date',         rc.closingDate],
-  ].filter(([, v]) => v);
-
-  document.getElementById('modal-config').innerHTML = configRows.length
-    ? `<table style="width:100%;font-size:12px;border-collapse:collapse;">
-        ${configRows.map(([k, v]) =>
-          `<tr>
-            <td style="padding:4px 8px;color:var(--muted);width:48%;border-bottom:1px solid var(--border)">${escHtml(k)}</td>
-            <td style="padding:4px 8px;font-weight:500;border-bottom:1px solid var(--border)">${escHtml(String(v))}</td>
-           </tr>`
-        ).join('')}
-      </table>`
-    : '<p style="font-size:12px;color:var(--muted);font-style:italic">No round configuration values found in document.</p>';
-
-  // Stakeholder table
-  document.getElementById('modal-count').textContent = parsed.stakeholders.length;
-  const BADGE = { common:'badge-common', preferred:'badge-preferred', option:'badge-option', warrant:'badge-warrant', safe:'badge-safe', note:'badge-note' };
-  document.getElementById('modal-stakes').innerHTML = parsed.stakeholders.length
-    ? `<div style="overflow-y:auto;max-height:220px;border:1px solid var(--border);border-radius:4px;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr style="background:var(--black);color:#fff;position:sticky;top:0">
-            <th style="padding:6px 10px;text-align:left">Name</th>
-            <th style="padding:6px 10px;text-align:left">Type</th>
-            <th style="padding:6px 10px;text-align:right">Shares / Principal</th>
-          </tr></thead>
-          <tbody>
-            ${parsed.stakeholders.map(s => `
-              <tr style="border-bottom:1px solid var(--border)">
-                <td style="padding:6px 10px">${escHtml(s.name)}</td>
-                <td style="padding:6px 10px"><span class="row-type-badge ${BADGE[s.type]||'badge-common'}" style="font-size:10px">${s.type}</span></td>
-                <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums">
-                  ${(s.type === 'safe' || s.type === 'note')
-                    ? (s.principal ? fmtC(s.principal) : '—')
-                    : ProFormaEngine.formatNumber(s.shares || 0)}
-                </td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`
-    : '<p style="font-size:12px;color:var(--muted);font-style:italic">No stakeholders detected.</p>';
-
-  // Warnings
-  document.getElementById('modal-warnings').innerHTML = parsed.warnings
-    .map(w => `<div style="margin-top:8px">&#9888; ${escHtml(w)}</div>`)
-    .join('');
-
-  document.getElementById('modal-title').textContent = `Parsed: ${filename}`;
-  document.getElementById('preview-modal').style.display = 'flex';
-}
-
-function closePreviewModal() {
-  document.getElementById('preview-modal').style.display = 'none';
-  _pendingParsed = null;
-}
-
-function applyParsedData() {
-  if (!_pendingParsed) return;
-  const parsed = _pendingParsed;
-  const rc     = parsed.roundConfig;
-
-  // Apply round config (only overwrite if value was detected)
-  if (rc.roundName)           document.getElementById('roundName').value           = rc.roundName;
-  if (rc.preMoneyValuation)   document.getElementById('preMoneyValuation').value   = rc.preMoneyValuation;
-  if (rc.newInvestment)       document.getElementById('newInvestment').value       = rc.newInvestment;
-  if (rc.optionPoolTargetPct) document.getElementById('optionPoolTargetPct').value = rc.optionPoolTargetPct;
-  if (rc.newInvestorName)     document.getElementById('newInvestorName').value     = rc.newInvestorName;
-  if (rc.closingDate)         document.getElementById('closingDate').value         = rc.closingDate;
-
-  // Replace cap table rows only if stakeholders were found
-  if (parsed.stakeholders.length > 0) {
-    document.getElementById('cap-table-rows').innerHTML = '';
-    rowCounter = 0;
-    parsed.stakeholders.forEach(s => addRow(s.type, s));
-  }
-
-  closePreviewModal();
-  setUploadStatus('success', `&#10003; Applied: ${parsed.stakeholders.length} stakeholder(s) and ${Object.keys(rc).length} config value(s) imported. Review and click <strong>Build Pro Forma</strong>.`);
-}
-
-// ══ PAGE-LEVEL TAB SWITCHING ═════════════════════════════════════
-
-function switchPageTab(btn, sectionId) {
-  document.querySelectorAll('.page-tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(sectionId).classList.add('active');
-}
-
-function switchPageTabByName(sectionId) {
-  const idx = sectionId === 'page-builder' ? 0 : 1;
-  const btn = document.querySelectorAll('.page-tab-btn')[idx];
-  if (btn) switchPageTab(btn, sectionId);
-}
-
-// ══ CONFORMANCE ANALYZER ════════════════════════════════════════
-
-
-// ══ CONFORMANCE TAB — FILE UPLOAD & ANALYSIS ════════════════════
-
-let _analysisTsData  = null;   // parsed term sheet object
-let _analysisPfData  = null;   // parsed pro forma (built result)
-
-// ── Drag & drop helpers ───────────────────────────────────────────
-
-function handleDocDragOver(e, zoneId) {
-  e.preventDefault();
-  document.getElementById(zoneId).classList.add('drag-over');
-}
-function handleDocDragLeave(zoneId) {
-  document.getElementById(zoneId).classList.remove('drag-over');
-}
-function handleDocDrop(e, side) {
-  e.preventDefault();
-  const zoneId = side + '-drop-zone';
-  document.getElementById(zoneId).classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processDocFile(file, side);
-}
-function handleDocSelect(e, side) {
-  const file = e.target.files[0];
-  if (file) processDocFile(file, side);
-  e.target.value = '';
-}
-
-// ── File processor ────────────────────────────────────────────────
-
-async function processDocFile(file, side) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  setDocStatus(side, 'loading', `&#8987; Parsing ${escHtml(file.name)}\u2026`);
-
+  let result;
   try {
-    if (side === 'ts') {
-      // Term sheet: extract deal terms
-      let text = '';
-      if (ext === 'docx' || ext === 'doc') {
-        if (typeof mammoth === 'undefined') { setDocStatus(side,'error','mammoth.js not loaded — check connection.'); return; }
-        const buf = await file.arrayBuffer();
-        const r   = await mammoth.extractRawText({ arrayBuffer: buf });
-        text = r.value;
-      } else if (ext === 'xlsx' || ext === 'xls') {
-        if (typeof XLSX === 'undefined') { setDocStatus(side,'error','SheetJS not loaded — check connection.'); return; }
-        const buf = await file.arrayBuffer();
-        const wb  = XLSX.read(buf, { type:'array' });
-        wb.SheetNames.forEach(n => {
-          text += XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n';
-        });
-      } else {
-        setDocStatus(side,'error',`Unsupported type .${escHtml(ext)} — upload .docx or .xlsx`); return;
-      }
-      _analysisTsData = parseTermSheetText(text, file.name);
-      const fields = Object.keys(_analysisTsData).filter(k => k !== 'dealName' && _analysisTsData[k] != null && _analysisTsData[k] !== '' && !Array.isArray(_analysisTsData[k]));
-      if (!fields.length) {
-        setDocStatus(side,'warning','&#9888; Recognised term sheet but could not extract numeric terms. Ensure the document contains labelled values like "Pre-money: $10M".');
-      } else {
-        setDocStatus(side,'success',`&#10003; <strong>${escHtml(_analysisTsData.dealName || file.name)}</strong> — ${fields.length} term(s) extracted`);
-        document.getElementById('ts-card').classList.add('loaded');
-      }
-    } else {
-      // Pro forma: parse cap table + round config, then build
-      let parsed;
-      if (ext === 'zip') {
-        if (typeof JSZip === 'undefined') { setDocStatus(side,'error','JSZip not loaded — check connection.'); return; }
-        parsed = await parseZipForConformance(file, side);
-        if (!parsed) return;
-      } else if (ext === 'xlsx' || ext === 'xls') {
-        if (typeof XLSX === 'undefined') { setDocStatus(side,'error','SheetJS not loaded.'); return; }
-        parsed = await parseExcel(file);
-      } else if (ext === 'docx' || ext === 'doc') {
-        if (typeof mammoth === 'undefined') { setDocStatus(side,'error','mammoth.js not loaded.'); return; }
-        parsed = await parseWord(file);
-      } else {
-        setDocStatus(side,'error',`Unsupported type .${escHtml(ext)} — upload .xlsx, .docx, or .zip`); return;
-      }
-      if (!parsed.stakeholders.length && !Object.keys(parsed.roundConfig).length) {
-        setDocStatus(side,'warning','&#9888; No cap table or round config detected in this file.'); return;
-      }
-      // Build the pro forma
-      const rc = {
-        roundName: parsed.roundConfig.roundName || 'Pro Forma',
-        preMoneyValuation: parsed.roundConfig.preMoneyValuation || 0,
-        newInvestment:     parsed.roundConfig.newInvestment || 0,
-        optionPoolTargetPct: parsed.roundConfig.optionPoolTargetPct
-          ? (parsed.roundConfig.optionPoolTargetPct > 1 ? parsed.roundConfig.optionPoolTargetPct/100 : parsed.roundConfig.optionPoolTargetPct)
-          : 0,
-        optionPoolMethod:    parsed.roundConfig.optionPoolMethod || 'pre-money',
-        newShareClass:       parsed.roundConfig.newShareClass || 'New Preferred',
-        newInvestorName:     parsed.roundConfig.newInvestorName || 'New Investors',
-        liquidationMultiple: parsed.roundConfig.liquidationMultiple || 1,
-        participating:       parsed.roundConfig.participating || false,
-        closingDate:         parsed.roundConfig.closingDate || new Date().toISOString().slice(0,10),
-      };
-      try {
-        _analysisPfData = ProFormaEngine.buildProForma(parsed.stakeholders, rc);
-      } catch(e) {
-        // If build fails, store raw parsed data as synthetic result
-        _analysisPfData = {
-          preMoneyValuation:   rc.preMoneyValuation,
-          newInvestment:       rc.newInvestment,
-          postMoneyValuation:  rc.preMoneyValuation + rc.newInvestment,
-          pps:                 null,
-          actualOptionPoolPct: rc.optionPoolTargetPct || null,
-          roundConfig:         rc,
-          convertedInstruments: [],
-          postRoundCap: parsed.stakeholders || [],
-          postFD: null,
-        };
-      }
-      const stakeCount = parsed.stakeholders.length;
-      setDocStatus(side,'success',`&#10003; <strong>${escHtml(file.name)}</strong> — ${stakeCount} stakeholder(s), pre-money $${((rc.preMoneyValuation||0)/1e6).toFixed(1)}M`);
-      document.getElementById('pf-card').classList.add('loaded');
-    }
-  } catch(err) {
-    setDocStatus(side,'error',`&#10005; Parse error: ${escHtml(err.message)}`);
+    result = ProFormaEngine.buildProForma(stakeholders, builtRc);
+  } catch (e) {
+    result = {
+      preMoneyValuation: builtRc.preMoneyValuation,
+      newInvestment: builtRc.newInvestment,
+      postMoneyValuation: builtRc.preMoneyValuation + builtRc.newInvestment,
+      pps: null, actualOptionPoolPct: builtRc.optionPoolTargetPct || null,
+      roundConfig: builtRc, convertedInstruments: [], postRoundCap: stakeholders, postFD: null
+    };
   }
-}
-
-async function parseZipForConformance(zipFile, side) {
-  const zip     = await JSZip.loadAsync(await zipFile.arrayBuffer());
-  const entries = [];
-  zip.forEach((path, entry) => {
-    if (entry.dir || path.startsWith('__MACOSX/')) return;
-    const ext = path.split('.').pop().toLowerCase();
-    if (['xlsx','xls','docx','doc'].includes(ext)) entries.push({ path, entry, ext });
-  });
-  if (!entries.length) { setDocStatus(side,'error','No Excel or Word file found in ZIP.'); return null; }
-  entries.sort((a,b) => (['xlsx','xls'].includes(a.ext)?0:1) - (['xlsx','xls'].includes(b.ext)?0:1));
-  const chosen = entries[0];
-  const blob   = await chosen.entry.async('blob');
-  const inner  = new File([blob], chosen.path);
-  return chosen.ext === 'xlsx' || chosen.ext === 'xls' ? parseExcel(inner) : parseWord(inner);
-}
-
-function setDocStatus(side, type, html) {
-  const el = document.getElementById(side + '-card-status');
-  el.className = 'upload-zone-card-status show ' + type;
-  el.innerHTML = html;
-}
-
-// ── Term sheet text parser ────────────────────────────────────────
-
-function parseTermSheetText(text, filename) {
-  const result = { dealName: '', safeConversions: [], noteConversions: [] };
-
-  // Deal name: look for round name in common positions
-  const roundMatch = text.match(/(?:series\s+[a-z]\b|seed\s+round|series\s+[a-z]\s+preferred|bridge\s+round)/i);
-  result.dealName = roundMatch ? roundMatch[0].replace(/\s+/g,' ').trim() : (filename || 'Deal');
-
-  function extractMoney(pattern) {
-    const re = new RegExp(pattern + '[^\\n]{0,80}?\\$?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?)', 'i');
-    const m  = text.match(re);
-    if (!m) return null;
-    let v = m[1].replace(/,/g,'').trim();
-    const mult = /million|^m$/i.test(v.split(/\s+/).pop()) ? 1e6 : /billion|^b$/i.test(v.split(/\s+/).pop()) ? 1e9 : 1;
-    v = parseFloat(v);
-    return isNaN(v) ? null : v * mult;
-  }
-
-  function extractPct(pattern) {
-    const re = new RegExp(pattern + '[^\\n]{0,80}?([0-9]+(?:\\.[0-9]+)?)\\s*%', 'i');
-    const m  = text.match(re);
-    if (!m) return null;
-    const v = parseFloat(m[1]);
-    return isNaN(v) ? null : v;
-  }
-
-  function extractMultiple(pattern) {
-    const re = new RegExp(pattern + '[^\\n]{0,40}?([0-9]+(?:\\.[0-9]+)?)\\s*[xX×]', 'i');
-    const m  = text.match(re);
-    if (!m) return null;
-    const v = parseFloat(m[1]);
-    return isNaN(v) ? null : v;
-  }
-
-  // Core economics
-  result.preMoneyValuation  = extractMoney('pre[\\s\\-]?money(?:\\s+valuation)?(?:\\s*:)?(?:\\s*of)?');
-  result.investmentAmount   = extractMoney('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|financing\\s+amount|gross\\s+proceeds)(?:\\s*:)?(?:\\s*of)?');
-  if (!result.investmentAmount)
-    result.investmentAmount = extractMoney('(?:series\\s+[a-z]|seed)\\s+(?:investment|financing|round)(?:\\s*:)?(?:\\s*of)?');
-
-  // Option pool
-  const poolPct = extractPct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive\\s+plan');
-  if (poolPct != null) result.targetOptionPool = poolPct / 100;
-
-  // Pool method
-  if (/pre[\s-]?money\s+option\s+pool|pool\s+shuffle|option\s+pool.*pre[\s-]?money/i.test(text))
-    result.optionPoolMethod = 'pre-money';
-  else if (/post[\s-]?money\s+option\s+pool/i.test(text))
-    result.optionPoolMethod = 'post-money';
-
-  // Price per share
-  result.statedPPS = extractMoney('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|purchase\\s+price\\s+per\\s+share|oip|conversion\\s+price(?:\\s*:)?(?:\\s*of)?');
-
-  // Liquidation preference
-  const liqM = extractMultiple('liquidation\\s+(?:preference|multiple)(?:\\s*:)?');
-  if (liqM != null) result.liquidationMultiple = liqM;
-
-  // Participating preferred
-  if (/non[\s-]participating/i.test(text)) result.participating = false;
-  else if (/participating\s+preferred|participating\s+liquidation/i.test(text)) result.participating = true;
-
-  // Participation cap
-  const capM = extractMultiple('participation\\s+cap(?:\\s*:)?');
-  if (capM != null) result.participationCap = capM;
-
-  // Anti-dilution
-  if (/broad[\s-]based\s+weighted[\s-]average/i.test(text)) result.antiDilution = 'broad-based-wa';
-  else if (/weighted[\s-]average/i.test(text)) result.antiDilution = 'weighted-average';
-  else if (/full\s+ratchet/i.test(text)) result.antiDilution = 'full-ratchet';
-
-  // Investor ownership target
-  const invOwn = extractPct('investor\\s+(?:ownership|percentage)|lead\\s+investor\\s+(?:receives|ownership)');
-  if (invOwn != null) result.investorOwnershipTarget = invOwn / 100;
-
+  result._stakeholderCount = stakeholders.length;
+  result._stakeholders = stakeholders;
+  result._rc = builtRc;
   return result;
 }
 
-// ── Run Analysis ──────────────────────────────────────────────────
+function extractRoundConfig(rows, rc) {
+  rows.forEach(row => {
+    for (let c = 0; c < Math.min(row.length, 5); c++) {
+      const cell = String(row[c] || '').trim(); if (!cell) continue;
+      const num = col => { for(let i=col;i<row.length;i++){const s=String(row[i]||'').replace(/[$,%\s,]/g,'');const n=parseFloat(s);if(!isNaN(n)&&n>0)return n;} return null; };
+      if (!rc.preMoneyValuation && /pre[\s-]?money/i.test(cell)) { const v=num(c+1); if(v) rc.preMoneyValuation=v; }
+      if (!rc.newInvestment && /investment|proceeds|round.size/i.test(cell)) { const v=num(c+1); if(v) rc.newInvestment=v; }
+      if (!rc.optionPoolTargetPct && /option.pool|esop/i.test(cell)) { const v=num(c+1); if(v) rc.optionPoolTargetPct=v>1?v:v*100; }
+    }
+  });
+}
 
-function tsRunAnalysis() {
-  if (!_analysisTsData && !_analysisPfData) {
-    tsShowWallError('Upload both documents above to run the analysis.');
-    return;
+function extractStakeholders(rows, out) {
+  let hIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const r = rows[i]; let hits = 0;
+    for (const cell of r) { const s=String(cell||'').toLowerCase(); if(['name','shares','type','class','holder','investor','principal'].some(k=>s.includes(k))) hits++; }
+    if (hits >= 2) { hIdx = i; break; }
   }
-  if (!_analysisTsData) {
-    tsShowWallError('Upload a term sheet document (left) to continue.');
-    return;
+  if (hIdx === -1) return;
+  const hdrs = rows[hIdx].map(h=>String(h||'').toLowerCase().trim());
+  const col = opts => { for(const o of opts){const i=hdrs.findIndex(h=>h.includes(o));if(i>=0)return i;} return -1; };
+  const cN=col(['name','holder','stockholder','investor']), cS=col(['shares','# shares','number']), cT=col(['type','class','security','instrument']);
+  if (cN < 0) return;
+  for (let r = hIdx+1; r < rows.length; r++) {
+    const row=rows[r]; const name=String(row[cN]||'').trim();
+    if (!name || /total|fully.diluted/i.test(name)) continue;
+    const shares = cS>=0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
+    const rawT = cT>=0 ? String(row[cT]||'').toLowerCase() : '';
+    const type = rawT.includes('safe')?'safe':rawT.includes('note')||rawT.includes('conv')?'note':rawT.includes('option')||rawT.includes('warrant')?'option':rawT.includes('pref')?'preferred':'common';
+    out.push({ name, shares, type });
   }
-  if (!_analysisPfData) {
-    tsShowWallError('Upload a pro forma document (right) to continue.');
+}
+
+// ── Builder ───────────────────────────────────────────────────────
+async function runBuilder() {
+  const ts = store.b.ts, ct = store.b.ct;
+  if (!ts || !ct) {
+    showError('builder-results', 'Upload both the term sheet and cap table first.');
     return;
   }
 
+  // Merge term sheet params into cap table round config
+  const stakeholders = ct._stakeholders || ct.postRoundCap || [];
+  const rc = {
+    roundName: ts.dealName || ct._rc?.roundName || 'New Round',
+    preMoneyValuation: ts.preMoneyValuation || ct._rc?.preMoneyValuation || 0,
+    newInvestment: ts.investmentAmount || ct._rc?.newInvestment || 0,
+    optionPoolTargetPct: ts.targetOptionPool || ct._rc?.optionPoolTargetPct || 0.10,
+    optionPoolMethod: ts.optionPoolMethod || ct._rc?.optionPoolMethod || 'pre-money',
+    newShareClass: ts.dealName ? ts.dealName + ' Preferred' : 'Series A Preferred',
+    newInvestorName: 'New Investors',
+    liquidationMultiple: ts.liquidationMultiple || 1,
+    participating: ts.participating || false,
+    closingDate: new Date().toISOString().slice(0, 10),
+  };
+
+  let pf;
+  try {
+    pf = ProFormaEngine.buildProForma(stakeholders, rc);
+  } catch (e) {
+    showError('builder-results', 'Engine error: ' + e.message);
+    return;
+  }
+
+  renderBuilderResults(pf, rc);
+  document.getElementById('builder-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderBuilderResults(pf, rc) {
+  const postMoney = (pf.preMoneyValuation || 0) + (pf.newInvestment || 0);
+  const pps = pf.pps || (rc.preMoneyValuation && pf.postFD ? rc.preMoneyValuation / pf.postFD : null);
+
+  const cap = pf.postRoundCap || [];
+  const total = cap.reduce((s, r) => s + (r.postShares || r.shares || 0), 0);
+
+  function typeClass(t) {
+    const tl = (t||'').toLowerCase();
+    return tl.includes('preferred')||tl.includes('series') ? 'tb-preferred' : tl==='common' ? 'tb-common' : tl==='option' ? 'tb-option' : tl==='safe' ? 'tb-safe' : tl==='note' ? 'tb-note' : tl==='new' ? 'tb-new' : 'tb-common';
+  }
+
+  const rows = cap.map(r => {
+    const sh = r.postShares || r.shares || 0;
+    const pctVal = total ? (sh / total * 100).toFixed(1) + '%' : '—';
+    const isNew = (r.name||'').toLowerCase().includes('new investor') || (r.type||'').toLowerCase().includes('new');
+    const isPool = (r.name||'').toLowerCase().includes('pool') || (r.name||'').toLowerCase().includes('option');
+    const trCls = isNew ? 'new-row' : isPool ? 'pool-row' : '';
+    const tc = typeClass(r.type);
+    return `<tr class="${trCls}"><td>${esc(r.name||'')}</td><td><span class="type-badge ${tc}">${esc(r.type||'common')}</span></td><td class="num">${fmt0(sh)}</td><td class="pct">${pctVal}</td></tr>`;
+  }).join('');
+
+  document.getElementById('builder-results').innerHTML = `
+    <div class="results-head">Generated Pro Forma — ${esc(rc.roundName)}</div>
+    <div class="metrics-row">
+      <div class="metric"><div class="metric-label">Pre-Money</div><div class="metric-val">${fmtM(pf.preMoneyValuation||0)}</div></div>
+      <div class="metric"><div class="metric-label">Investment</div><div class="metric-val">${fmtM(pf.newInvestment||rc.newInvestment||0)}</div></div>
+      <div class="metric"><div class="metric-label">Post-Money</div><div class="metric-val">${fmtM(postMoney)}</div></div>
+      <div class="metric"><div class="metric-label">Price Per Share</div><div class="metric-val">${pps ? '$' + pps.toFixed(4) : '—'}</div></div>
+      <div class="metric"><div class="metric-label">Option Pool</div><div class="metric-val">${rc.optionPoolTargetPct ? (rc.optionPoolTargetPct*100).toFixed(0)+'%' : '—'}</div><div class="metric-sub">${rc.optionPoolMethod}</div></div>
+      <div class="metric"><div class="metric-label">Total Shares</div><div class="metric-val">${fmt0(total)}</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Shareholder</th><th>Type</th><th class="r">Shares</th><th class="r">Ownership</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="2">Total (Fully Diluted)</td><td class="num">${fmt0(total)}</td><td class="pct">100.0%</td></tr></tfoot>
+      </table>
+    </div>`;
+}
+
+// ── Analyzer ──────────────────────────────────────────────────────
+function runAnalyzer() {
+  const ts = store.a.ts, pf = store.a.pf;
+  if (!ts || !pf) {
+    showError('analyzer-results', 'Upload both the term sheet and pro forma first.');
+    return;
+  }
   let report;
   try {
-    report = ProFormaComparator.checkConformance(_analysisPfData, _analysisTsData);
-  } catch(err) {
-    tsShowWallError('Analysis error: ' + err.message);
+    report = ProFormaComparator.checkConformance(pf, ts);
+  } catch (e) {
+    showError('analyzer-results', 'Analysis error: ' + e.message);
     return;
   }
-  tsRenderWall(report, _analysisPfData, _analysisTsData);
+  renderAnalyzerResults(report);
+  document.getElementById('analyzer-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function tsShowWallError(msg) {
-  document.getElementById('ts-wall').innerHTML = `
-    <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:4px;padding:16px 20px;color:var(--red);font-size:13px;">
-      &#9888; ${escHtml(msg)}
-    </div>`;
-}
+function renderAnalyzerResults(report) {
+  const score = Math.round(report.score * 100);
+  const isPass = report.conformant;
+  const pass = report.passed.length, errs = report.criticalFailures.length, warns = report.warningFailures.length;
 
-// ── Render wall ───────────────────────────────────────────────────
-
-function tsRenderWall(report, pf, ts) {
-  const fmtScore = Math.round(report.score * 100);
-  const isPassing = report.conformant;
-  const errCount  = report.criticalFailures.length;
-  const warnCount = report.warningFailures.length;
-  const passCount = report.passed.length;
-
-  const summaryHtml = `
-    <div class="wall-summary">
-      <div class="wall-score-circle ${isPassing ? 'pass' : 'fail'}">${fmtScore}%</div>
-      <div class="wall-summary-text">
-        <h2>${isPassing ? '&#10003; Conformant' : '&#9888; Non-Conformant'} &mdash; ${escHtml(report.dealName)}</h2>
-        <p>${report.checks.length} checks run &nbsp;|&nbsp; ${passCount} passed, ${errCount} error(s), ${warnCount} warning(s)</p>
-      </div>
-      <div class="wall-summary-counts">
-        <div class="wall-count-item"><span class="wall-count-num c-pass">${passCount}</span><span class="wall-count-label">Passed</span></div>
-        <div class="wall-count-item"><span class="wall-count-num c-err">${errCount}</span><span class="wall-count-label">Errors</span></div>
-        <div class="wall-count-item"><span class="wall-count-num c-warn">${warnCount}</span><span class="wall-count-label">Warnings</span></div>
-      </div>
-    </div>`;
-
-  // Sort: errors first, then warnings, then passes
   const sorted = [
     ...report.checks.filter(c => !c.pass && c.severity === 'error'),
     ...report.checks.filter(c => !c.pass && c.severity === 'warning'),
     ...report.checks.filter(c => c.pass),
   ];
 
-  const cardsHtml = sorted.length ? sorted.map(c => {
-    const cls  = c.pass ? 'wc-pass' : (c.severity === 'error' ? 'wc-error' : 'wc-warn');
-    const icon = c.pass ? '&#10003;' : (c.severity === 'error' ? '&#9889;' : '&#9888;');
-    const badge = c.pass
-      ? '<span class="wall-card-badge wb-pass">Pass</span>'
-      : c.severity === 'error'
-        ? '<span class="wall-card-badge wb-error">Error</span>'
-        : '<span class="wall-card-badge wb-warn">Warning</span>';
-    const mismatch = !c.pass ? ' mismatch' : '';
-    const noteHtml = c.note
-      ? `<div class="wall-card-note${c.severity === 'warning' ? ' warn-note' : ''}">&#8594; ${escHtml(c.note)}</div>`
-      : '';
-    return `
-      <div class="wall-card ${cls}">
-        <div class="wall-card-top">
-          <span class="wall-card-icon">${icon}</span>
-          <span class="wall-card-field">${escHtml(c.label)}</span>
-          ${badge}
-        </div>
-        <div class="wall-card-vals">
-          <div class="wall-val-block">
-            <div class="wall-val-label">Term Sheet</div>
-            <div class="wall-val-num">${escHtml(c.expectedFmt)}</div>
-          </div>
-          <div class="wall-val-block">
-            <div class="wall-val-label">Pro Forma</div>
-            <div class="wall-val-num${mismatch}">${escHtml(c.actualFmt)}</div>
-          </div>
-        </div>
-        ${noteHtml}
-      </div>`;
-  }).join('') : '<p style="color:var(--muted);font-size:13px;">No comparable fields found — ensure both documents contain labelled financial figures.</p>';
+  const cards = sorted.map(c => {
+    const cls = c.pass ? 'p' : c.severity === 'error' ? 'e' : 'w';
+    const icon = c.pass ? '✓' : c.severity === 'error' ? '⚡' : '⚠';
+    const badge = c.pass ? '<span class="ccard-bdg bp">Pass</span>' : c.severity==='error' ? '<span class="ccard-bdg be">Error</span>' : '<span class="ccard-bdg bw">Warning</span>';
+    const pfCls = c.pass ? '' : ' bad';
+    const note = c.note ? `<div class="ccard-note ${c.severity==='warning'?'cn-w':'cn-e'}">→ ${esc(c.note)}</div>` : '';
+    return `<div class="ccard ${cls}">
+      <div class="ccard-top"><span class="ccard-icon">${icon}</span><span class="ccard-label">${esc(c.label)}</span>${badge}</div>
+      <div class="ccard-vals">
+        <div class="cv"><div class="cv-l">Term Sheet</div><div class="cv-n">${esc(c.expectedFmt)}</div></div>
+        <div class="cv"><div class="cv-l">Pro Forma</div><div class="cv-n${pfCls}">${esc(c.actualFmt)}</div></div>
+      </div>${note}</div>`;
+  }).join('');
 
-  document.getElementById('ts-wall').innerHTML = `
-    ${summaryHtml}
-    <div class="wall-grid">${cardsHtml}</div>`;
-
-  document.getElementById('ts-wall').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('analyzer-results').innerHTML = `
+    <div class="results-head">Conformance Report — ${esc(report.dealName)}</div>
+    <div class="conf-summary">
+      <div class="score-circle ${isPass?'pass':'fail'}">${score}%</div>
+      <div class="sum-text">
+        <h3>${isPass ? '✓ Conformant' : '⚠ Non-Conformant'}</h3>
+        <p>${report.checks.length} checks · ${pass} passed · ${errs} error(s) · ${warns} warning(s)</p>
+      </div>
+      <div class="sum-counts">
+        <div class="cnt"><span class="n c-pass">${pass}</span><span class="l">Passed</span></div>
+        <div class="cnt"><span class="n c-err">${errs}</span><span class="l">Errors</span></div>
+        <div class="cnt"><span class="n c-warn">${warns}</span><span class="l">Warnings</span></div>
+      </div>
+    </div>
+    <div class="conf-cards">${cards || '<p style="color:#888;font-size:13px;">No comparable terms found. Check that your documents contain labelled financial figures.</p>'}</div>`;
 }
+
+// ── Helpers ───────────────────────────────────────────────────────
+function showError(containerId, msg) {
+  document.getElementById(containerId).innerHTML = `<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:4px;padding:14px;color:#c41e3a;font-size:13px;margin-top:16px;">${esc(msg)}</div>`;
+}
+function fmt0(n) { return Math.round(n||0).toLocaleString(); }
+function fmtM(n) { if (!n) return '$0'; if (Math.abs(n)>=1e6) return '$'+(n/1e6).toFixed(1)+'M'; return '$'+Math.round(n).toLocaleString(); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 </script>
 </body>
 </html>
