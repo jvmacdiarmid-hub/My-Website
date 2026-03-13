@@ -1,0 +1,272 @@
+[
+  {
+    "label": "1 — Founders Only (no pool, no convertibles)",
+    "description": "Cleanest possible round: a single common shareholder and a new investor. PPS = pre-money / shares = $1.00 exactly. No option pool, no convertibles.",
+    "stakeholders": [
+      { "name": "Founder", "type": "common", "shares": 10000000 }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 10000000,
+      "newInvestment": 2000000,
+      "optionPoolTargetPct": 0,
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "Acme Ventures",
+      "liquidationMultiple": 1,
+      "participating": false,
+      "closingDate": "2025-01-01"
+    },
+    "expected": {
+      "pps": 1.0,
+      "postMoneyValuation": 12000000,
+      "newInvestorPct": 0.16667,
+      "actualOptionPoolPct": 0,
+      "convertedCount": 0,
+      "analyzerStatus": "ok"
+    },
+    "tolerancePct": 0.001
+  },
+
+  {
+    "label": "2 — Seed Round with Pre-money Option Pool Shuffle",
+    "description": "Two founders + small existing pool, expanding to 15% using the pre-money method. The pool shuffle dilutes founders before PPS is set.",
+    "stakeholders": [
+      { "name": "Founder 1",     "type": "common", "shares": 3000000 },
+      { "name": "Founder 2",     "type": "common", "shares": 3000000 },
+      { "name": "Advisor Grants","type": "option", "shares": 200000  },
+      { "name": "Option Pool",   "type": "option", "shares": 300000  }
+    ],
+    "config": {
+      "roundName": "Seed",
+      "preMoneyValuation": 5000000,
+      "newInvestment": 1000000,
+      "optionPoolTargetPct": 0.15,
+      "optionPoolMethod": "pre-money",
+      "newShareClass": "Seed Preferred",
+      "newInvestorName": "Seed Investors",
+      "liquidationMultiple": 1,
+      "participating": false,
+      "closingDate": "2025-03-01"
+    },
+    "expected": {
+      "pps": 0.6833,
+      "postMoneyValuation": 6000000,
+      "newInvestorPct": 0.16667,
+      "actualOptionPoolPct": 0.15,
+      "convertedCount": 0,
+      "analyzerStatus": "ok"
+    },
+    "tolerancePct": 0.005
+  },
+
+  {
+    "label": "3 — Series A with Cap-Only SAFE",
+    "description": "Angel SAFE with $8M valuation cap and 20% discount converts into a $12M pre-money Series A. Cap price wins because cap price < discount price < round PPS. SAFE dilution causes VALUATION_MISMATCH and pool rounding causes POOL_PCT_MISMATCH — both normal.",
+    "stakeholders": [
+      { "name": "Founder 1",      "type": "common",    "shares": 3000000 },
+      { "name": "Founder 2",      "type": "common",    "shares": 2500000 },
+      { "name": "Seed Investors", "type": "preferred", "shares": 1200000, "series": "Seed", "originalIssuePrice": 0.8333, "liquidationMultiple": 1, "participating": false },
+      { "name": "Option Pool",    "type": "option",    "shares": 1300000 },
+      { "name": "Angel SAFE",     "type": "safe",      "shares": 0, "principal": 500000, "valuationCap": 8000000, "discountRate": 0.8, "safeType": "pre-money" }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 12000000,
+      "newInvestment": 3000000,
+      "optionPoolTargetPct": 0.15,
+      "optionPoolMethod": "pre-money",
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "Series A Lead",
+      "liquidationMultiple": 1,
+      "participating": false,
+      "closingDate": "2025-06-01"
+    },
+    "expected": {
+      "postMoneyValuation": 15000000,
+      "convertedCount": 1,
+      "analyzerStatus": "warning"
+    }
+  },
+
+  {
+    "label": "4 — Multiple SAFEs and a Convertible Note (4 instruments)",
+    "description": "Four converting instruments: cap-only SAFE, discount-only SAFE, cap+discount SAFE, and a 6% convertible note with accrued interest. All must convert to positive shares.",
+    "stakeholders": [
+      { "name": "Founders",             "type": "common", "shares": 8000000 },
+      { "name": "Option Pool",          "type": "option", "shares": 2000000 },
+      { "name": "SAFE – Cap Only",      "type": "safe",   "shares": 0, "principal": 250000,  "valuationCap": 5000000,  "discountRate": null, "safeType": "pre-money" },
+      { "name": "SAFE – Discount Only", "type": "safe",   "shares": 0, "principal": 250000,  "valuationCap": null,     "discountRate": 0.8,  "safeType": "pre-money" },
+      { "name": "SAFE – Cap+Discount",  "type": "safe",   "shares": 0, "principal": 500000,  "valuationCap": 7000000,  "discountRate": 0.85, "safeType": "pre-money" },
+      { "name": "Convertible Note",     "type": "note",   "shares": 0, "principal": 1000000, "interestRate": 0.06, "issueDate": "2024-01-01", "valuationCap": 8000000, "discountRate": 0.8 }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 15000000,
+      "newInvestment": 5000000,
+      "optionPoolTargetPct": 0.15,
+      "optionPoolMethod": "pre-money",
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "Lead VC",
+      "liquidationMultiple": 1,
+      "participating": false,
+      "closingDate": "2025-06-01"
+    },
+    "expected": {
+      "postMoneyValuation": 20000000,
+      "convertedCount": 4,
+      "analyzerStatus": "warning"
+    }
+  },
+
+  {
+    "label": "5 — Convertible Note: Interest Accrual Accuracy",
+    "description": "1-year bridge note at 6% on $1M principal — 2023 is not a leap year so 365 days → interest = $60,000 exactly. Note has no cap/discount so converts at round PPS.",
+    "stakeholders": [
+      { "name": "Founders",    "type": "common", "shares": 8000000 },
+      { "name": "Option Pool", "type": "option", "shares": 1000000 },
+      { "name": "Bridge Note", "type": "note",   "shares": 0, "principal": 1000000, "interestRate": 0.06, "issueDate": "2023-01-01", "valuationCap": null, "discountRate": null }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 10000000,
+      "newInvestment": 2000000,
+      "optionPoolTargetPct": 0,
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "New Investors",
+      "closingDate": "2024-01-01"
+    },
+    "expected": {
+      "pps": 1.1111,
+      "postMoneyValuation": 12000000,
+      "convertedCount": 1,
+      "noteInterest": 60000,
+      "analyzerStatus": "warning"
+    },
+    "tolerancePct": 0.001
+  },
+
+  {
+    "label": "6 — Post-money Option Pool Method",
+    "description": "Pool expansion happens AFTER new investors are added (post-money method), so PPS is not diluted by the pool shuffle. Higher PPS for founders vs pre-money method.",
+    "stakeholders": [
+      { "name": "Founders",    "type": "common", "shares": 8000000 },
+      { "name": "Option Pool", "type": "option", "shares": 200000  }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 10000000,
+      "newInvestment": 2000000,
+      "optionPoolTargetPct": 0.15,
+      "optionPoolMethod": "post-money",
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "New Investors",
+      "closingDate": "2025-01-01"
+    },
+    "expected": {
+      "pps": 1.2195,
+      "postMoneyValuation": 12000000,
+      "actualOptionPoolPct": 0.15,
+      "analyzerStatus": "warning"
+    },
+    "tolerancePct": 0.005
+  },
+
+  {
+    "label": "7 — Down Round (anti-dilution trigger)",
+    "description": "Series B at $10M pre-money where prior Series A preferred was issued at $2.50/share. New PPS will be below $2.50, triggering the DOWN_ROUND error and anti-dilution review.",
+    "stakeholders": [
+      { "name": "Founders",           "type": "common",    "shares": 5000000 },
+      { "name": "Seed Preferred",     "type": "preferred", "shares": 800000,  "series": "Seed", "originalIssuePrice": 0.625, "liquidationMultiple": 1, "participating": false },
+      { "name": "Series A Preferred", "type": "preferred", "shares": 2000000, "series": "A",    "originalIssuePrice": 2.50,  "liquidationMultiple": 1, "participating": false },
+      { "name": "Option Pool",        "type": "option",    "shares": 1200000 }
+    ],
+    "config": {
+      "roundName": "Series B (Down)",
+      "preMoneyValuation": 10000000,
+      "newInvestment": 3000000,
+      "optionPoolTargetPct": 0.10,
+      "optionPoolMethod": "pre-money",
+      "newShareClass": "Series B Preferred",
+      "newInvestorName": "Series B Investors",
+      "liquidationMultiple": 1,
+      "participating": false,
+      "closingDate": "2026-01-01"
+    },
+    "expected": {
+      "postMoneyValuation": 13000000,
+      "analyzerStatus": "error",
+      "expectedIssueCodes": ["DOWN_ROUND"]
+    }
+  },
+
+  {
+    "label": "8 — Participating Preferred",
+    "description": "New round issued with full participation rights (no cap). Analyzer must flag PARTICIPATING_PREFERRED so the user is aware of the double-dip liquidation preference.",
+    "stakeholders": [
+      { "name": "Founders", "type": "common", "shares": 8000000 }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 10000000,
+      "newInvestment": 2000000,
+      "optionPoolTargetPct": 0,
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "New Investors",
+      "participating": true,
+      "closingDate": "2025-01-01"
+    },
+    "expected": {
+      "postMoneyValuation": 12000000,
+      "analyzerStatus": "ok",
+      "expectedNoteCodes": ["PARTICIPATING_PREFERRED"]
+    }
+  },
+
+  {
+    "label": "9 — Large Option Pool Warning (30%)",
+    "description": "Option pool target of 30% exceeds the 25% threshold. Engine should build successfully but the analyzer must emit a POOL_LARGE warning.",
+    "stakeholders": [
+      { "name": "Founders", "type": "common", "shares": 8000000 }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 10000000,
+      "newInvestment": 2000000,
+      "optionPoolTargetPct": 0.30,
+      "optionPoolMethod": "pre-money",
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "New Investors",
+      "closingDate": "2025-01-01"
+    },
+    "expected": {
+      "postMoneyValuation": 12000000,
+      "analyzerStatus": "warning",
+      "expectedWarningCodes": ["POOL_LARGE"]
+    }
+  },
+
+  {
+    "label": "10 — Deep Discount SAFE Warning (>50% effective discount)",
+    "description": "Early SAFE with a $500K valuation cap converting into a $20M round produces >50% effective discount to round PPS, triggering a DEEP_DISCOUNT warning.",
+    "stakeholders": [
+      { "name": "Founders",   "type": "common", "shares": 8000000 },
+      { "name": "Pool",       "type": "option", "shares": 1000000 },
+      { "name": "Early SAFE", "type": "safe",   "shares": 0, "principal": 200000, "valuationCap": 500000, "discountRate": null, "safeType": "pre-money" }
+    ],
+    "config": {
+      "roundName": "Series A",
+      "preMoneyValuation": 20000000,
+      "newInvestment": 5000000,
+      "optionPoolTargetPct": 0,
+      "newShareClass": "Series A Preferred",
+      "newInvestorName": "Lead VC",
+      "closingDate": "2025-01-01"
+    },
+    "expected": {
+      "postMoneyValuation": 25000000,
+      "convertedCount": 1,
+      "analyzerStatus": "warning",
+      "expectedWarningCodes": ["DEEP_DISCOUNT"]
+    }
+  }
+]
