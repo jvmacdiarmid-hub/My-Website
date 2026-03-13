@@ -622,6 +622,282 @@ const ProFormaEngine = (function () {
                  `Review existing investor rights.` });
     }
 
+    // ================================================================
+    // SECTION 1 — PRE-MONEY CAP TABLE INTEGRITY
+    // ================================================================
+
+    // Fully-diluted composition note
+    const preCommon    = preRoundCap.filter(s => s.type === 'common').reduce((sum, s) => sum + (s.shares || 0), 0);
+    const prePreferred = preRoundCap.filter(s => s.type === 'preferred').reduce((sum, s) => sum + (s.shares || 0), 0);
+    const preOptions   = preRoundCap.filter(s => s.type === 'option').reduce((sum, s) => sum + (s.shares || 0), 0);
+    const preWarrants  = preRoundCap.filter(s => s.type === 'warrant').reduce((sum, s) => sum + (s.shares || 0), 0);
+    const preSAFEs     = preRoundCap.filter(s => s.type === 'safe').length;
+    const preNotes     = preRoundCap.filter(s => s.type === 'note').length;
+    notes.push({ code: 'FD_COMPOSITION',
+      message:
+        `Pre-money FD breakdown — Common: ${formatNumber(preCommon)}, ` +
+        `Preferred: ${formatNumber(prePreferred)}, ` +
+        `Options: ${formatNumber(preOptions)}, ` +
+        `Warrants: ${formatNumber(preWarrants)}` +
+        (preSAFEs ? `, ${preSAFEs} SAFE(s) pending conversion` : '') +
+        (preNotes ? `, ${preNotes} note(s) pending conversion` : '') +
+        `. Pre-money FD (after any pool expansion): ${formatNumber(premoneyFD)}.`,
+    });
+
+    // Warrants — net exercise dilution risk
+    if (preWarrants > 0) {
+      warnings.push({ severity: 'warning', code: 'WARRANT_PRESENT',
+        message:
+          `${formatNumber(preWarrants)} warrant shares are included in the pre-money FD count. ` +
+          `Confirm whether these are "net exercise" (cashless) warrants: if exercised net, the dilutive ` +
+          `share count equals only the in-the-money spread, not the full face count. ` +
+          `Review each warrant's exercise mechanics and strike price before finalising the FD denominator.`,
+      });
+    }
+
+    // Informal / unissued equity promises
+    const informalHolders = preRoundCap.filter(s => s.informal === true);
+    if (informalHolders.length > 0) {
+      warnings.push({ severity: 'warning', code: 'INFORMAL_EQUITY',
+        message:
+          `${informalHolders.length} stakeholder(s) flagged as informal/unissued: ` +
+          `${informalHolders.map(s => s.name).join(', ')}. ` +
+          `These represent "handshake" promises or offer letters that have not been formally executed. ` +
+          `Determine whether they should be formalised and added to the cap table before closing, or ` +
+          `excluded from the FD count entirely.`,
+      });
+    }
+
+    // Treasury / cancelled shares
+    const treasuryHolders = preRoundCap.filter(s => s.treasury === true);
+    if (treasuryHolders.length > 0) {
+      warnings.push({ severity: 'warning', code: 'TREASURY_SHARES',
+        message:
+          `${treasuryHolders.length} treasury or cancelled share block(s) detected: ` +
+          `${treasuryHolders.map(s => `${s.name} (${formatNumber(s.shares || 0)} shares)`).join(', ')}. ` +
+          `Repurchased and cancelled shares must be excluded from the fully-diluted denominator. ` +
+          `Confirm these entries are NOT counted in the FD share total used for PPS calculation.`,
+      });
+    }
+
+    // Springing / milestone-based grants
+    const springingGrants = preRoundCap.filter(s => s.springing === true || s.milestone === true);
+    if (springingGrants.length > 0) {
+      warnings.push({ severity: 'warning', code: 'SPRINGING_GRANT',
+        message:
+          `${springingGrants.length} springing or milestone-based grant(s) detected: ` +
+          `${springingGrants.map(s => s.name).join(', ')}. ` +
+          `These shares or options vest (or spring into existence) only upon achieving a defined milestone ` +
+          `(e.g. revenue target, FDA approval, Series B closing). ` +
+          `If the milestone has NOT been reached at closing, exclude these from the pre-money FD count. ` +
+          `If the milestone IS triggered by this financing, include them now.`,
+      });
+    }
+
+    // ================================================================
+    // SECTION 2 — SAFE / NOTE CONVERSION DETAILS
+    // ================================================================
+
+    // Pre-money vs post-money SAFE method
+    const preMoneySAFEs  = preRoundCap.filter(s => s.type === 'safe' && s.safeType !== 'post-money');
+    const postMoneySAFEs = preRoundCap.filter(s => s.type === 'safe' && s.safeType === 'post-money');
+
+    if (preMoneySAFEs.length > 0) {
+      notes.push({ code: 'SAFE_METHOD_PRE_MONEY',
+        message:
+          `${preMoneySAFEs.length} pre-money SAFE(s): ${preMoneySAFEs.map(s => s.name).join(', ')}. ` +
+          `Pre-money SAFEs convert on the pre-money fully-diluted cap, diluting founders AND all ` +
+          `existing holders before the new investor's price is set. ` +
+          `Conversion price = min(valuationCap / pre-money FD, round PPS × discountRate, round PPS).`,
+      });
+    }
+
+    if (postMoneySAFEs.length > 0) {
+      notes.push({ code: 'SAFE_METHOD_POST_MONEY',
+        message:
+          `${postMoneySAFEs.length} post-money SAFE(s): ${postMoneySAFEs.map(s => s.name).join(', ')}. ` +
+          `Post-money SAFEs maintain a fixed post-closing ownership percentage for the SAFE holder. ` +
+          `They dilute only founders and prior holders — NOT the new lead investor. ` +
+          `Carefully check pro-rata rights and MFN provisions; double-dilution errors are common here.`,
+      });
+    }
+
+    // Notes missing issue date — interest cannot be accrued
+    const notesNoIssueDate = preRoundCap.filter(s => s.type === 'note' && s.interestRate && !s.issueDate);
+    if (notesNoIssueDate.length > 0) {
+      warnings.push({ severity: 'warning', code: 'NOTE_NO_ISSUE_DATE',
+        message:
+          `${notesNoIssueDate.length} convertible note(s) carry an interest rate but no issue date: ` +
+          `${notesNoIssueDate.map(s => s.name).join(', ')}. ` +
+          `No interest is being accrued. Add an "issueDate" field to each note so accrued interest ` +
+          `through the closing date is included in the conversion amount.`,
+      });
+    }
+
+    // Notes with interest but no explicit closing date
+    const notesWithAccrual = preRoundCap.filter(s => s.type === 'note' && s.interestRate && s.issueDate);
+    if (notesWithAccrual.length > 0 && !roundConfig.closingDate) {
+      warnings.push({ severity: 'warning', code: 'NOTE_CLOSING_DATE_DEFAULT',
+        message:
+          `${notesWithAccrual.length} convertible note(s) are accruing interest but no closingDate was ` +
+          `specified in the round config. Interest is being calculated to today's date ` +
+          `(${new Date().toISOString().slice(0, 10)}). ` +
+          `Set a "closingDate" in the round config to lock in the exact interest amount. ` +
+          `Even a few missing days of interest can change the conversion share count.`,
+      });
+    }
+
+    // ================================================================
+    // SECTION 3 — OPTION POOL EXPANSION
+    // ================================================================
+
+    if (optionPoolTargetPct > 0) {
+      // Unallocated vs total pool
+      const totalPoolShares    = postRoundCap.filter(s => s.type === 'option').reduce((sum, s) => sum + (s.shares || 0), 0);
+      const allocatedShares    = postRoundCap.filter(s => s.type === 'option' && s.allocated === true).reduce((sum, s) => sum + (s.shares || 0), 0);
+      const unallocatedShares  = totalPoolShares - allocatedShares;
+      const unallocatedPct     = postFD > 0 ? unallocatedShares / postFD : 0;
+
+      if (allocatedShares > 0) {
+        notes.push({ code: 'OPTION_POOL_UNALLOCATED',
+          message:
+            `Option pool after closing: ${formatNumber(totalPoolShares)} total shares. ` +
+            `Allocated (issued/outstanding options): ${formatNumber(allocatedShares)}. ` +
+            `Unallocated (available for future grants): ${formatNumber(unallocatedShares)} ` +
+            `(${formatPct(unallocatedPct)} of post-round FD). ` +
+            `Investors typically focus on unallocated availability when assessing hiring capacity.`,
+        });
+      } else {
+        notes.push({ code: 'OPTION_POOL_UNALLOCATED',
+          message:
+            `Option pool after closing: ${formatNumber(totalPoolShares)} total shares ` +
+            `(${formatPct(result.actualOptionPoolPct)} of post-round FD). ` +
+            `To separately track allocated vs. unallocated shares, mark issued option grants ` +
+            `with "allocated": true in the stakeholder list.`,
+        });
+      }
+
+      // Confirm pool percentage basis
+      notes.push({ code: 'OPTION_POOL_BASIS',
+        message:
+          `Option pool target (${formatPct(optionPoolTargetPct)}) is measured against the ` +
+          `post-money fully-diluted share count (${formatNumber(postFD)} shares). ` +
+          `Method: ${optionPoolMethod}. ` +
+          (optionPoolMethod === 'pre-money'
+            ? `The pool was expanded before the new-money PPS was set ("option pool shuffle"), ` +
+              `which lowers the effective pre-money valuation for founders.`
+            : `The pool was expanded after the new-money PPS was set, diluting all post-round ` +
+              `holders equally — no shuffle effect.`),
+      });
+    }
+
+    // ================================================================
+    // SECTION 4 — NEW MONEY MECHANICS
+    // ================================================================
+
+    // PPS decimal precision note
+    if (isFinite(pps) && pps > 0) {
+      const pps4dp = parseFloat(pps.toFixed(4));
+      const pps5dp = parseFloat(pps.toFixed(5));
+      const delta4 = Math.abs(pps - pps4dp) / pps;
+      const delta5 = Math.abs(pps - pps5dp) / pps;
+      notes.push({ code: 'PPS_PRECISION',
+        message:
+          `Price per share: ${formatCurrency(pps, 5)} (5 d.p.) / ${formatCurrency(pps, 4)} (4 d.p.). ` +
+          `NVCA model documents typically round to 4–5 decimal places. ` +
+          `Rounding to 4 d.p. introduces a ${formatPct(delta4)} error; ` +
+          `rounding to 5 d.p. introduces a ${formatPct(delta5)} error. ` +
+          `Ensure your spreadsheet uses consistent precision so the total investment ` +
+          `(shares × PPS) does not diverge from the agreed amount by more than a few dollars.`,
+      });
+    }
+
+    // ================================================================
+    // SECTION 5 — POST-CLOSING CAPITALIZATION
+    // ================================================================
+
+    // Ownership sum must equal exactly 100%
+    if (postFD > 0) {
+      const ownershipSum  = postRoundCap.reduce((sum, s) => sum + (s.shares || 0), 0);
+      const ownershipFrac = ownershipSum / postFD;
+      const ownershipErr  = Math.abs(ownershipFrac - 1);
+      if (ownershipErr > 0.0001) {
+        issues.push({ severity: 'error', code: 'OWNERSHIP_SUM_ERROR',
+          message:
+            `Post-round cap table shares sum to ${formatNumber(ownershipSum)} but the computed ` +
+            `fully-diluted count is ${formatNumber(postFD)} — ownership percentages would sum to ` +
+            `${formatPct(ownershipFrac)} instead of 100.00%. ` +
+            `This indicates a share-count discrepancy. Review all entries for duplicate or missing rows.`,
+        });
+      } else {
+        notes.push({ code: 'OWNERSHIP_SUM_OK',
+          message:
+            `Ownership integrity check: all post-round holders sum to ` +
+            `${formatPct(ownershipFrac)} ✓ (${formatNumber(ownershipSum)} / ${formatNumber(postFD)} shares).`,
+        });
+      }
+    }
+
+    // Liquidation waterfall summary
+    const allPreferred = postRoundCap.filter(s => s.type === 'preferred');
+    if (allPreferred.length > 0) {
+      const totalLiqPref       = allPreferred.reduce((sum, s) => {
+        const oip    = s.originalIssuePrice || 0;
+        const mult   = s.liquidationMultiple || 1;
+        const shares = s.shares || 0;
+        return sum + oip * mult * shares;
+      }, 0);
+      const participatingCount = allPreferred.filter(s => s.participating).length;
+      const cappedCount        = allPreferred.filter(s => s.participating && s.participationCap).length;
+      notes.push({ code: 'WATERFALL_SUMMARY',
+        message:
+          `Liquidation preference waterfall: aggregate preference stack = ${formatCurrency(totalLiqPref)}. ` +
+          `${allPreferred.length} preferred series; ` +
+          `${participatingCount} participating` +
+          (cappedCount ? ` (${cappedCount} capped)` : '') +
+          `, ${allPreferred.length - participatingCount} non-participating (straight preferred). ` +
+          `NVCA standard is 1× non-participating. ` +
+          `Model the waterfall at representative exit values (1×, 2×, and 5× invested capital) ` +
+          `to confirm the preference stack behaves as expected under the NVCA Charter.`,
+      });
+    }
+
+    // Anti-dilution baseline — record OIP for the new series
+    if (roundConfig.newShareClass) {
+      notes.push({ code: 'ANTI_DILUTION_BASELINE',
+        message:
+          `Anti-dilution baseline: Original Issue Price (OIP) for ${roundConfig.newShareClass} = ` +
+          `${formatCurrency(pps, 5)}. ` +
+          `This is the reference price for future broad-based weighted-average (BBWA) anti-dilution ` +
+          `adjustments. If a subsequent round prices below this OIP, the conversion ratio for ` +
+          `${roundConfig.newShareClass} will be adjusted upward in favour of existing holders.`,
+      });
+    }
+
+    // Authorized shares check
+    if (roundConfig.authorizedShares) {
+      const authorized  = roundConfig.authorizedShares;
+      const utilization = authorized > 0 ? postFD / authorized : Infinity;
+      if (postFD > authorized) {
+        issues.push({ severity: 'error', code: 'AUTHORIZED_SHARES_EXCEEDED',
+          message:
+            `Post-round fully-diluted share count (${formatNumber(postFD)}) exceeds the authorized ` +
+            `share count (${formatNumber(authorized)}). ` +
+            `The company's Certificate of Incorporation / Charter must be amended to authorize ` +
+            `sufficient shares (including enough Common to cover full preferred conversion) ` +
+            `before the round can close.`,
+        });
+      } else if (utilization > 0.8) {
+        warnings.push({ severity: 'warning', code: 'AUTHORIZED_SHARES_WARNING',
+          message:
+            `Post-round FD (${formatNumber(postFD)}) consumes ${formatPct(utilization)} of authorized ` +
+            `shares (${formatNumber(authorized)}). Less than 20% headroom remains. ` +
+            `Consider amending the Charter to authorize additional shares before the next financing ` +
+            `to avoid a last-minute amendment at a future closing.`,
+        });
+      }
+    }
+
     return {
       issues,
       warnings,
