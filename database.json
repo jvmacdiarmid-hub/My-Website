@@ -1,0 +1,1391 @@
+{
+  "records": [
+    {
+      "id": 1,
+      "type": "proforma",
+      "name": "Acme Inc — Series A",
+      "version": "company-draft",
+      "date": "2025-04-01",
+      "source": "company counsel",
+      "tags": [
+        "draft"
+      ],
+      "data": {
+        "preRoundCap": [
+          {
+            "name": "Founder A",
+            "type": "common",
+            "shares": 4500000
+          },
+          {
+            "name": "Founder B",
+            "type": "common",
+            "shares": 3000000
+          },
+          {
+            "name": "Early Employee",
+            "type": "common",
+            "shares": 500000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 750000
+          },
+          {
+            "name": "YC SAFE",
+            "type": "safe",
+            "shares": 0,
+            "principal": 125000,
+            "valuationCap": 5000000,
+            "safeType": "post-money"
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "safe",
+            "shares": 0,
+            "principal": 250000,
+            "valuationCap": 7000000,
+            "discountRate": 0.8,
+            "safeType": "pre-money"
+          },
+          {
+            "name": "Bridge Note",
+            "type": "note",
+            "shares": 0,
+            "principal": 500000,
+            "interestRate": 0.06,
+            "issueDate": "2024-06-01",
+            "valuationCap": 9000000,
+            "discountRate": 0.8
+          }
+        ],
+        "roundConfig": {
+          "roundName": "Series A",
+          "preMoneyValuation": 12000000,
+          "newInvestment": 3000000,
+          "optionPoolTargetPct": 0.15,
+          "optionPoolMethod": "pre-money",
+          "newShareClass": "Series A Preferred",
+          "newInvestorName": "Lead VC Fund",
+          "liquidationMultiple": 1,
+          "participating": false,
+          "closingDate": "2025-06-01",
+          "authorizedShares": 30000000
+        },
+        "pps": 1.2187499809570315,
+        "premoneyFD": 9846154,
+        "postFD": 13485324,
+        "preMoneyValuation": 12000000,
+        "postMoneyValuation": 15000000,
+        "newInvestment": 3000000,
+        "newInvestorShares": 2461539,
+        "optionExpansion": 1096154,
+        "actualOptionPoolPct": 0.136900974718887,
+        "postRoundCap": [
+          {
+            "name": "Founder A",
+            "type": "common",
+            "shares": 4500000
+          },
+          {
+            "name": "Founder B",
+            "type": "common",
+            "shares": 3000000
+          },
+          {
+            "name": "Early Employee",
+            "type": "common",
+            "shares": 500000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 1846154,
+            "_expansion": 1096154
+          },
+          {
+            "name": "YC SAFE",
+            "type": "preferred",
+            "shares": 246154,
+            "principal": 125000,
+            "valuationCap": 5000000,
+            "safeType": "post-money",
+            "conversionPPS": 0.5078124920654298,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.5833333333333333,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.5078124920654298,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "preferred",
+            "shares": 351648,
+            "principal": 250000,
+            "valuationCap": 7000000,
+            "discountRate": 0.8,
+            "safeType": "pre-money",
+            "conversionPPS": 0.7109374888916017,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.41666666666666663,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.7109374888916017,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "shares": 579829,
+            "principal": 500000,
+            "interestRate": 0.06,
+            "issueDate": "2024-06-01",
+            "valuationCap": 9000000,
+            "discountRate": 0.8,
+            "conversionPPS": 0.9140624857177737,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.2499999999999999,
+            "interest": 30000,
+            "conversionAmount": 530000,
+            "originalType": "note",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.9140624857177737,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Lead VC Fund",
+            "type": "preferred",
+            "shares": 2461539,
+            "series": "Series A Preferred",
+            "originalIssuePrice": 1.2187499809570315,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "convertedInstruments": [
+          {
+            "name": "YC SAFE",
+            "type": "preferred",
+            "shares": 246154,
+            "principal": 125000,
+            "valuationCap": 5000000,
+            "safeType": "post-money",
+            "conversionPPS": 0.5078124920654298,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.5833333333333333,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.5078124920654298,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "preferred",
+            "shares": 351648,
+            "principal": 250000,
+            "valuationCap": 7000000,
+            "discountRate": 0.8,
+            "safeType": "pre-money",
+            "conversionPPS": 0.7109374888916017,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.41666666666666663,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.7109374888916017,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "shares": 579829,
+            "principal": 500000,
+            "interestRate": 0.06,
+            "issueDate": "2024-06-01",
+            "valuationCap": 9000000,
+            "discountRate": 0.8,
+            "conversionPPS": 0.9140624857177737,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.2499999999999999,
+            "interest": 30000,
+            "conversionAmount": 530000,
+            "originalType": "note",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.9140624857177737,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "ownershipTable": [
+          {
+            "name": "Founder A",
+            "type": "common",
+            "series": null,
+            "shares": 4500000,
+            "pct": 0.33369609806927886
+          },
+          {
+            "name": "Founder B",
+            "type": "common",
+            "series": null,
+            "shares": 3000000,
+            "pct": 0.22246406537951924
+          },
+          {
+            "name": "Early Employee",
+            "type": "common",
+            "series": null,
+            "shares": 500000,
+            "pct": 0.03707734422991987
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "series": null,
+            "shares": 1846154,
+            "pct": 0.136900974718887
+          },
+          {
+            "name": "YC SAFE",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 246154,
+            "pct": 0.018253473183143392
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 351648,
+            "pct": 0.026076347887525726
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 579829,
+            "pct": 0.04299703885498042
+          },
+          {
+            "name": "Lead VC Fund",
+            "type": "preferred",
+            "series": "Series A Preferred",
+            "shares": 2461539,
+            "pct": 0.18253465767674548
+          }
+        ],
+        "issues": [],
+        "warnings": [],
+        "roundName": "Series A",
+        "closingDate": "2025-06-01",
+        "analysis": {
+          "issues": [],
+          "warnings": [
+            {
+              "severity": "warning",
+              "code": "POOL_PCT_MISMATCH",
+              "message": "Actual option pool (13.69%) differs from target (15.00%) by 1.31%. Likely caused by share rounding."
+            },
+            {
+              "severity": "warning",
+              "code": "DEEP_DISCOUNT",
+              "message": "YC SAFE converting at a 58.33% discount to round PPS ($0.5078 vs $1.2187). Confirm conversion terms."
+            },
+            {
+              "severity": "warning",
+              "code": "VALUATION_MISMATCH",
+              "message": "Implied pre-money ($13,435,235) differs from stated ($12,000,000) by 11.96%. Primarily caused by share rounding and SAFE/note dilution."
+            }
+          ],
+          "notes": [
+            {
+              "code": "OPTION_POOL_SHUFFLE",
+              "message": "Option pool shuffle: 1,096,154 shares created pre-money (PPS = $1.2187), diluting existing holders before new investment. Effective pre-money valuation for founders = $10,664,062."
+            },
+            {
+              "code": "SHUFFLE_DILUTION",
+              "message": "Pool shuffle causes ~11.13% additional dilution to pre-existing shareholders."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "YC SAFE: converting on valuation cap ($5,000,000) → $0.5078/share vs round PPS $1.2187/share."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "Angel SAFE: converting on valuation cap ($7,000,000) → $0.7109/share vs round PPS $1.2187/share."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "Bridge Note: converting on valuation cap ($9,000,000) → $0.9141/share vs round PPS $1.2187/share."
+            },
+            {
+              "code": "NOTE_INTEREST",
+              "message": "Bridge Note: accrued interest $30,000 added to principal $500,000 → conversion amount $530,000."
+            },
+            {
+              "code": "FD_COMPOSITION",
+              "message": "Pre-money FD breakdown — Common: 8,000,000, Preferred: 0, Options: 750,000, Warrants: 0, 2 SAFE(s) pending conversion, 1 note(s) pending conversion. Pre-money FD (after any pool expansion): 9,846,154."
+            },
+            {
+              "code": "SAFE_METHOD_PRE_MONEY",
+              "message": "1 pre-money SAFE(s): Angel SAFE. Pre-money SAFEs convert on the pre-money fully-diluted cap, diluting founders AND all existing holders before the new investor's price is set. Conversion price = min(valuationCap / pre-money FD, round PPS × discountRate, round PPS)."
+            },
+            {
+              "code": "SAFE_METHOD_POST_MONEY",
+              "message": "1 post-money SAFE(s): YC SAFE. Post-money SAFEs maintain a fixed post-closing ownership percentage for the SAFE holder. They dilute only founders and prior holders — NOT the new lead investor. Carefully check pro-rata rights and MFN provisions; double-dilution errors are common here."
+            },
+            {
+              "code": "OPTION_POOL_UNALLOCATED",
+              "message": "Option pool after closing: 1,846,154 total shares (13.69% of post-round FD). To separately track allocated vs. unallocated shares, mark issued option grants with \"allocated\": true in the stakeholder list."
+            },
+            {
+              "code": "OPTION_POOL_BASIS",
+              "message": "Option pool target (15.00%) is measured against the post-money fully-diluted share count (13,485,324 shares). Method: pre-money. The pool was expanded before the new-money PPS was set (\"option pool shuffle\"), which lowers the effective pre-money valuation for founders."
+            },
+            {
+              "code": "PPS_PRECISION",
+              "message": "Price per share: $1.21875 (5 d.p.) / $1.2187 (4 d.p.). NVCA model documents typically round to 4–5 decimal places. Rounding to 4 d.p. introduces a 0.00% error; rounding to 5 d.p. introduces a 0.00% error. Ensure your spreadsheet uses consistent precision so the total investment (shares × PPS) does not diverge from the agreed amount by more than a few dollars."
+            },
+            {
+              "code": "OWNERSHIP_SUM_OK",
+              "message": "Ownership integrity check: all post-round holders sum to 100.00% ✓ (13,485,324 / 13,485,324 shares)."
+            },
+            {
+              "code": "WATERFALL_SUMMARY",
+              "message": "Liquidation preference waterfall: aggregate preference stack = $3,905,000. 4 preferred series; 0 participating, 4 non-participating (straight preferred). NVCA standard is 1× non-participating. Model the waterfall at representative exit values (1×, 2×, and 5× invested capital) to confirm the preference stack behaves as expected under the NVCA Charter."
+            },
+            {
+              "code": "ANTI_DILUTION_BASELINE",
+              "message": "Anti-dilution baseline: Original Issue Price (OIP) for Series A Preferred = $1.21875. This is the reference price for future broad-based weighted-average (BBWA) anti-dilution adjustments. If a subsequent round prices below this OIP, the conversion ratio for Series A Preferred will be adjusted upward in favour of existing holders."
+            }
+          ],
+          "summary": {
+            "issueCount": 0,
+            "warningCount": 3,
+            "noteCount": 15,
+            "hasErrors": false,
+            "status": "warning"
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "proforma",
+      "name": "Acme Inc — Series A",
+      "version": "investor-draft",
+      "date": "2025-04-15",
+      "source": "investor counsel",
+      "tags": [
+        "draft",
+        "investor-version"
+      ],
+      "data": {
+        "preRoundCap": [
+          {
+            "name": "Founder A",
+            "type": "common",
+            "shares": 4500000
+          },
+          {
+            "name": "Founder B",
+            "type": "common",
+            "shares": 3000000
+          },
+          {
+            "name": "Early Employee",
+            "type": "common",
+            "shares": 500000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 750000
+          },
+          {
+            "name": "YC SAFE",
+            "type": "safe",
+            "shares": 0,
+            "principal": 125000,
+            "valuationCap": 5000000,
+            "safeType": "post-money"
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "safe",
+            "shares": 0,
+            "principal": 250000,
+            "valuationCap": 7000000,
+            "discountRate": 0.8,
+            "safeType": "pre-money"
+          },
+          {
+            "name": "Bridge Note",
+            "type": "note",
+            "shares": 0,
+            "principal": 500000,
+            "interestRate": 0.06,
+            "issueDate": "2024-06-01",
+            "valuationCap": 9000000,
+            "discountRate": 0.8
+          }
+        ],
+        "roundConfig": {
+          "roundName": "Series A",
+          "preMoneyValuation": 12000000,
+          "newInvestment": 3000000,
+          "optionPoolTargetPct": 0.2,
+          "optionPoolMethod": "pre-money",
+          "newShareClass": "Series A Preferred",
+          "newInvestorName": "Lead VC Fund",
+          "liquidationMultiple": 1,
+          "participating": false,
+          "closingDate": "2025-06-01",
+          "authorizedShares": 30000000
+        },
+        "pps": 1.1249999648437512,
+        "premoneyFD": 10666667,
+        "postFD": 14609101,
+        "preMoneyValuation": 12000000,
+        "postMoneyValuation": 15000000,
+        "newInvestment": 3000000,
+        "newInvestorShares": 2666667,
+        "optionExpansion": 1916667,
+        "actualOptionPoolPct": 0.18253464056412505,
+        "postRoundCap": [
+          {
+            "name": "Founder A",
+            "type": "common",
+            "shares": 4500000
+          },
+          {
+            "name": "Founder B",
+            "type": "common",
+            "shares": 3000000
+          },
+          {
+            "name": "Early Employee",
+            "type": "common",
+            "shares": 500000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 2666667,
+            "_expansion": 1916667
+          },
+          {
+            "name": "YC SAFE",
+            "type": "preferred",
+            "shares": 266667,
+            "principal": 125000,
+            "valuationCap": 5000000,
+            "safeType": "post-money",
+            "conversionPPS": 0.468749985351563,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.5833333333333334,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.468749985351563,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "preferred",
+            "shares": 380952,
+            "principal": 250000,
+            "valuationCap": 7000000,
+            "discountRate": 0.8,
+            "safeType": "pre-money",
+            "conversionPPS": 0.6562499794921881,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.41666666666666674,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.6562499794921881,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "shares": 628148,
+            "principal": 500000,
+            "interestRate": 0.06,
+            "issueDate": "2024-06-01",
+            "valuationCap": 9000000,
+            "discountRate": 0.8,
+            "conversionPPS": 0.8437499736328133,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.25,
+            "interest": 30000,
+            "conversionAmount": 530000,
+            "originalType": "note",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.8437499736328133,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Lead VC Fund",
+            "type": "preferred",
+            "shares": 2666667,
+            "series": "Series A Preferred",
+            "originalIssuePrice": 1.1249999648437512,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "convertedInstruments": [
+          {
+            "name": "YC SAFE",
+            "type": "preferred",
+            "shares": 266667,
+            "principal": 125000,
+            "valuationCap": 5000000,
+            "safeType": "post-money",
+            "conversionPPS": 0.468749985351563,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.5833333333333334,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.468749985351563,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "preferred",
+            "shares": 380952,
+            "principal": 250000,
+            "valuationCap": 7000000,
+            "discountRate": 0.8,
+            "safeType": "pre-money",
+            "conversionPPS": 0.6562499794921881,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.41666666666666674,
+            "originalType": "safe",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.6562499794921881,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "shares": 628148,
+            "principal": 500000,
+            "interestRate": 0.06,
+            "issueDate": "2024-06-01",
+            "valuationCap": 9000000,
+            "discountRate": 0.8,
+            "conversionPPS": 0.8437499736328133,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.25,
+            "interest": 30000,
+            "conversionAmount": 530000,
+            "originalType": "note",
+            "series": "Series A Converted",
+            "originalIssuePrice": 0.8437499736328133,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "ownershipTable": [
+          {
+            "name": "Founder A",
+            "type": "common",
+            "series": null,
+            "shares": 4500000,
+            "pct": 0.3080271674485651
+          },
+          {
+            "name": "Founder B",
+            "type": "common",
+            "series": null,
+            "shares": 3000000,
+            "pct": 0.20535144496571006
+          },
+          {
+            "name": "Early Employee",
+            "type": "common",
+            "series": null,
+            "shares": 500000,
+            "pct": 0.034225240827618346
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "series": null,
+            "shares": 2666667,
+            "pct": 0.18253464056412505
+          },
+          {
+            "name": "YC SAFE",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 266667,
+            "pct": 0.018253484591557
+          },
+          {
+            "name": "Angel SAFE",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 380952,
+            "pct": 0.026076347887525726
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 628148,
+            "pct": 0.04299703315077362
+          },
+          {
+            "name": "Lead VC Fund",
+            "type": "preferred",
+            "series": "Series A Preferred",
+            "shares": 2666667,
+            "pct": 0.18253464056412505
+          }
+        ],
+        "issues": [],
+        "warnings": [],
+        "roundName": "Series A",
+        "closingDate": "2025-06-01",
+        "analysis": {
+          "issues": [],
+          "warnings": [
+            {
+              "severity": "warning",
+              "code": "POOL_PCT_MISMATCH",
+              "message": "Actual option pool (18.25%) differs from target (20.00%) by 1.75%. Likely caused by share rounding."
+            },
+            {
+              "severity": "warning",
+              "code": "DEEP_DISCOUNT",
+              "message": "YC SAFE converting at a 58.33% discount to round PPS ($0.4687 vs $1.1250). Confirm conversion terms."
+            },
+            {
+              "severity": "warning",
+              "code": "VALUATION_MISMATCH",
+              "message": "Implied pre-money ($13,435,237) differs from stated ($12,000,000) by 11.96%. Primarily caused by share rounding and SAFE/note dilution."
+            }
+          ],
+          "notes": [
+            {
+              "code": "OPTION_POOL_SHUFFLE",
+              "message": "Option pool shuffle: 1,916,667 shares created pre-money (PPS = $1.1250), diluting existing holders before new investment. Effective pre-money valuation for founders = $9,843,750."
+            },
+            {
+              "code": "SHUFFLE_DILUTION",
+              "message": "Pool shuffle causes ~17.97% additional dilution to pre-existing shareholders."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "YC SAFE: converting on valuation cap ($5,000,000) → $0.4687/share vs round PPS $1.1250/share."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "Angel SAFE: converting on valuation cap ($7,000,000) → $0.6562/share vs round PPS $1.1250/share."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "Bridge Note: converting on valuation cap ($9,000,000) → $0.8437/share vs round PPS $1.1250/share."
+            },
+            {
+              "code": "NOTE_INTEREST",
+              "message": "Bridge Note: accrued interest $30,000 added to principal $500,000 → conversion amount $530,000."
+            },
+            {
+              "code": "FD_COMPOSITION",
+              "message": "Pre-money FD breakdown — Common: 8,000,000, Preferred: 0, Options: 750,000, Warrants: 0, 2 SAFE(s) pending conversion, 1 note(s) pending conversion. Pre-money FD (after any pool expansion): 10,666,667."
+            },
+            {
+              "code": "SAFE_METHOD_PRE_MONEY",
+              "message": "1 pre-money SAFE(s): Angel SAFE. Pre-money SAFEs convert on the pre-money fully-diluted cap, diluting founders AND all existing holders before the new investor's price is set. Conversion price = min(valuationCap / pre-money FD, round PPS × discountRate, round PPS)."
+            },
+            {
+              "code": "SAFE_METHOD_POST_MONEY",
+              "message": "1 post-money SAFE(s): YC SAFE. Post-money SAFEs maintain a fixed post-closing ownership percentage for the SAFE holder. They dilute only founders and prior holders — NOT the new lead investor. Carefully check pro-rata rights and MFN provisions; double-dilution errors are common here."
+            },
+            {
+              "code": "OPTION_POOL_UNALLOCATED",
+              "message": "Option pool after closing: 2,666,667 total shares (18.25% of post-round FD). To separately track allocated vs. unallocated shares, mark issued option grants with \"allocated\": true in the stakeholder list."
+            },
+            {
+              "code": "OPTION_POOL_BASIS",
+              "message": "Option pool target (20.00%) is measured against the post-money fully-diluted share count (14,609,101 shares). Method: pre-money. The pool was expanded before the new-money PPS was set (\"option pool shuffle\"), which lowers the effective pre-money valuation for founders."
+            },
+            {
+              "code": "PPS_PRECISION",
+              "message": "Price per share: $1.12500 (5 d.p.) / $1.1250 (4 d.p.). NVCA model documents typically round to 4–5 decimal places. Rounding to 4 d.p. introduces a 0.00% error; rounding to 5 d.p. introduces a 0.00% error. Ensure your spreadsheet uses consistent precision so the total investment (shares × PPS) does not diverge from the agreed amount by more than a few dollars."
+            },
+            {
+              "code": "OWNERSHIP_SUM_OK",
+              "message": "Ownership integrity check: all post-round holders sum to 100.00% ✓ (14,609,101 / 14,609,101 shares)."
+            },
+            {
+              "code": "WATERFALL_SUMMARY",
+              "message": "Liquidation preference waterfall: aggregate preference stack = $3,905,000. 4 preferred series; 0 participating, 4 non-participating (straight preferred). NVCA standard is 1× non-participating. Model the waterfall at representative exit values (1×, 2×, and 5× invested capital) to confirm the preference stack behaves as expected under the NVCA Charter."
+            },
+            {
+              "code": "ANTI_DILUTION_BASELINE",
+              "message": "Anti-dilution baseline: Original Issue Price (OIP) for Series A Preferred = $1.12500. This is the reference price for future broad-based weighted-average (BBWA) anti-dilution adjustments. If a subsequent round prices below this OIP, the conversion ratio for Series A Preferred will be adjusted upward in favour of existing holders."
+            }
+          ],
+          "summary": {
+            "issueCount": 0,
+            "warningCount": 3,
+            "noteCount": 15,
+            "hasErrors": false,
+            "status": "warning"
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "proforma",
+      "name": "Beta Co — Seed",
+      "version": "final",
+      "date": "2025-02-10",
+      "source": "signed closing",
+      "tags": [
+        "seed",
+        "signed",
+        "closed"
+      ],
+      "data": {
+        "preRoundCap": [
+          {
+            "name": "CEO",
+            "type": "common",
+            "shares": 6000000
+          },
+          {
+            "name": "CTO",
+            "type": "common",
+            "shares": 4000000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 500000
+          },
+          {
+            "name": "Seed SAFE",
+            "type": "safe",
+            "shares": 0,
+            "principal": 500000,
+            "valuationCap": 4000000,
+            "safeType": "pre-money"
+          }
+        ],
+        "roundConfig": {
+          "roundName": "Seed",
+          "preMoneyValuation": 5000000,
+          "newInvestment": 1000000,
+          "optionPoolTargetPct": 0.1,
+          "optionPoolMethod": "pre-money",
+          "newShareClass": "Seed Preferred",
+          "newInvestorName": "Seed Fund",
+          "liquidationMultiple": 1,
+          "participating": false,
+          "closingDate": "2025-02-10",
+          "authorizedShares": 20000000
+        },
+        "pps": 0.44000001408000045,
+        "premoneyFD": 11363636,
+        "postFD": 15056818,
+        "preMoneyValuation": 5000000,
+        "postMoneyValuation": 6000000,
+        "newInvestment": 1000000,
+        "newInvestorShares": 2272727,
+        "optionExpansion": 863636,
+        "actualOptionPoolPct": 0.09056601467853301,
+        "postRoundCap": [
+          {
+            "name": "CEO",
+            "type": "common",
+            "shares": 6000000
+          },
+          {
+            "name": "CTO",
+            "type": "common",
+            "shares": 4000000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 1363636,
+            "_expansion": 863636
+          },
+          {
+            "name": "Seed SAFE",
+            "type": "preferred",
+            "shares": 1420455,
+            "principal": 500000,
+            "valuationCap": 4000000,
+            "safeType": "pre-money",
+            "conversionPPS": 0.3520000112640004,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.19999999999999996,
+            "originalType": "safe",
+            "series": "Seed Converted",
+            "originalIssuePrice": 0.3520000112640004,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Seed Fund",
+            "type": "preferred",
+            "shares": 2272727,
+            "series": "Seed Preferred",
+            "originalIssuePrice": 0.44000001408000045,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "convertedInstruments": [
+          {
+            "name": "Seed SAFE",
+            "type": "preferred",
+            "shares": 1420455,
+            "principal": 500000,
+            "valuationCap": 4000000,
+            "safeType": "pre-money",
+            "conversionPPS": 0.3520000112640004,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.19999999999999996,
+            "originalType": "safe",
+            "series": "Seed Converted",
+            "originalIssuePrice": 0.3520000112640004,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "ownershipTable": [
+          {
+            "name": "CEO",
+            "type": "common",
+            "series": null,
+            "shares": 6000000,
+            "pct": 0.39849057084969747
+          },
+          {
+            "name": "CTO",
+            "type": "common",
+            "series": null,
+            "shares": 4000000,
+            "pct": 0.26566038056646496
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "series": null,
+            "shares": 1363636,
+            "pct": 0.09056601467853301
+          },
+          {
+            "name": "Seed SAFE",
+            "type": "preferred",
+            "series": "Seed Converted",
+            "shares": 1420455,
+            "pct": 0.0943396539693845
+          },
+          {
+            "name": "Seed Fund",
+            "type": "preferred",
+            "series": "Seed Preferred",
+            "shares": 2272727,
+            "pct": 0.15094337993592005
+          }
+        ],
+        "issues": [],
+        "warnings": [],
+        "roundName": "Seed",
+        "closingDate": "2025-02-10",
+        "analysis": {
+          "issues": [],
+          "warnings": [
+            {
+              "severity": "warning",
+              "code": "POOL_PCT_MISMATCH",
+              "message": "Actual option pool (9.06%) differs from target (10.00%) by 0.94%. Likely caused by share rounding."
+            },
+            {
+              "severity": "warning",
+              "code": "VALUATION_MISMATCH",
+              "message": "Implied pre-money ($5,625,001) differs from stated ($5,000,000) by 12.50%. Primarily caused by share rounding and SAFE/note dilution."
+            }
+          ],
+          "notes": [
+            {
+              "code": "OPTION_POOL_SHUFFLE",
+              "message": "Option pool shuffle: 863,636 shares created pre-money (PPS = $0.4400), diluting existing holders before new investment. Effective pre-money valuation for founders = $4,620,000."
+            },
+            {
+              "code": "SHUFFLE_DILUTION",
+              "message": "Pool shuffle causes ~7.60% additional dilution to pre-existing shareholders."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "Seed SAFE: converting on valuation cap ($4,000,000) → $0.3520/share vs round PPS $0.4400/share."
+            },
+            {
+              "code": "FD_COMPOSITION",
+              "message": "Pre-money FD breakdown — Common: 10,000,000, Preferred: 0, Options: 500,000, Warrants: 0, 1 SAFE(s) pending conversion. Pre-money FD (after any pool expansion): 11,363,636."
+            },
+            {
+              "code": "SAFE_METHOD_PRE_MONEY",
+              "message": "1 pre-money SAFE(s): Seed SAFE. Pre-money SAFEs convert on the pre-money fully-diluted cap, diluting founders AND all existing holders before the new investor's price is set. Conversion price = min(valuationCap / pre-money FD, round PPS × discountRate, round PPS)."
+            },
+            {
+              "code": "OPTION_POOL_UNALLOCATED",
+              "message": "Option pool after closing: 1,363,636 total shares (9.06% of post-round FD). To separately track allocated vs. unallocated shares, mark issued option grants with \"allocated\": true in the stakeholder list."
+            },
+            {
+              "code": "OPTION_POOL_BASIS",
+              "message": "Option pool target (10.00%) is measured against the post-money fully-diluted share count (15,056,818 shares). Method: pre-money. The pool was expanded before the new-money PPS was set (\"option pool shuffle\"), which lowers the effective pre-money valuation for founders."
+            },
+            {
+              "code": "PPS_PRECISION",
+              "message": "Price per share: $0.44000 (5 d.p.) / $0.4400 (4 d.p.). NVCA model documents typically round to 4–5 decimal places. Rounding to 4 d.p. introduces a 0.00% error; rounding to 5 d.p. introduces a 0.00% error. Ensure your spreadsheet uses consistent precision so the total investment (shares × PPS) does not diverge from the agreed amount by more than a few dollars."
+            },
+            {
+              "code": "OWNERSHIP_SUM_OK",
+              "message": "Ownership integrity check: all post-round holders sum to 100.00% ✓ (15,056,818 / 15,056,818 shares)."
+            },
+            {
+              "code": "WATERFALL_SUMMARY",
+              "message": "Liquidation preference waterfall: aggregate preference stack = $1,500,000. 2 preferred series; 0 participating, 2 non-participating (straight preferred). NVCA standard is 1× non-participating. Model the waterfall at representative exit values (1×, 2×, and 5× invested capital) to confirm the preference stack behaves as expected under the NVCA Charter."
+            },
+            {
+              "code": "ANTI_DILUTION_BASELINE",
+              "message": "Anti-dilution baseline: Original Issue Price (OIP) for Seed Preferred = $0.44000. This is the reference price for future broad-based weighted-average (BBWA) anti-dilution adjustments. If a subsequent round prices below this OIP, the conversion ratio for Seed Preferred will be adjusted upward in favour of existing holders."
+            }
+          ],
+          "summary": {
+            "issueCount": 0,
+            "warningCount": 2,
+            "noteCount": 11,
+            "hasErrors": false,
+            "status": "warning"
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "proforma",
+      "name": "Gamma Health — Series A",
+      "version": "final",
+      "date": "2025-03-20",
+      "source": "signed closing",
+      "tags": [
+        "healthcare",
+        "signed",
+        "closed"
+      ],
+      "data": {
+        "preRoundCap": [
+          {
+            "name": "Founder",
+            "type": "common",
+            "shares": 5000000
+          },
+          {
+            "name": "Co-Founder",
+            "type": "common",
+            "shares": 3500000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 1000000
+          },
+          {
+            "name": "Seed Preferred",
+            "type": "preferred",
+            "shares": 1500000,
+            "series": "Seed",
+            "originalIssuePrice": 0.5,
+            "liquidationMultiple": 1,
+            "participating": false
+          },
+          {
+            "name": "Bridge Note",
+            "type": "note",
+            "shares": 0,
+            "principal": 750000,
+            "interestRate": 0.08,
+            "issueDate": "2024-09-01",
+            "valuationCap": 14000000
+          }
+        ],
+        "roundConfig": {
+          "roundName": "Series A",
+          "preMoneyValuation": 18000000,
+          "newInvestment": 5000000,
+          "optionPoolTargetPct": 0.15,
+          "optionPoolMethod": "pre-money",
+          "newShareClass": "Series A Preferred",
+          "newInvestorName": "Health Ventures",
+          "liquidationMultiple": 1,
+          "participating": false,
+          "closingDate": "2025-03-20",
+          "authorizedShares": 40000000
+        },
+        "pps": 1.455000002425,
+        "premoneyFD": 12371134,
+        "postFD": 16499351,
+        "preMoneyValuation": 18000000,
+        "postMoneyValuation": 23000000,
+        "newInvestment": 5000000,
+        "newInvestorShares": 3436426,
+        "optionExpansion": 1371134,
+        "actualOptionPoolPct": 0.14371074353166982,
+        "postRoundCap": [
+          {
+            "name": "Founder",
+            "type": "common",
+            "shares": 5000000
+          },
+          {
+            "name": "Co-Founder",
+            "type": "common",
+            "shares": 3500000
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "shares": 2371134,
+            "_expansion": 1371134
+          },
+          {
+            "name": "Seed Preferred",
+            "type": "preferred",
+            "shares": 1500000,
+            "series": "Seed",
+            "originalIssuePrice": 0.5,
+            "liquidationMultiple": 1,
+            "participating": false
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "shares": 691791,
+            "principal": 750000,
+            "interestRate": 0.08,
+            "issueDate": "2024-09-01",
+            "valuationCap": 14000000,
+            "conversionPPS": 1.1316666685527779,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.2222222222222222,
+            "interest": 32876.71232876712,
+            "conversionAmount": 782876.7123287672,
+            "originalType": "note",
+            "series": "Series A Converted",
+            "originalIssuePrice": 1.1316666685527779,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          },
+          {
+            "name": "Health Ventures",
+            "type": "preferred",
+            "shares": 3436426,
+            "series": "Series A Preferred",
+            "originalIssuePrice": 1.455000002425,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "convertedInstruments": [
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "shares": 691791,
+            "principal": 750000,
+            "interestRate": 0.08,
+            "issueDate": "2024-09-01",
+            "valuationCap": 14000000,
+            "conversionPPS": 1.1316666685527779,
+            "conversionBasis": "cap",
+            "effectiveDiscount": 0.2222222222222222,
+            "interest": 32876.71232876712,
+            "conversionAmount": 782876.7123287672,
+            "originalType": "note",
+            "series": "Series A Converted",
+            "originalIssuePrice": 1.1316666685527779,
+            "liquidationMultiple": 1,
+            "participating": false,
+            "participationCap": null
+          }
+        ],
+        "ownershipTable": [
+          {
+            "name": "Founder",
+            "type": "common",
+            "series": null,
+            "shares": 5000000,
+            "pct": 0.30304222269106224
+          },
+          {
+            "name": "Co-Founder",
+            "type": "common",
+            "series": null,
+            "shares": 3500000,
+            "pct": 0.21212955588374355
+          },
+          {
+            "name": "Option Pool",
+            "type": "option",
+            "series": null,
+            "shares": 2371134,
+            "pct": 0.14371074353166982
+          },
+          {
+            "name": "Seed Preferred",
+            "type": "preferred",
+            "series": "Seed",
+            "shares": 1500000,
+            "pct": 0.09091266680731866
+          },
+          {
+            "name": "Bridge Note",
+            "type": "preferred",
+            "series": "Series A Converted",
+            "shares": 691791,
+            "pct": 0.04192837645553452
+          },
+          {
+            "name": "Health Ventures",
+            "type": "preferred",
+            "series": "Series A Preferred",
+            "shares": 3436426,
+            "pct": 0.20827643463067122
+          }
+        ],
+        "issues": [],
+        "warnings": [],
+        "roundName": "Series A",
+        "closingDate": "2025-03-20",
+        "analysis": {
+          "issues": [],
+          "warnings": [
+            {
+              "severity": "warning",
+              "code": "POOL_PCT_MISMATCH",
+              "message": "Actual option pool (14.37%) differs from target (15.00%) by 0.63%. Likely caused by share rounding."
+            },
+            {
+              "severity": "warning",
+              "code": "VALUATION_MISMATCH",
+              "message": "Implied pre-money ($19,006,557) differs from stated ($18,000,000) by 5.59%. Primarily caused by share rounding and SAFE/note dilution."
+            }
+          ],
+          "notes": [
+            {
+              "code": "OPTION_POOL_SHUFFLE",
+              "message": "Option pool shuffle: 1,371,134 shares created pre-money (PPS = $1.4550), diluting existing holders before new investment. Effective pre-money valuation for founders = $16,005,000."
+            },
+            {
+              "code": "SHUFFLE_DILUTION",
+              "message": "Pool shuffle causes ~11.08% additional dilution to pre-existing shareholders."
+            },
+            {
+              "code": "SAFE_CAP_CONVERSION",
+              "message": "Bridge Note: converting on valuation cap ($14,000,000) → $1.1317/share vs round PPS $1.4550/share."
+            },
+            {
+              "code": "NOTE_INTEREST",
+              "message": "Bridge Note: accrued interest $32,877 added to principal $750,000 → conversion amount $782,877."
+            },
+            {
+              "code": "FD_COMPOSITION",
+              "message": "Pre-money FD breakdown — Common: 8,500,000, Preferred: 1,500,000, Options: 1,000,000, Warrants: 0, 1 note(s) pending conversion. Pre-money FD (after any pool expansion): 12,371,134."
+            },
+            {
+              "code": "OPTION_POOL_UNALLOCATED",
+              "message": "Option pool after closing: 2,371,134 total shares (14.37% of post-round FD). To separately track allocated vs. unallocated shares, mark issued option grants with \"allocated\": true in the stakeholder list."
+            },
+            {
+              "code": "OPTION_POOL_BASIS",
+              "message": "Option pool target (15.00%) is measured against the post-money fully-diluted share count (16,499,351 shares). Method: pre-money. The pool was expanded before the new-money PPS was set (\"option pool shuffle\"), which lowers the effective pre-money valuation for founders."
+            },
+            {
+              "code": "PPS_PRECISION",
+              "message": "Price per share: $1.45500 (5 d.p.) / $1.4550 (4 d.p.). NVCA model documents typically round to 4–5 decimal places. Rounding to 4 d.p. introduces a 0.00% error; rounding to 5 d.p. introduces a 0.00% error. Ensure your spreadsheet uses consistent precision so the total investment (shares × PPS) does not diverge from the agreed amount by more than a few dollars."
+            },
+            {
+              "code": "OWNERSHIP_SUM_OK",
+              "message": "Ownership integrity check: all post-round holders sum to 100.00% ✓ (16,499,351 / 16,499,351 shares)."
+            },
+            {
+              "code": "WATERFALL_SUMMARY",
+              "message": "Liquidation preference waterfall: aggregate preference stack = $6,532,877. 3 preferred series; 0 participating, 3 non-participating (straight preferred). NVCA standard is 1× non-participating. Model the waterfall at representative exit values (1×, 2×, and 5× invested capital) to confirm the preference stack behaves as expected under the NVCA Charter."
+            },
+            {
+              "code": "ANTI_DILUTION_BASELINE",
+              "message": "Anti-dilution baseline: Original Issue Price (OIP) for Series A Preferred = $1.45500. This is the reference price for future broad-based weighted-average (BBWA) anti-dilution adjustments. If a subsequent round prices below this OIP, the conversion ratio for Series A Preferred will be adjusted upward in favour of existing holders."
+            }
+          ],
+          "summary": {
+            "issueCount": 0,
+            "warningCount": 2,
+            "noteCount": 11,
+            "hasErrors": false,
+            "status": "warning"
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "termsheet",
+      "name": "Acme Inc — Series A",
+      "version": "signed-loi",
+      "date": "2025-03-15",
+      "source": "lead investor",
+      "tags": [
+        "signed",
+        "loi"
+      ],
+      "data": {
+        "dealName": "Acme Inc — Series A",
+        "roundName": "Series A",
+        "source": "lead investor",
+        "date": "2025-03-15",
+        "preMoneyValuation": 12000000,
+        "investmentAmount": 3000000,
+        "targetOptionPool": 0.15,
+        "optionPoolMethod": "pre-money",
+        "liquidationMultiple": 1,
+        "participating": false,
+        "participationCap": null,
+        "dividendRate": null,
+        "antiDilution": "broad-based weighted average",
+        "investorOwnershipTarget": 0.2,
+        "founderOwnershipFloor": null,
+        "statedPPS": null,
+        "safeConversions": [
+          {
+            "name": "YC SAFE",
+            "valuationCap": 5000000
+          },
+          {
+            "name": "Angel SAFE",
+            "valuationCap": 7000000,
+            "discountRate": 0.8
+          }
+        ],
+        "noteConversions": [
+          {
+            "name": "Bridge Note",
+            "interestRate": 0.06,
+            "valuationCap": 9000000,
+            "discountRate": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "termsheet",
+      "name": "Beta Co — Seed",
+      "version": "signed",
+      "date": "2025-01-28",
+      "source": "investor term sheet",
+      "tags": [
+        "signed",
+        "seed"
+      ],
+      "data": {
+        "dealName": "Beta Co — Seed",
+        "roundName": "Seed",
+        "source": "investor term sheet",
+        "date": "2025-01-28",
+        "preMoneyValuation": 5000000,
+        "investmentAmount": 1000000,
+        "targetOptionPool": 0.1,
+        "optionPoolMethod": "pre-money",
+        "liquidationMultiple": 1,
+        "participating": false,
+        "participationCap": null,
+        "dividendRate": null,
+        "antiDilution": "broad-based weighted average",
+        "investorOwnershipTarget": null,
+        "founderOwnershipFloor": null,
+        "statedPPS": null,
+        "safeConversions": [],
+        "noteConversions": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "termsheet",
+      "name": "Gamma Health — Series A",
+      "version": "signed",
+      "date": "2025-03-01",
+      "source": "Health Ventures term sheet",
+      "tags": [
+        "signed",
+        "healthcare"
+      ],
+      "data": {
+        "dealName": "Gamma Health — Series A",
+        "roundName": "Series A",
+        "source": "Health Ventures term sheet",
+        "date": "2025-03-01",
+        "preMoneyValuation": 18000000,
+        "investmentAmount": 5000000,
+        "targetOptionPool": 0.15,
+        "optionPoolMethod": "pre-money",
+        "liquidationMultiple": 1,
+        "participating": false,
+        "participationCap": null,
+        "dividendRate": null,
+        "antiDilution": "broad-based weighted average",
+        "investorOwnershipTarget": 0.2174,
+        "founderOwnershipFloor": null,
+        "statedPPS": null,
+        "safeConversions": [],
+        "noteConversions": [
+          {
+            "name": "Bridge Note",
+            "interestRate": 0.08,
+            "valuationCap": 14000000
+          }
+        ]
+      }
+    }
+  ],
+  "nextId": 8
+}

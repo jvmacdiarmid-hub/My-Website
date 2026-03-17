@@ -10,7 +10,11 @@
     "test:pool":     "node run-tests.js --category 'Option Pool'",
     "test:full":     "node run-tests.js --category 'Full Pro Forma'",
     "test:analysis": "node run-tests.js --category Analyzer",
-    "test:list":     "node run-tests.js --list"
+    "test:list":     "node run-tests.js --list",
+    "db":            "node manage-db.js",
+    "db:list":       "node manage-db.js list",
+    "db:audit":      "node manage-db.js audit",
+    "db:import":     "node manage-db.js import --file"
   },
   "engines": {
     "node": ">=14"

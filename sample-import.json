@@ -1,0 +1,193 @@
+{
+  "_comment": "Bulk import file for manage-db.js — run: node manage-db.js import --file sample-import.json",
+
+  "proformas": [
+    {
+      "name":    "Acme Inc — Series A",
+      "version": "company-draft",
+      "date":    "2025-04-01",
+      "source":  "company counsel",
+      "tags":    ["draft"],
+      "stakeholders": [
+        { "name": "Founder A",      "type": "common",    "shares": 4500000 },
+        { "name": "Founder B",      "type": "common",    "shares": 3000000 },
+        { "name": "Early Employee", "type": "common",    "shares": 500000  },
+        { "name": "Option Pool",    "type": "option",    "shares": 750000  },
+        { "name": "YC SAFE",        "type": "safe",      "shares": 0,
+          "principal": 125000, "valuationCap": 5000000, "safeType": "post-money" },
+        { "name": "Angel SAFE",     "type": "safe",      "shares": 0,
+          "principal": 250000, "valuationCap": 7000000, "discountRate": 0.80, "safeType": "pre-money" },
+        { "name": "Bridge Note",    "type": "note",      "shares": 0,
+          "principal": 500000, "interestRate": 0.06,
+          "issueDate": "2024-06-01", "valuationCap": 9000000, "discountRate": 0.80 }
+      ],
+      "config": {
+        "roundName":           "Series A",
+        "preMoneyValuation":   12000000,
+        "newInvestment":       3000000,
+        "optionPoolTargetPct": 0.15,
+        "optionPoolMethod":    "pre-money",
+        "newShareClass":       "Series A Preferred",
+        "newInvestorName":     "Lead VC Fund",
+        "liquidationMultiple": 1,
+        "participating":       false,
+        "closingDate":         "2025-06-01",
+        "authorizedShares":    30000000
+      }
+    },
+    {
+      "name":    "Acme Inc — Series A",
+      "version": "investor-draft",
+      "date":    "2025-04-15",
+      "source":  "investor counsel",
+      "tags":    ["draft","investor-version"],
+      "stakeholders": [
+        { "name": "Founder A",      "type": "common",    "shares": 4500000 },
+        { "name": "Founder B",      "type": "common",    "shares": 3000000 },
+        { "name": "Early Employee", "type": "common",    "shares": 500000  },
+        { "name": "Option Pool",    "type": "option",    "shares": 750000  },
+        { "name": "YC SAFE",        "type": "safe",      "shares": 0,
+          "principal": 125000, "valuationCap": 5000000, "safeType": "post-money" },
+        { "name": "Angel SAFE",     "type": "safe",      "shares": 0,
+          "principal": 250000, "valuationCap": 7000000, "discountRate": 0.80, "safeType": "pre-money" },
+        { "name": "Bridge Note",    "type": "note",      "shares": 0,
+          "principal": 500000, "interestRate": 0.06,
+          "issueDate": "2024-06-01", "valuationCap": 9000000, "discountRate": 0.80 }
+      ],
+      "config": {
+        "roundName":           "Series A",
+        "preMoneyValuation":   12000000,
+        "newInvestment":       3000000,
+        "optionPoolTargetPct": 0.20,
+        "optionPoolMethod":    "pre-money",
+        "newShareClass":       "Series A Preferred",
+        "newInvestorName":     "Lead VC Fund",
+        "liquidationMultiple": 1,
+        "participating":       false,
+        "closingDate":         "2025-06-01",
+        "authorizedShares":    30000000
+      }
+    },
+    {
+      "name":    "Beta Co — Seed",
+      "version": "final",
+      "date":    "2025-02-10",
+      "source":  "signed closing",
+      "tags":    ["seed","signed","closed"],
+      "stakeholders": [
+        { "name": "CEO",            "type": "common",    "shares": 6000000 },
+        { "name": "CTO",            "type": "common",    "shares": 4000000 },
+        { "name": "Option Pool",    "type": "option",    "shares": 500000  },
+        { "name": "Seed SAFE",      "type": "safe",      "shares": 0,
+          "principal": 500000, "valuationCap": 4000000, "safeType": "pre-money" }
+      ],
+      "config": {
+        "roundName":           "Seed",
+        "preMoneyValuation":   5000000,
+        "newInvestment":       1000000,
+        "optionPoolTargetPct": 0.10,
+        "optionPoolMethod":    "pre-money",
+        "newShareClass":       "Seed Preferred",
+        "newInvestorName":     "Seed Fund",
+        "liquidationMultiple": 1,
+        "participating":       false,
+        "closingDate":         "2025-02-10",
+        "authorizedShares":    20000000
+      }
+    },
+    {
+      "name":    "Gamma Health — Series A",
+      "version": "final",
+      "date":    "2025-03-20",
+      "source":  "signed closing",
+      "tags":    ["healthcare","signed","closed"],
+      "stakeholders": [
+        { "name": "Founder",        "type": "common",    "shares": 5000000 },
+        { "name": "Co-Founder",     "type": "common",    "shares": 3500000 },
+        { "name": "Option Pool",    "type": "option",    "shares": 1000000 },
+        { "name": "Seed Preferred", "type": "preferred", "shares": 1500000,
+          "series": "Seed", "originalIssuePrice": 0.5,
+          "liquidationMultiple": 1, "participating": false },
+        { "name": "Bridge Note",    "type": "note",      "shares": 0,
+          "principal": 750000, "interestRate": 0.08,
+          "issueDate": "2024-09-01", "valuationCap": 14000000 }
+      ],
+      "config": {
+        "roundName":           "Series A",
+        "preMoneyValuation":   18000000,
+        "newInvestment":       5000000,
+        "optionPoolTargetPct": 0.15,
+        "optionPoolMethod":    "pre-money",
+        "newShareClass":       "Series A Preferred",
+        "newInvestorName":     "Health Ventures",
+        "liquidationMultiple": 1,
+        "participating":       false,
+        "closingDate":         "2025-03-20",
+        "authorizedShares":    40000000
+      }
+    }
+  ],
+
+  "termsheets": [
+    {
+      "name":                   "Acme Inc — Series A",
+      "version":                "signed-loi",
+      "date":                   "2025-03-15",
+      "source":                 "lead investor",
+      "tags":                   ["signed","loi"],
+      "dealName":               "Acme Inc — Series A",
+      "roundName":              "Series A",
+      "preMoneyValuation":      12000000,
+      "investmentAmount":       3000000,
+      "targetOptionPool":       0.15,
+      "optionPoolMethod":       "pre-money",
+      "liquidationMultiple":    1,
+      "participating":          false,
+      "antiDilution":           "broad-based weighted average",
+      "investorOwnershipTarget": 0.20,
+      "safeConversions": [
+        { "name": "YC SAFE",    "valuationCap": 5000000 },
+        { "name": "Angel SAFE", "valuationCap": 7000000, "discountRate": 0.80 }
+      ],
+      "noteConversions": [
+        { "name": "Bridge Note", "interestRate": 0.06, "valuationCap": 9000000, "discountRate": 0.80 }
+      ]
+    },
+    {
+      "name":                   "Beta Co — Seed",
+      "version":                "signed",
+      "date":                   "2025-01-28",
+      "source":                 "investor term sheet",
+      "tags":                   ["signed","seed"],
+      "dealName":               "Beta Co — Seed",
+      "roundName":              "Seed",
+      "preMoneyValuation":      5000000,
+      "investmentAmount":       1000000,
+      "targetOptionPool":       0.10,
+      "optionPoolMethod":       "pre-money",
+      "liquidationMultiple":    1,
+      "participating":          false,
+      "antiDilution":           "broad-based weighted average"
+    },
+    {
+      "name":                   "Gamma Health — Series A",
+      "version":                "signed",
+      "date":                   "2025-03-01",
+      "source":                 "Health Ventures term sheet",
+      "tags":                   ["signed","healthcare"],
+      "dealName":               "Gamma Health — Series A",
+      "roundName":              "Series A",
+      "preMoneyValuation":      18000000,
+      "investmentAmount":       5000000,
+      "targetOptionPool":       0.15,
+      "optionPoolMethod":       "pre-money",
+      "liquidationMultiple":    1,
+      "participating":          false,
+      "antiDilution":           "broad-based weighted average",
+      "investorOwnershipTarget": 0.2174,
+      "noteConversions": [
+        { "name": "Bridge Note", "interestRate": 0.08, "valuationCap": 14000000 }
+      ]
+    }
+  ]
+}
