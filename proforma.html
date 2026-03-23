@@ -524,12 +524,19 @@ async function parseTermSheet(file) {
   const m = text.match(/series\s+[a-z]\b|seed\s+round|bridge\s+round/i);
   ts.dealName = m ? m[0].trim() : file.name.replace(/\.[^.]+$/, '');
 
+  // money() requires a $ sign so it never accidentally matches bare share counts
+  // (e.g. "5,000,000,000 fully diluted shares" near the word "pre-money").
+  // It also strips footnote superscripts like "million1" → "million".
   function money(pat) {
-    const r = new RegExp(pat + '[^\\n]{0,100}\\$?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?)', 'i');
+    const r = new RegExp(
+      pat + '[^\\n]{0,120}\\$\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?[0-9]*)',
+      'i'
+    );
     const x = text.match(r); if (!x || x[1] == null) return null;
-    let s = x[1].replace(/,/g, '').trim();
+    // strip commas, then strip any trailing footnote digit(s) glued to a unit word
+    let s = x[1].replace(/,/g, '').replace(/([a-z])\d+\s*$/i, '$1').trim();
     const last = s.split(/\s+/).pop();
-    const mult = /million|^m$/i.test(last) ? 1e6 : /billion|^b$/i.test(last) ? 1e9 : 1;
+    const mult = /^(million|m)$/i.test(last) ? 1e6 : /^(billion|b)$/i.test(last) ? 1e9 : 1;
     const v = parseFloat(s); return isNaN(v) ? null : v * mult;
   }
   function pct(pat) {
@@ -541,9 +548,21 @@ async function parseTermSheet(file) {
     const x = text.match(r); return x ? parseFloat(x[1]) : null;
   }
 
-  ts.preMoneyValuation = money('pre[\\s\\-]?money(?:\\s+valuation)?(?:\\s*[:=])?(?:\\s*of)?');
-  ts.investmentAmount  = money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)(?:\\s*[:=])?')
-                      || money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?');
+  // Pre-money: try narrow / high-confidence patterns first, fall back to broad ones.
+  // "Transaction Valuation" is the term this specific class of term sheet uses.
+  ts.preMoneyValuation =
+    money('Transaction\\s+Valuation') ||
+    money('pre[\\s\\-]?money\\s+(?:equity\\s+)?valuation\\s+of') ||
+    money('pre[\\s\\-]?money\\s+(?:equity\\s+)?valuation(?:\\s*[:=])') ||
+    money('pre[\\s\\-]?money(?:\\s*[:=])');
+
+  // Investment: require a colon/equals or a very specific phrase to avoid
+  // matching "return on investment" or "investment committee" etc.
+  ts.investmentAmount  =
+    money('(?:aggregate\\s+)?(?:total\\s+)?(?:new\\s+)?(?:gross\\s+)?(?:investment|proceeds|round\\s+size)\\s*[:=]') ||
+    money('subscribing\\s+for') ||
+    money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?') ||
+    money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)\\s+of');
   const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
   if (p != null) ts.targetOptionPool = p / 100;
   if (/pre[\s-]?money\s+option\s+pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
