@@ -224,6 +224,72 @@
     .chip-introduced { background: #fff5f5; color: #991b1b; border-color: #fecaca; }
     .chip-persistent { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
     .no-changes { font-size: 13px; color: var(--muted); font-style: italic; padding: 10px 0; }
+
+    /* ── CSV Download button ── */
+    .dl-wrap { text-align: center; padding: 22px 0 6px; border-top: 1px solid var(--border); margin-top: 20px; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 26px; background: var(--white); color: var(--black);
+      border: 2px solid var(--black); border-radius: 4px;
+      font-size: 13px; font-weight: 600; font-family: var(--sans);
+      cursor: pointer; transition: background .15s, color .15s;
+    }
+    .dl-btn:hover { background: var(--black); color: var(--white); }
+    .dl-btn-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    /* ── Convertible Note Analyzer ── */
+    .badge-note { background: #fef3c7; color: #92400e; }
+
+    .nt-params { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+    .nt-section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 14px; }
+    .nt-params-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    @media (max-width: 700px) { .nt-params-grid { grid-template-columns: 1fr 1fr; } }
+    .nt-field label { display: block; font-size: 11px; font-weight: 600; color: var(--mid); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+    .nt-field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: var(--sans); color: var(--black); }
+    .nt-field input:focus { outline: none; border-color: var(--black); }
+    .nt-pps-preview { margin-top: 10px; font-size: 12px; color: var(--blue); font-weight: 500; min-height: 18px; }
+
+    .nt-notes { margin-bottom: 20px; }
+    .nt-notes-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .nt-notes-head span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+    .add-note-btn { background: var(--black); color: var(--white); border: none; border-radius: 4px; padding: 6px 14px; font-size: 12px; font-weight: 600; font-family: var(--sans); cursor: pointer; }
+    .add-note-btn:hover { background: var(--dark); }
+
+    .nt-tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
+    .nt-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .nt-tbl thead tr { background: var(--black); color: var(--white); }
+    .nt-tbl thead th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .nt-tbl tbody tr { border-bottom: 1px solid var(--border); }
+    .nt-tbl tbody td { padding: 4px 6px; }
+    .nt-tbl input[type="text"], .nt-tbl input[type="number"], .nt-tbl input[type="date"], .nt-tbl select {
+      width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 3px;
+      font-size: 12px; font-family: var(--sans); background: var(--white); color: var(--black);
+    }
+    .nt-tbl input:focus, .nt-tbl select:focus { outline: none; border-color: var(--black); }
+    .nt-tbl td.rm-col { width: 28px; text-align: center; }
+    .rm-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 4px; }
+    .rm-btn:hover { color: var(--red); }
+
+    /* Note results */
+    .nt-metrics { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .nt-metric { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; min-width: 130px; }
+    .nt-metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+    .nt-metric-val { font-size: 17px; font-weight: 700; }
+
+    .note-res-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .note-res-tbl thead tr { background: var(--black); color: var(--white); }
+    .note-res-tbl thead th { padding: 7px 9px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .note-res-tbl thead th.r { text-align: right; }
+    .note-res-tbl tbody tr { border-bottom: 1px solid var(--border); }
+    .note-res-tbl tbody tr:hover { background: #f5f3ef; }
+    .note-res-tbl tbody td { padding: 7px 9px; }
+    .note-res-tbl tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+    .note-res-tbl tfoot tr { background: #f5f3ef; font-weight: 700; border-top: 2px solid var(--border); }
+    .note-res-tbl tfoot td { padding: 7px 9px; }
+    .note-res-tbl tfoot td.r { text-align: right; }
+    .nb-cap  { background: #dbeafe; color: #1d4ed8; font-size: 10px; padding: 1px 7px; border-radius: 8px; font-weight: 700; }
+    .nb-disc { background: #dcfce7; color: #166534; font-size: 10px; padding: 1px 7px; border-radius: 8px; font-weight: 700; }
+    .nb-pps  { background: #f3f4f6; color: #374151; font-size: 10px; padding: 1px 7px; border-radius: 8px; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -407,6 +473,71 @@
   <div class="results-area" id="comparator-results"></div>
 </div><!-- /comparator-section -->
 
+<!-- ═══════════════════════════════ CONVERTIBLE NOTE ANALYZER -->
+<div class="comparator-section" id="note-tool-section">
+  <div class="comp-head">
+    <div class="col-badge badge-note">Note Analyzer</div>
+    <h2>Convertible Note &amp; SAFE Analyzer</h2>
+    <p>Enter round parameters and instrument details to compute exact conversion prices, accrued interest, share counts, effective discounts, and dilution for each convertible note or SAFE — and download the full conversion schedule as CSV.</p>
+  </div>
+
+  <!-- Round Parameters -->
+  <div class="nt-params">
+    <div class="nt-section-head">Round Parameters</div>
+    <div class="nt-params-grid">
+      <div class="nt-field">
+        <label>Pre-Money Valuation ($)</label>
+        <input type="number" id="nt-premoney" placeholder="e.g. 10,000,000" min="0" oninput="updateNtPpsPreview()">
+      </div>
+      <div class="nt-field">
+        <label>New Investment ($)</label>
+        <input type="number" id="nt-investment" placeholder="e.g. 2,000,000" min="0">
+      </div>
+      <div class="nt-field">
+        <label>Pre-Money FD Shares</label>
+        <input type="number" id="nt-fd" placeholder="e.g. 10,000,000" min="0" oninput="updateNtPpsPreview()">
+      </div>
+      <div class="nt-field">
+        <label>Closing Date</label>
+        <input type="date" id="nt-closing">
+      </div>
+    </div>
+    <div class="nt-pps-preview" id="nt-pps-preview"></div>
+  </div>
+
+  <!-- Instrument rows -->
+  <div class="nt-notes">
+    <div class="nt-notes-head">
+      <span>Instruments</span>
+      <button class="add-note-btn" onclick="addNoteRow()">+ Add Row</button>
+    </div>
+    <div class="nt-tbl-wrap">
+      <table class="nt-tbl">
+        <thead>
+          <tr>
+            <th>Holder / Name</th>
+            <th>Type</th>
+            <th>Principal ($)</th>
+            <th>Interest Rate %</th>
+            <th>Issue Date</th>
+            <th>Valuation Cap ($)</th>
+            <th>Discount %</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="nt-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="action-wrap">
+    <button class="action-btn" onclick="runNoteAnalyzer()">&#9654;&nbsp; Analyze Instruments</button>
+    <p class="action-hint">Enter round parameters and at least one instrument row above.</p>
+  </div>
+
+  <div class="results-area" id="note-results"></div>
+</div><!-- /note-tool-section -->
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -416,6 +547,7 @@
 
 // ── Parsed data store ─────────────────────────────────────────────
 const store = { b: { ts: null, ct: null }, a: { ts: null, pf: null } };
+let _csvData = { b: null, a: null };   // holds last-built {pf, rc} for CSV export
 
 // ── Generic slot handler ──────────────────────────────────────────
 async function handleSlot(tool, slot, input) {
@@ -712,6 +844,7 @@ async function runBuilder() {
     return;
   }
 
+  _csvData.b = { pf, rc };
   renderBuilderResults(pf, rc);
   document.getElementById('builder-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -754,6 +887,10 @@ function renderBuilderResults(pf, rc) {
         <tbody>${rows}</tbody>
         <tfoot><tr><td colspan="2">Total (Fully Diluted)</td><td class="num">${fmt0(total)}</td><td class="pct">100.0%</td></tr></tfoot>
       </table>
+    </div>
+    <div class="dl-wrap">
+      <button class="dl-btn" onclick="downloadBuilderCSV()">⬇ Download CSV Analysis</button>
+      <div class="dl-btn-sub">6-section analysis · Cap table · Conversion logic · Option pool audit · Formula checks</div>
     </div>`;
 }
 
@@ -771,6 +908,7 @@ function runAnalyzer() {
     showError('analyzer-results', 'Analysis error: ' + e.message);
     return;
   }
+  _csvData.a = { pf: store.a.pf, rc: store.a.pf?._rc || store.a.pf?.roundConfig };
   renderAnalyzerResults(report);
   document.getElementById('analyzer-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -814,7 +952,11 @@ function renderAnalyzerResults(report) {
         <div class="cnt"><span class="n c-warn">${warns}</span><span class="l">Warnings</span></div>
       </div>
     </div>
-    <div class="conf-cards">${cards || '<p style="color:#888;font-size:13px;">No comparable terms found. Check that your documents contain labelled financial figures.</p>'}</div>`;
+    <div class="conf-cards">${cards || '<p style="color:#888;font-size:13px;">No comparable terms found. Check that your documents contain labelled financial figures.</p>'}</div>
+    <div class="dl-wrap">
+      <button class="dl-btn" onclick="downloadAnalyzerCSV()">⬇ Download CSV Analysis</button>
+      <div class="dl-btn-sub">6-section analysis · Cap table · Conversion logic · Option pool audit · Formula checks</div>
+    </div>`;
 }
 
 // ── Version Comparator ────────────────────────────────────────────
@@ -980,6 +1122,572 @@ function renderComparatorResults(diff) {
         ? `<div class="issue-chips">${resolvedChips}${introducedChips}${persistentChips}</div>`
         : '<p class="no-changes">No issue changes between versions.</p>'}
     </div>`;
+}
+
+// ── Convertible Note / SAFE Analyzer ─────────────────────────────
+let _noteRowCounter  = 0;
+let _lastNoteResults = null;
+
+function addNoteRow(defaults = {}) {
+  _noteRowCounter++;
+  const id   = _noteRowCounter;
+  const tr   = document.createElement('tr');
+  tr.id      = 'nt-row-' + id;
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Holder name" value="${esc(defaults.name || '')}"></td>
+    <td><select>
+      <option value="note"${defaults.type === 'note' ? ' selected' : ''}>Convertible Note</option>
+      <option value="safe-pre"${defaults.type === 'safe-pre' ? ' selected' : ''}>SAFE (pre-money)</option>
+      <option value="safe-post"${defaults.type === 'safe-post' ? ' selected' : ''}>SAFE (post-money)</option>
+    </select></td>
+    <td><input type="number" min="0" step="1" placeholder="1,000,000" value="${defaults.principal || ''}"></td>
+    <td><input type="number" min="0" max="100" step="0.1" placeholder="6.0" value="${defaults.interestRate || ''}"></td>
+    <td><input type="date" value="${defaults.issueDate || ''}"></td>
+    <td><input type="number" min="0" step="1" placeholder="optional" value="${defaults.valuationCap || ''}"></td>
+    <td><input type="number" min="0" max="100" step="0.1" placeholder="optional" value="${defaults.discountPct || ''}"></td>
+    <td class="rm-col"><button class="rm-btn" onclick="removeNoteRow(${id})" title="Remove row">×</button></td>`;
+  document.getElementById('nt-tbody').appendChild(tr);
+}
+
+function removeNoteRow(id) {
+  const row = document.getElementById('nt-row-' + id);
+  if (row) row.remove();
+}
+
+function updateNtPpsPreview() {
+  const pm  = parseFloat(document.getElementById('nt-premoney').value) || 0;
+  const fd  = parseFloat(document.getElementById('nt-fd').value)       || 0;
+  const el  = document.getElementById('nt-pps-preview');
+  el.textContent = (pm > 0 && fd > 0)
+    ? 'Derived PPS = $' + (pm / fd).toFixed(4) + '  (Pre-Money ÷ FD Shares)'
+    : '';
+}
+
+function _getNoteRows() {
+  const notes = [];
+  document.getElementById('nt-tbody').querySelectorAll('tr').forEach(tr => {
+    const ins = tr.querySelectorAll('input, select');
+    const name      = ins[0].value.trim();
+    const typeRaw   = ins[1].value;
+    const principal = parseFloat(ins[2].value) || 0;
+    const ratePct   = parseFloat(ins[3].value);
+    const issueDate = ins[4].value;
+    const cap       = parseFloat(ins[5].value) || null;
+    const discPct   = parseFloat(ins[6].value);
+    if (!name && principal <= 0) return;
+    notes.push({
+      name:         name || 'Unnamed',
+      type:         typeRaw.startsWith('safe') ? 'safe' : 'note',
+      safeType:     typeRaw === 'safe-post' ? 'post-money' : 'pre-money',
+      principal,
+      interestRate: isNaN(ratePct) ? null : ratePct / 100,
+      issueDate:    issueDate || null,
+      valuationCap: cap,
+      discountRate: isNaN(discPct) ? null : 1 - discPct / 100,
+    });
+  });
+  return notes;
+}
+
+function runNoteAnalyzer() {
+  const pm      = parseFloat(document.getElementById('nt-premoney').value)   || 0;
+  const inv     = parseFloat(document.getElementById('nt-investment').value) || 0;
+  const fd      = parseFloat(document.getElementById('nt-fd').value)         || 0;
+  const closing = document.getElementById('nt-closing').value || new Date().toISOString().slice(0, 10);
+  const notes   = _getNoteRows();
+  const resEl   = document.getElementById('note-results');
+
+  if (pm <= 0 || fd <= 0) {
+    resEl.innerHTML = '<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:4px;padding:14px;color:#c41e3a;font-size:13px;margin-top:16px;">Enter pre-money valuation and fully diluted share count first.</div>';
+    return;
+  }
+  if (notes.length === 0) {
+    resEl.innerHTML = '<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:4px;padding:14px;color:#c41e3a;font-size:13px;margin-top:16px;">Add at least one instrument row.</div>';
+    return;
+  }
+
+  const pps = pm / fd;
+  const results = notes.map(n => {
+    // Accrue simple interest (notes only)
+    const daysHeld  = (n.type === 'note' && n.interestRate && n.issueDate)
+      ? Math.max(0, (new Date(closing) - new Date(n.issueDate)) / 86400000) : 0;
+    const interest  = n.principal * (n.interestRate || 0) * (daysHeld / 365);
+    const convAmt   = n.principal + interest;
+
+    // Conversion price: take the best (lowest) of cap price / discount price / round PPS
+    const cands = [];
+    if (n.valuationCap) cands.push({ basis: 'cap',      price: n.valuationCap / fd });
+    if (n.discountRate) cands.push({ basis: 'discount', price: pps * n.discountRate });
+    if (cands.length === 0) cands.push({ basis: 'pps',  price: pps });
+    let best = cands.reduce((min, c) => c.price < min.price ? c : min, cands[0]);
+    if (best.price > pps) best = { basis: 'pps', price: pps };
+
+    const shares = Math.round(convAmt / best.price);
+    return {
+      ...n, interest, convAmt,
+      convPPS:   best.price,
+      convBasis: best.basis,
+      shares,
+      effDisc:   pps > 0 ? 1 - best.price / pps : 0,
+      dilutionOfPreFD: fd > 0 ? shares / fd : 0,
+    };
+  });
+
+  _lastNoteResults = { pps, pm, inv, fd, closing, results };
+  renderNoteResults(_lastNoteResults);
+  resEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderNoteResults({ pps, pm, inv, fd, closing, results }) {
+  const fD  = n => '$' + Math.round(n || 0).toLocaleString('en-US');
+  const fP4 = n => '$' + Number(n).toFixed(4);
+  const fPt = n => (n * 100).toFixed(2) + '%';
+  const f0  = n => Math.round(n || 0).toLocaleString('en-US');
+  const badge = b =>
+    b === 'cap'      ? '<span class="nb-cap">Cap</span>'      :
+    b === 'discount' ? '<span class="nb-disc">Discount</span>' :
+                       '<span class="nb-pps">PPS</span>';
+
+  const totPrinc  = results.reduce((a, r) => a + r.principal, 0);
+  const totInt    = results.reduce((a, r) => a + r.interest, 0);
+  const totAmt    = results.reduce((a, r) => a + r.convAmt, 0);
+  const totShares = results.reduce((a, r) => a + r.shares, 0);
+  const newInvSh  = inv > 0 ? Math.round(inv / pps) : 0;
+  const postFD    = fd + totShares + newInvSh;
+  const convDil   = postFD > 0 ? totShares / postFD : 0;
+
+  const rowsHtml = results.map(r => `<tr>
+    <td>${esc(r.name)}</td>
+    <td>${esc(r.type === 'safe' ? 'SAFE (' + r.safeType + ')' : 'Convertible Note')}</td>
+    <td class="r">${fD(r.principal)}</td>
+    <td class="r">${r.interestRate ? fPt(r.interestRate) : '—'}</td>
+    <td class="r">${r.interest > 0.01 ? fD(r.interest) : '—'}</td>
+    <td class="r">${fD(r.convAmt)}</td>
+    <td class="r">${r.valuationCap ? fD(r.valuationCap) : '—'}</td>
+    <td class="r">${r.discountRate ? fPt(1 - r.discountRate) : '—'}</td>
+    <td class="r">${badge(r.convBasis)}</td>
+    <td class="r">${fP4(r.convPPS)}</td>
+    <td class="r">${f0(r.shares)}</td>
+    <td class="r">${fPt(r.effDisc)}</td>
+    <td class="r">${fPt(r.dilutionOfPreFD)}</td>
+  </tr>`).join('');
+
+  document.getElementById('note-results').innerHTML = `
+    <div class="results-head">Conversion Schedule — Closing ${esc(closing)}</div>
+    <div class="nt-metrics">
+      <div class="nt-metric"><div class="nt-metric-label">Round PPS</div><div class="nt-metric-val">${fP4(pps)}</div></div>
+      <div class="nt-metric"><div class="nt-metric-label">Instruments</div><div class="nt-metric-val">${results.length}</div></div>
+      <div class="nt-metric"><div class="nt-metric-label">Total Principal</div><div class="nt-metric-val">${fD(totPrinc)}</div></div>
+      <div class="nt-metric"><div class="nt-metric-label">Accrued Interest</div><div class="nt-metric-val">${fD(totInt)}</div></div>
+      <div class="nt-metric"><div class="nt-metric-label">Shares Issued</div><div class="nt-metric-val">${f0(totShares)}</div></div>
+      <div class="nt-metric"><div class="nt-metric-label">Dilution (post-FD)</div><div class="nt-metric-val">${fPt(convDil)}</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="note-res-tbl">
+        <thead><tr>
+          <th>Holder</th><th>Type</th>
+          <th class="r">Principal</th><th class="r">Rate</th>
+          <th class="r">Interest</th><th class="r">Conv. Amt</th>
+          <th class="r">Val. Cap</th><th class="r">Discount</th>
+          <th class="r">Basis</th><th class="r">Conv. PPS</th>
+          <th class="r">Shares</th><th class="r">Eff. Disc.</th>
+          <th class="r">Dilution %</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr>
+          <td colspan="2"><strong>TOTAL</strong></td>
+          <td class="r">${fD(totPrinc)}</td>
+          <td class="r">—</td>
+          <td class="r">${totInt > 0.01 ? fD(totInt) : '—'}</td>
+          <td class="r">${fD(totAmt)}</td>
+          <td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td>
+          <td class="r">${f0(totShares)}</td>
+          <td class="r">—</td>
+          <td class="r">${fPt(convDil)}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="dl-wrap">
+      <button class="dl-btn" onclick="downloadNoteCSV()">⬇ Download CSV Analysis</button>
+      <div class="dl-btn-sub">Conversion schedule · Interest accrual · Dilution per instrument</div>
+    </div>`;
+}
+
+function downloadNoteCSV() {
+  if (!_lastNoteResults) return;
+  const { pps, pm, inv, fd, closing, results } = _lastNoteResults;
+  const rows = [];
+  const q   = v => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const row = (...c) => rows.push(c.map(q).join(','));
+  const cD  = n => n != null ? '$' + Math.round(n).toLocaleString('en-US') : '';
+  const cP  = n => n != null ? '$' + Number(n).toFixed(4) : '';
+  const cPt = n => n != null ? (n * 100).toFixed(2) + '%' : '';
+  const c0  = n => n != null ? Math.round(n).toLocaleString('en-US') : '';
+
+  rows.push(q('CONVERTIBLE INSTRUMENT CONVERSION ANALYSIS'));
+  rows.push('');
+  row('Closing Date', closing);
+  row('Pre-Money Valuation', cD(pm));
+  row('New Investment', cD(inv));
+  row('Pre-Money FD Shares', c0(fd));
+  row('Round PPS', cP(pps));
+  rows.push('');
+  row('Holder', 'Type', 'Principal', 'Interest Rate', 'Accrued Interest',
+      'Conversion Amount', 'Valuation Cap', 'Discount %', 'Conversion Basis',
+      'Conversion PPS', 'Shares Received', 'Effective Discount', 'Dilution % of Post-FD');
+  const totPrinc  = results.reduce((a, r) => a + r.principal, 0);
+  const totInt    = results.reduce((a, r) => a + r.interest, 0);
+  const totAmt    = results.reduce((a, r) => a + r.convAmt, 0);
+  const totShares = results.reduce((a, r) => a + r.shares, 0);
+  const newInvSh  = inv > 0 ? Math.round(inv / pps) : 0;
+  const postFD    = fd + totShares + newInvSh;
+  const convDil   = postFD > 0 ? totShares / postFD : 0;
+  for (const r of results) {
+    row(r.name,
+      r.type === 'safe' ? 'SAFE (' + r.safeType + ')' : 'Convertible Note',
+      cD(r.principal), r.interestRate ? cPt(r.interestRate) : 'N/A',
+      cD(r.interest), cD(r.convAmt),
+      r.valuationCap ? cD(r.valuationCap) : 'None',
+      r.discountRate ? cPt(1 - r.discountRate) : 'None',
+      r.convBasis, cP(r.convPPS), c0(r.shares), cPt(r.effDisc), cPt(r.dilutionOfPreFD));
+  }
+  row('TOTAL', '', cD(totPrinc), '', cD(totInt), cD(totAmt), '', '', '', '', c0(totShares), '', cPt(convDil));
+  downloadCSV('note-conversion-analysis.csv', rows.join('\n'));
+}
+
+// Seed one empty row on load
+(function () { addNoteRow(); })();
+
+// ── CSV Analysis Export ───────────────────────────────────────────
+
+/**
+ * Generate a 6-section CSV analysis from a ProFormaEngine result.
+ * Sections:
+ *   1. Capitalization & Share Counts (Pre-Closing)
+ *   2. Convertible Instruments & Conversion Logic
+ *   3. The New Money Investment
+ *   4. Option Pool Management (The Shuffle)
+ *   5. Final Output & Percentage Integrity
+ *   6. Formula & Structural Audit
+ */
+function generateCSVAnalysis(pf, rc) {
+  const rows = [];
+
+  // Formatting helpers (local, no dependency on outer fmt0/fmtM)
+  const c0   = n => n == null ? '' : Math.round(n).toLocaleString('en-US');
+  const cD   = n => n == null ? '' : '$' + Math.round(n).toLocaleString('en-US');
+  const cPPS = n => n == null ? '' : '$' + Number(n).toFixed(4);
+  const cPct = n => n == null ? '' : (n * 100).toFixed(2) + '%';
+  const cRt  = n => n == null ? '' : (n * 100).toFixed(2) + '%';
+
+  // CSV escape: wrap in quotes if value contains comma, quote, or newline
+  const q = v => {
+    const s = String(v == null ? '' : v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r'))
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const row   = (...cells) => rows.push(cells.map(q).join(','));
+  const blank = ()         => rows.push('');
+  const sect  = title      => { blank(); rows.push(q(title)); blank(); };
+
+  const pre    = pf.preRoundCap || pf._stakeholders || [];
+  const post   = pf.postRoundCap || [];
+  const conv   = pf.convertedInstruments || [];
+  const rcData = rc || pf.roundConfig || pf._rc || {};
+
+  // ── SECTION 1: Capitalization & Share Counts (Pre-Closing) ──────
+  sect('SECTION 1: CAPITALIZATION & SHARE COUNTS (PRE-CLOSING)');
+  row('Category', 'Holder / Name', 'Series / Class', 'Shares', 'Original Issue Price', 'Strike Price', 'Notes');
+
+  // Common Stock
+  const common = pre.filter(s => s.type === 'common');
+  const commonTotal = common.reduce((a, s) => a + (s.shares || 0), 0);
+  if (common.length === 0) {
+    row('Common Stock – Outstanding', '(none)', '', '', '', '', '');
+  } else {
+    for (const s of common) row('Common Stock – Outstanding', s.name, '', c0(s.shares), '', '', '');
+    if (common.length > 1) row('Common Stock – SUBTOTAL', '', '', c0(commonTotal), '', '', '');
+  }
+  blank();
+
+  // Preferred Stock by series
+  const pref = pre.filter(s => s.type === 'preferred');
+  if (pref.length === 0) {
+    row('Preferred Stock – Outstanding', '(none)', '', '', '', '', '');
+  } else {
+    const byS = {};
+    for (const s of pref) {
+      const k = s.series || 'Preferred';
+      if (!byS[k]) byS[k] = { oip: s.originalIssuePrice, list: [] };
+      byS[k].list.push(s);
+    }
+    for (const [series, d] of Object.entries(byS)) {
+      const st = d.list.reduce((a, s) => a + (s.shares || 0), 0);
+      for (const s of d.list) {
+        row('Preferred Stock – Outstanding', s.name, series, c0(s.shares),
+          d.oip != null ? cPPS(d.oip) : '', '', '');
+      }
+      if (d.list.length > 1) row('  ' + series + ' SUBTOTAL', '', series, c0(st), '', '', '');
+      blank();
+    }
+  }
+
+  // Warrants
+  const warrants = pre.filter(s => s.type === 'warrant');
+  if (warrants.length === 0) {
+    row('Warrants – Outstanding', '(none)', '', '', '', '', '');
+  } else {
+    for (const s of warrants) {
+      row('Warrants – Outstanding', s.name, s.series || '', c0(s.shares), '',
+        s.strikePrice != null ? cPPS(s.strikePrice) : '',
+        s.underlyingType ? 'For: ' + s.underlyingType : '');
+    }
+  }
+  blank();
+
+  // Equity Incentive Plan
+  const opts      = pre.filter(s => s.type === 'option');
+  const issuedOpts = opts.filter(s => !/pool|unalloc|available|reserve/i.test(s.name));
+  const poolOpts   = opts.filter(s => /pool|unalloc|available|reserve/i.test(s.name));
+  if (issuedOpts.length === 0 && poolOpts.length === 0) {
+    row('EIP – Options', '(none)', '', '', '', '', '');
+  } else {
+    for (const s of issuedOpts) {
+      row('EIP – Issued / Outstanding', s.name, '', c0(s.shares), '',
+        s.strikePrice != null ? cPPS(s.strikePrice) : '', '');
+    }
+    for (const s of poolOpts) {
+      row('EIP – Available Pool (Pre-Money)', s.name, '', c0(s.shares), '', '', 'Unallocated');
+    }
+  }
+  blank();
+
+  // SAFEs and Convertible Notes (pre-conversion summary)
+  const safes = pre.filter(s => s.type === 'safe');
+  const notes = pre.filter(s => s.type === 'note');
+  for (const s of safes)
+    row('SAFE (Pre-Conversion)', s.name, s.safeType || 'pre-money', '', '', '', 'Principal: ' + cD(s.principal));
+  for (const s of notes)
+    row('Convertible Note (Pre-Conversion)', s.name, '', '', '', '', 'Principal: ' + cD(s.principal));
+  if (safes.length === 0 && notes.length === 0)
+    row('Convertible Instruments', '(none)', '', '', '', '', '');
+
+  // ── SECTION 2: Convertible Instruments & Conversion Logic ───────
+  sect('SECTION 2: CONVERTIBLE INSTRUMENTS & CONVERSION LOGIC');
+  row('Instrument Type', 'Holder', 'Principal', 'SAFE Type',
+      'Valuation Cap', 'Discount Rate', 'Interest Rate', 'Issue Date',
+      'Conversion Basis', 'Conversion PPS', 'Shares Received',
+      'Effective Discount', 'Inclusion Logic');
+
+  const allConv = pre.filter(s => s.type === 'safe' || s.type === 'note');
+  if (allConv.length === 0) {
+    row('(No convertible instruments)', '', '', '', '', '', '', '', '', '', '', '', '');
+  } else {
+    for (const s of allConv) {
+      const ci = conv.find(c => c.name === s.name);
+      const inclLogic = s.safeType === 'post-money'
+        ? 'Dilutive to all (Post-Money SAFE)'
+        : s.type === 'safe'
+          ? 'Shares Pre-Money valuation (Standard NVCA)'
+          : 'Shares Pre-Money valuation';
+      row(
+        s.type === 'safe' ? 'SAFE (' + (s.safeType || 'pre-money') + ')' : 'Convertible Note',
+        s.name, cD(s.principal),
+        s.safeType || (s.type === 'note' ? 'N/A' : 'pre-money'),
+        s.valuationCap != null ? cD(s.valuationCap) : 'None',
+        s.discountRate != null ? cRt(1 - s.discountRate) + ' discount' : 'None',
+        s.interestRate != null ? cRt(s.interestRate) : 'N/A',
+        s.issueDate || 'N/A',
+        ci ? (ci.conversionBasis || 'pps') : 'Not converted',
+        ci ? cPPS(ci.conversionPPS) : '',
+        ci ? c0(ci.shares) : '',
+        ci ? cPct(ci.effectiveDiscount || 0) : '',
+        inclLogic,
+      );
+    }
+  }
+
+  // ── SECTION 3: The New Money Investment ─────────────────────────
+  sect('SECTION 3: THE NEW MONEY INVESTMENT');
+  row('Field', 'Value', 'Notes');
+
+  const preMoney   = pf.preMoneyValuation;
+  const newInv     = pf.newInvestment;
+  const preFD      = pf.premoneyFD;
+  const pps        = pf.pps;
+  const derivedPPS = (preMoney != null && preFD) ? preMoney / preFD : null;
+  const ppsDiff    = (pps != null && derivedPPS != null) ? Math.abs(pps - derivedPPS) : null;
+  const ppsOk      = ppsDiff != null ? ppsDiff <= 0.005 : null;
+
+  row('Pre-Money Valuation', cD(preMoney), 'Agreed upon per term sheet');
+  row('New Investment Amount', cD(newInv), 'Total aggregate new cash');
+  row('Pre-Money Fully Diluted Shares', c0(preFD),
+    'Denominator for PPS — includes option pool expansion if pre-money method');
+  row('Price Per Share (PPS)', cPPS(pps), 'Reported by pro forma engine');
+  row('Derived PPS = Pre-Money ÷ FD Shares', cPPS(derivedPPS), 'Independently cross-checked');
+  row('PPS Formula Check', ppsOk == null ? 'N/A' : ppsOk ? 'PASS' : 'FAIL',
+    ppsDiff != null && !ppsOk
+      ? 'Delta ' + cPPS(ppsDiff) + ' exceeds $0.005 tolerance' : 'Within $0.005 tolerance');
+  row('New Investor Shares = Investment ÷ PPS', c0(pf.newInvestorShares),
+    pps ? cD(newInv) + ' ÷ ' + cPPS(pps) : '');
+
+  // ── SECTION 4: Option Pool Management (The Shuffle) ─────────────
+  sect('SECTION 4: OPTION POOL MANAGEMENT (THE SHUFFLE)');
+  row('Field', 'Value', 'Notes');
+
+  const poolMethod = rcData.optionPoolMethod || 'pre-money';
+  const poolTarget = rcData.optionPoolTargetPct;
+  const poolExp    = pf.optionExpansion || 0;
+  const actualPool = pf.actualOptionPoolPct;
+  const prePoolSh  = pre.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const postPoolSh = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const poolOk     = (poolTarget != null && actualPool != null)
+    ? Math.abs(actualPool - poolTarget) <= 0.001 : null;
+  const circNeeded = poolMethod === 'pre-money' && poolTarget > 0;
+
+  row('Option Pool Method', poolMethod,
+    poolMethod === 'pre-money'
+      ? 'Pool expanded before PPS is set — dilutes existing holders (pool shuffle)'
+      : 'Pool expanded after new investment closes — no effect on PPS');
+  row('Target Post-Money Pool %', poolTarget != null ? cPct(poolTarget) : 'Not specified',
+    'Required unallocated pool after closing');
+  row('Existing Pool Shares (Pre-Expansion)', c0(prePoolSh), 'Unallocated options before this round');
+  row('Pool Expansion (New Shares Issued)', c0(poolExp),
+    poolMethod === 'pre-money'
+      ? 'Issued pre-money — lowers PPS; founders bear dilution before investors price the round'
+      : 'Issued post-money — no effect on PPS');
+  row('Pre-Money FD After Pool Expansion', c0(preFD), 'Denominator used to calculate PPS');
+  row('PPS After Shuffle', cPPS(pps), 'Lower than no-shuffle scenario by design');
+  row('Total Unallocated Pool (Post-Closing)', c0(postPoolSh), 'Pre-existing unallocated + expansion');
+  row('Actual Post-Money Pool %', cPct(actualPool), 'Pool shares ÷ post-money fully diluted');
+  row('Pool % Target Achieved', poolOk == null ? 'N/A' : poolOk ? 'PASS' : 'FAIL',
+    poolOk === false ? 'Delta ' + cPct(Math.abs(actualPool - poolTarget)) + ' (tolerance: 0.10 pp)' : '');
+  row('Circular Reference Required', circNeeded ? 'YES' : 'NO',
+    circNeeded
+      ? 'Pool size depends on PPS; PPS depends on pool size — iterative calc required in Excel'
+      : 'Not applicable (post-money method)');
+  const truePM = (preMoney != null && preFD && poolExp)
+    ? preMoney * (preFD - poolExp) / preFD : null;
+  row('Effective Pre-Money for Founders', truePM != null ? cD(truePM) : 'N/A',
+    'Economic pre-money after shuffle dilution: Pre-Money × (FD − Expansion) / FD');
+
+  // ── SECTION 5: Final Output & Percentage Integrity ──────────────
+  sect('SECTION 5: FINAL OUTPUT & PERCENTAGE INTEGRITY');
+  row('Holder', 'Security Type', 'Post-Round Shares', 'Ownership %');
+
+  const ownTable = pf.ownershipTable || post.map(s => ({
+    name: s.name, type: s.type, shares: s.shares || 0,
+    pct: pf.postFD > 0 ? (s.shares || 0) / pf.postFD : 0,
+  }));
+  for (const r of ownTable) row(r.name, r.type, c0(r.shares), cPct(r.pct));
+
+  blank();
+  const totalFD  = pf.postFD || ownTable.reduce((a, r) => a + r.shares, 0);
+  const totC     = ownTable.filter(r => r.type === 'common').reduce((a, r) => a + r.shares, 0);
+  const totP     = ownTable.filter(r => r.type === 'preferred').reduce((a, r) => a + r.shares, 0);
+  const totW     = ownTable.filter(r => r.type === 'warrant').reduce((a, r) => a + r.shares, 0);
+  const totO     = ownTable.filter(r => r.type === 'option').reduce((a, r) => a + r.shares, 0);
+  const pctOf    = n => totalFD ? cPct(n / totalFD) : '';
+
+  row('TOTAL – Common', 'common', c0(totC), pctOf(totC));
+  row('TOTAL – Preferred (all series)', 'preferred', c0(totP), pctOf(totP));
+  row('TOTAL – Warrants', 'warrant', c0(totW), pctOf(totW));
+  row('TOTAL – Unallocated Option Pool', 'option', c0(totO), pctOf(totO));
+  row('TOTAL – Fully Diluted', 'all', c0(totalFD), '100.00%');
+  blank();
+
+  const postMoney = pf.postMoneyValuation;
+  const fdXpps    = (totalFD && pps) ? totalFD * pps : null;
+  const pmCheck   = (postMoney && fdXpps)
+    ? Math.abs(postMoney - fdXpps) / postMoney <= 0.0005 : null;
+
+  row('Post-Money Valuation', cD(postMoney), 'Pre-Money + New Investment');
+  row('Cross-Check: FD Shares × PPS', cD(fdXpps), 'Must equal Post-Money Valuation (±0.05%)');
+  row('Post-Money Arithmetic Check', pmCheck == null ? 'N/A' : pmCheck ? 'PASS' : 'FAIL',
+    pmCheck === false ? 'Delta: ' + cD(Math.abs(postMoney - fdXpps)) : '');
+
+  // ── SECTION 6: Formula & Structural Audit ───────────────────────
+  sect('SECTION 6: FORMULA & STRUCTURAL AUDIT');
+  row('Check', 'Status', 'Detail');
+
+  row('PPS = Pre-Money ÷ FD Shares',
+    ppsOk == null ? 'N/A' : ppsOk ? 'PASS' : 'FAIL',
+    ppsOk === false
+      ? 'Computed ' + cPPS(derivedPPS) + ' vs Reported ' + cPPS(pps) + ' — delta ' + cPPS(ppsDiff)
+      : pps != null ? cPPS(pps) : '');
+
+  const pmArith = (preMoney != null && newInv != null && postMoney != null)
+    ? Math.abs(preMoney + newInv - postMoney) < 1 : null;
+  row('Post-Money = Pre-Money + Investment',
+    pmArith == null ? 'N/A' : pmArith ? 'PASS' : 'FAIL',
+    pmArith === false
+      ? cD(preMoney) + ' + ' + cD(newInv) + ' = ' + cD(preMoney + newInv) + ' ≠ ' + cD(postMoney)
+      : preMoney != null ? cD(preMoney) + ' + ' + cD(newInv) + ' = ' + cD(postMoney) : '');
+
+  const poolArith = (totO != null && totalFD > 0 && actualPool != null)
+    ? Math.abs(totO / totalFD - actualPool) < 0.0001 : null;
+  row('Pool % = Pool Shares ÷ Total FD',
+    poolArith == null ? 'N/A' : poolArith ? 'PASS' : 'FAIL',
+    poolArith === false
+      ? c0(totO) + ' ÷ ' + c0(totalFD) + ' ≠ ' + cPct(actualPool)
+      : c0(totO) + ' ÷ ' + c0(totalFD) + ' = ' + cPct(actualPool));
+
+  const ppsStr      = pps != null ? pps.toFixed(10).replace(/0+$/, '') : '';
+  const ppsDecimals = ppsStr.includes('.') ? ppsStr.split('.')[1].length : 0;
+  row('PPS Decimal Precision',
+    ppsDecimals <= 4 ? 'OK (' + ppsDecimals + ' dp)' : 'REVIEW (' + ppsDecimals + ' dp shown)',
+    'Recommended: 4 decimal places; excess precision can cause share-count rounding drift');
+
+  row('Hardcode Detection', 'MANUAL CHECK REQUIRED',
+    'Verify share counts and PPS are formula-derived in spreadsheet — not manually typed values');
+
+  const ownSum = ownTable.reduce((a, r) => a + r.shares, 0);
+  const sumOk  = Math.abs(ownSum - totalFD) < 1;
+  row('Ownership Table Summation', sumOk ? 'PASS' : 'FAIL',
+    sumOk
+      ? 'Row sum ' + c0(ownSum) + ' matches FD total ' + c0(totalFD)
+      : 'Row sum ' + c0(ownSum) + ' ≠ FD ' + c0(totalFD) + ' — check for missing or uncaptured rows');
+
+  row('Circular Reference / Iterative Calc Required',
+    circNeeded ? 'YES — Enable in Excel' : 'NO — Not required',
+    circNeeded
+      ? 'Excel: File → Options → Formulas → Enable Iterative Calculation (max iterations ≥ 100)'
+      : 'Not required when using post-money pool method');
+
+  row('Share Rounding Method', 'Standard (Math.round — nearest whole share)',
+    'Verify Excel uses ROUND() not INT() or TRUNC(); affects post-closing share counts by ±1');
+
+  const engIssues   = pf.issues   || [];
+  const engWarnings = pf.warnings || [];
+  if (engIssues.length === 0 && engWarnings.length === 0) {
+    row('Engine Diagnostics', 'CLEAN', 'No issues or warnings flagged by the pro forma engine');
+  } else {
+    for (const iss of engIssues)
+      row('Engine ' + (iss.severity || 'Issue'), '[' + (iss.code || 'ERROR').toUpperCase() + ']', iss.message || '');
+    for (const w of engWarnings)
+      row('Engine Warning', '[' + (w.code || 'WARNING').toUpperCase() + ']', w.message || '');
+  }
+
+  return rows.join('\n');
+}
+
+function downloadCSV(filename, csvString) {
+  const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
+}
+
+function downloadBuilderCSV() {
+  if (!_csvData.b) return;
+  downloadCSV('proforma-analysis.csv', generateCSVAnalysis(_csvData.b.pf, _csvData.b.rc));
+}
+
+function downloadAnalyzerCSV() {
+  if (!_csvData.a) return;
+  downloadCSV('proforma-conformance-analysis.csv', generateCSVAnalysis(_csvData.a.pf, _csvData.a.rc));
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
