@@ -479,8 +479,23 @@ async function parseTermSheet(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   let text = '';
   if (ext === 'docx' || ext === 'doc') {
-    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-    text = r.value;
+    try {
+      const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      text = r.value || '';
+    } catch (e) {
+      throw new Error(
+        'Could not read this Word document — it may contain track changes, ' +
+        'complex tables, or field codes that the parser cannot handle. ' +
+        'Try accepting all tracked changes (Review → Accept All), then re-save as .docx, or export a copy as .xlsx.'
+      );
+    }
+    if (!text.trim()) {
+      throw new Error(
+        'The document was opened but no text could be extracted. ' +
+        'The content may be inside text boxes, shapes, or a scanned image. ' +
+        'Try copying the text into a plain .docx or .xlsx and uploading that instead.'
+      );
+    }
   } else if (ext === 'xlsx' || ext === 'xls') {
     const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
     wb.SheetNames.forEach(n => { text += XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n'; });
@@ -494,7 +509,7 @@ async function parseTermSheet(file) {
 
   function money(pat) {
     const r = new RegExp(pat + '[^\\n]{0,100}\\$?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?)', 'i');
-    const x = text.match(r); if (!x) return null;
+    const x = text.match(r); if (!x || x[1] == null) return null;
     let s = x[1].replace(/,/g, '').trim();
     const last = s.split(/\s+/).pop();
     const mult = /million|^m$/i.test(last) ? 1e6 : /billion|^b$/i.test(last) ? 1e9 : 1;
