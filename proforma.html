@@ -237,6 +237,51 @@
     .dl-btn:hover { background: var(--black); color: var(--white); }
     .dl-btn-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
 
+    /* ── In-page analysis view ── */
+    .analysis-container { margin-top: 0; }
+    .analysis-view { border-top: 2px solid var(--border); margin-top: 8px; padding-top: 4px; }
+
+    .as-sect { margin-top: 28px; }
+    .as-sect-head {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--black); border-bottom: 2px solid var(--black); padding-bottom: 7px; margin-bottom: 12px;
+    }
+    .as-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--black); color: var(--white); font-size: 11px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .as-tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 5px; margin-bottom: 10px; }
+    .as-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .as-tbl thead tr { background: #f5f3ef; }
+    .as-tbl thead th { padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--mid); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .as-tbl thead th.r { text-align: right; }
+    .as-tbl tbody tr { border-bottom: 1px solid #ebebeb; }
+    .as-tbl tbody tr:last-child { border-bottom: none; }
+    .as-tbl tbody tr:hover { background: #faf9f7; }
+    .as-tbl tbody td { padding: 7px 10px; vertical-align: top; }
+    .as-tbl tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+    .as-tbl tfoot tr { background: #f0ede8; font-weight: 700; border-top: 2px solid var(--border); }
+    .as-tbl tfoot td { padding: 7px 10px; }
+    .as-tbl tfoot td.r { text-align: right; }
+
+    /* kv table column widths */
+    .as-field { width: 36%; font-weight: 500; color: var(--dark); }
+    .as-val   { width: 24%; font-weight: 600; }
+    .as-note  { width: 40%; font-size: 11px; color: var(--mid); }
+
+    /* Status badges */
+    .ab { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 9px; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+    .ab-pass { background: #dcfce7; color: #166534; }
+    .ab-fail { background: #fee2e2; color: #991b1b; }
+    .ab-warn { background: #fef9c3; color: #854d0e; }
+    .ab-na   { background: #f3f4f6; color: #6b7280; }
+    .ab-info { background: #eff6ff; color: #1d4ed8; }
+
+    .as-dl-row { text-align: center; padding: 20px 0 8px; }
+
     /* ── Convertible Note Analyzer ── */
     .badge-note { background: #fef3c7; color: #92400e; }
 
@@ -889,9 +934,10 @@ function renderBuilderResults(pf, rc) {
       </table>
     </div>
     <div class="dl-wrap">
-      <button class="dl-btn" onclick="downloadBuilderCSV()">⬇ Download CSV Analysis</button>
-      <div class="dl-btn-sub">6-section analysis · Cap table · Conversion logic · Option pool audit · Formula checks</div>
-    </div>`;
+      <button class="dl-btn" onclick="toggleBuilderAnalysis(this)">▼ View Full Analysis</button>
+      <div class="dl-btn-sub">6 sections: cap table · conversions · PPS formula · option pool · integrity · audit</div>
+    </div>
+    <div id="builder-analysis" class="analysis-container" style="display:none"></div>`;
 }
 
 // ── Analyzer ──────────────────────────────────────────────────────
@@ -954,9 +1000,10 @@ function renderAnalyzerResults(report) {
     </div>
     <div class="conf-cards">${cards || '<p style="color:#888;font-size:13px;">No comparable terms found. Check that your documents contain labelled financial figures.</p>'}</div>
     <div class="dl-wrap">
-      <button class="dl-btn" onclick="downloadAnalyzerCSV()">⬇ Download CSV Analysis</button>
-      <div class="dl-btn-sub">6-section analysis · Cap table · Conversion logic · Option pool audit · Formula checks</div>
-    </div>`;
+      <button class="dl-btn" onclick="toggleAnalyzerAnalysis(this)">▼ View Full Analysis</button>
+      <div class="dl-btn-sub">6 sections: cap table · conversions · PPS formula · option pool · integrity · audit</div>
+    </div>
+    <div id="analyzer-analysis" class="analysis-container" style="display:none"></div>`;
 }
 
 // ── Version Comparator ────────────────────────────────────────────
@@ -1357,6 +1404,324 @@ function downloadNoteCSV() {
 
 // Seed one empty row on load
 (function () { addNoteRow(); })();
+
+// ── In-page Analysis Renderer ─────────────────────────────────────
+
+function toggleBuilderAnalysis(btn) {
+  const container = document.getElementById('builder-analysis');
+  if (!container.dataset.rendered) {
+    container.innerHTML = renderAnalysisHTML(_csvData.b.pf, _csvData.b.rc, 'downloadBuilderCSV');
+    container.dataset.rendered = '1';
+  }
+  const show = container.style.display === 'none' || !container.style.display;
+  container.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? '▲ Hide Analysis' : '▼ View Full Analysis';
+}
+
+function toggleAnalyzerAnalysis(btn) {
+  const container = document.getElementById('analyzer-analysis');
+  if (!container.dataset.rendered) {
+    container.innerHTML = renderAnalysisHTML(_csvData.a.pf, _csvData.a.rc, 'downloadAnalyzerCSV');
+    container.dataset.rendered = '1';
+  }
+  const show = container.style.display === 'none' || !container.style.display;
+  container.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? '▲ Hide Analysis' : '▼ View Full Analysis';
+}
+
+/**
+ * Render the 6-section pro forma analysis as styled HTML for in-page display.
+ * @param {Object} pf      ProFormaEngine result
+ * @param {Object} rc      Round config
+ * @param {string} csvFn   Name of the download function to wire up the CSV button
+ */
+function renderAnalysisHTML(pf, rc, csvFn) {
+  const pre    = pf.preRoundCap || pf._stakeholders || [];
+  const post   = pf.postRoundCap || [];
+  const conv   = pf.convertedInstruments || [];
+  const rcData = rc || pf.roundConfig || pf._rc || {};
+
+  // Local formatters
+  const c0   = n => n == null ? '—' : Math.round(n).toLocaleString('en-US');
+  const cD   = n => n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US');
+  const cPPS = n => n == null ? '—' : '$' + Number(n).toFixed(4);
+  const cPct = n => n == null ? '—' : (n * 100).toFixed(2) + '%';
+  const cRt  = n => n == null ? '—' : (n * 100).toFixed(2) + '%';
+  const e    = s  => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function statusBadge(s) {
+    const lc = (s || '').toLowerCase();
+    let cls;
+    if (lc === 'pass' || lc === 'clean' || lc.startsWith('ok'))       cls = 'ab-pass';
+    else if (lc === 'fail')                                             cls = 'ab-fail';
+    else if (lc === 'n/a' || lc === 'no' || lc.startsWith('no —'))    cls = 'ab-na';
+    else if (lc.startsWith('yes') || lc.includes('review') || lc.includes('manual') || lc.includes('warn')) cls = 'ab-warn';
+    else                                                                cls = 'ab-info';
+    return `<span class="ab ${cls}">${e(s)}</span>`;
+  }
+
+  // Field / Value / Notes table  (status:true rows use a badge for the value)
+  function kvTable(rows) {
+    const trs = rows.map(({ field, value, note, status }) => {
+      const valHtml = status ? statusBadge(value) : `<strong>${e(String(value ?? '—'))}</strong>`;
+      return `<tr>
+        <td class="as-field">${e(field)}</td>
+        <td class="as-val">${valHtml}</td>
+        <td class="as-note">${e(note || '')}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="as-tbl-wrap"><table class="as-tbl">
+      <thead><tr><th>Field</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>${trs}</tbody>
+    </table></div>`;
+  }
+
+  // Generic table with configurable columns
+  function dataTable(headers, rows, footRow) {
+    const ths = headers.map(h => `<th${h.right ? ' class="r"' : ''}>${e(h.label)}</th>`).join('');
+    const trs = rows.map(r =>
+      '<tr>' + headers.map((h, i) => `<td${h.right ? ' class="r"' : ''}>${r[i] ?? '—'}</td>`).join('') + '</tr>'
+    ).join('');
+    const tfoot = footRow
+      ? `<tfoot><tr>${headers.map((h, i) => `<td${h.right ? ' class="r"' : ''}><strong>${footRow[i] ?? ''}</strong></td>`).join('')}</tr></tfoot>`
+      : '';
+    return `<div class="as-tbl-wrap"><table class="as-tbl">
+      <thead><tr>${ths}</tr></thead>
+      <tbody>${trs}</tbody>
+      ${tfoot}
+    </table></div>`;
+  }
+
+  const parts = [];
+  function sect(num, title, html) {
+    parts.push(`<div class="as-sect">
+      <div class="as-sect-head"><span class="as-num">${num}</span>${e(title)}</div>
+      ${html}
+    </div>`);
+  }
+
+  // ── Section 1 ──────────────────────────────────────────────────
+  const common   = pre.filter(s => s.type === 'common');
+  const pref     = pre.filter(s => s.type === 'preferred');
+  const warrants = pre.filter(s => s.type === 'warrant');
+  const opts     = pre.filter(s => s.type === 'option');
+  const safes    = pre.filter(s => s.type === 'safe');
+  const noteInst = pre.filter(s => s.type === 'note');
+
+  const s1h = [
+    { label: 'Category' }, { label: 'Holder / Name' }, { label: 'Series / Class' },
+    { label: 'Shares', right: true }, { label: 'OIP / Strike', right: true }, { label: 'Notes' }
+  ];
+  const s1r = [];
+
+  // Common
+  const commonTotal = common.reduce((a, s) => a + (s.shares || 0), 0);
+  for (const s of common) s1r.push(['Common Stock', e(s.name), '', c0(s.shares), '', '']);
+  if (common.length > 1) s1r.push([`<strong>Common — Subtotal</strong>`, '', '', `<strong>${c0(commonTotal)}</strong>`, '', '']);
+
+  // Preferred by series
+  const byS = {};
+  for (const s of pref) {
+    const k = s.series || 'Preferred';
+    if (!byS[k]) byS[k] = { oip: s.originalIssuePrice, list: [] };
+    byS[k].list.push(s);
+  }
+  for (const [series, d] of Object.entries(byS)) {
+    const st = d.list.reduce((a, s) => a + (s.shares || 0), 0);
+    for (const s of d.list)
+      s1r.push(['Preferred Stock', e(s.name), e(series), c0(s.shares), d.oip != null ? cPPS(d.oip) : '', '']);
+    if (d.list.length > 1)
+      s1r.push([`<strong>${e(series)} — Subtotal</strong>`, '', e(series), `<strong>${c0(st)}</strong>`, '', '']);
+  }
+  if (pref.length === 0) s1r.push(['Preferred Stock', '<em>(none)</em>', '', '', '', '']);
+
+  // Warrants
+  for (const s of warrants)
+    s1r.push(['Warrant', e(s.name), e(s.series || ''), c0(s.shares), s.strikePrice != null ? cPPS(s.strikePrice) : '', e(s.underlyingType || '')]);
+  if (warrants.length === 0) s1r.push(['Warrants', '<em>(none)</em>', '', '', '', '']);
+
+  // EIP
+  const issuedOpts = opts.filter(s => !/pool|unalloc|available|reserve/i.test(s.name));
+  const poolOpts   = opts.filter(s =>  /pool|unalloc|available|reserve/i.test(s.name));
+  for (const s of issuedOpts)
+    s1r.push(['EIP – Issued / Outstanding', e(s.name), '', c0(s.shares), s.strikePrice != null ? cPPS(s.strikePrice) : '', '']);
+  for (const s of poolOpts)
+    s1r.push(['EIP – Available Pool (Pre-Money)', e(s.name), '', c0(s.shares), '', 'Unallocated']);
+  if (opts.length === 0) s1r.push(['EIP – Options', '<em>(none)</em>', '', '', '', '']);
+
+  // Convertible (summary row only — detail in Section 2)
+  for (const s of safes)
+    s1r.push([`SAFE (${e(s.safeType || 'pre-money')})`, e(s.name), '', '', '', 'Principal: ' + cD(s.principal)]);
+  for (const s of noteInst)
+    s1r.push(['Convertible Note', e(s.name), '', '', '', 'Principal: ' + cD(s.principal)]);
+  if (safes.length === 0 && noteInst.length === 0)
+    s1r.push(['Convertible Instruments', '<em>(none)</em>', '', '', '', '']);
+
+  sect(1, 'Capitalization & Share Counts (Pre-Closing)', dataTable(s1h, s1r));
+
+  // ── Section 2 ──────────────────────────────────────────────────
+  const allConvInst = pre.filter(s => s.type === 'safe' || s.type === 'note');
+  const s2h = [
+    { label: 'Type' }, { label: 'Holder' }, { label: 'Principal', right: true },
+    { label: 'Cap', right: true }, { label: 'Discount', right: true },
+    { label: 'Int. Rate' }, { label: 'Issue Date' },
+    { label: 'Basis' }, { label: 'Conv. PPS', right: true },
+    { label: 'Shares', right: true }, { label: 'Eff. Disc.', right: true },
+    { label: 'Inclusion Logic' }
+  ];
+  const basisBadgeFn = b =>
+    b === 'cap'      ? '<span class="nb-cap">Cap</span>' :
+    b === 'discount' ? '<span class="nb-disc">Discount</span>' :
+                       '<span class="nb-pps">PPS</span>';
+  let s2r;
+  if (allConvInst.length === 0) {
+    s2r = [['<em>(no convertible instruments)</em>', '', '', '', '', '', '', '', '', '', '', '']];
+  } else {
+    s2r = allConvInst.map(s => {
+      const ci = conv.find(c => c.name === s.name);
+      return [
+        e(s.type === 'safe' ? 'SAFE (' + (s.safeType || 'pre-money') + ')' : 'Convertible Note'),
+        e(s.name), cD(s.principal),
+        s.valuationCap != null ? cD(s.valuationCap) : '—',
+        s.discountRate != null ? cRt(1 - s.discountRate) + ' disc.' : '—',
+        s.interestRate != null ? cRt(s.interestRate) : '—',
+        e(s.issueDate || '—'),
+        ci ? basisBadgeFn(ci.conversionBasis) : '—',
+        ci ? cPPS(ci.conversionPPS) : '—',
+        ci ? c0(ci.shares) : '—',
+        ci ? cPct(ci.effectiveDiscount || 0) : '—',
+        e(s.safeType === 'post-money' ? 'Dilutive to all (Post-Money)' : 'Shares Pre-Money val.'),
+      ];
+    });
+  }
+  sect(2, 'Convertible Instruments & Conversion Logic', dataTable(s2h, s2r));
+
+  // ── Section 3 ──────────────────────────────────────────────────
+  const preMoney   = pf.preMoneyValuation;
+  const newInv     = pf.newInvestment;
+  const preFD      = pf.premoneyFD;
+  const pps        = pf.pps;
+  const derivedPPS = (preMoney != null && preFD) ? preMoney / preFD : null;
+  const ppsDiff    = (pps != null && derivedPPS != null) ? Math.abs(pps - derivedPPS) : null;
+  const ppsOk      = ppsDiff != null ? ppsDiff <= 0.005 : null;
+
+  sect(3, 'The New Money Investment', kvTable([
+    { field: 'Pre-Money Valuation',           value: cD(preMoney),               note: 'Agreed per term sheet' },
+    { field: 'New Investment Amount',          value: cD(newInv),                 note: 'Total aggregate new cash' },
+    { field: 'Pre-Money Fully Diluted Shares', value: c0(preFD),                  note: 'Includes pool expansion if pre-money method' },
+    { field: 'Price Per Share (PPS)',          value: cPPS(pps),                  note: 'Reported by pro forma engine' },
+    { field: 'Derived PPS = Pre-Money ÷ FD',  value: cPPS(derivedPPS),           note: 'Cross-check: independently calculated' },
+    { field: 'PPS Formula Check',             value: ppsOk == null ? 'N/A' : ppsOk ? 'PASS' : 'FAIL', status: true,
+      note: ppsDiff != null && !ppsOk ? 'Delta ' + cPPS(ppsDiff) + ' exceeds $0.005 tolerance' : 'Within $0.005 tolerance' },
+    { field: 'New Investor Shares',           value: c0(pf.newInvestorShares),   note: pps ? cD(newInv) + ' ÷ ' + cPPS(pps) : '' },
+  ]));
+
+  // ── Section 4 ──────────────────────────────────────────────────
+  const poolMethod = rcData.optionPoolMethod || 'pre-money';
+  const poolTarget = rcData.optionPoolTargetPct;
+  const poolExp    = pf.optionExpansion || 0;
+  const actualPool = pf.actualOptionPoolPct;
+  const prePoolSh  = pre.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const postPoolSh = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const poolOk     = (poolTarget != null && actualPool != null) ? Math.abs(actualPool - poolTarget) <= 0.001 : null;
+  const circNeeded = poolMethod === 'pre-money' && poolTarget > 0;
+  const truePM     = (preMoney != null && preFD && poolExp) ? preMoney * (preFD - poolExp) / preFD : null;
+
+  sect(4, 'Option Pool Management (The Shuffle)', kvTable([
+    { field: 'Option Pool Method',                value: poolMethod,
+      note: poolMethod === 'pre-money' ? 'Pool expanded before PPS is set (pool shuffle)' : 'Pool expanded after closing' },
+    { field: 'Target Post-Money Pool %',          value: poolTarget != null ? cPct(poolTarget) : 'Not specified', note: 'Required unallocated pool after closing' },
+    { field: 'Existing Pool Shares (Pre-Expansion)', value: c0(prePoolSh), note: 'Unallocated options before this round' },
+    { field: 'Pool Expansion (New Shares)',        value: c0(poolExp),
+      note: poolMethod === 'pre-money' ? 'Issued pre-money — lowers PPS, dilutes founders before investors price the round' : 'Issued post-money — no effect on PPS' },
+    { field: 'Pre-Money FD After Expansion',      value: c0(preFD),                      note: 'Denominator used to calculate PPS' },
+    { field: 'PPS After Shuffle',                 value: cPPS(pps),                      note: 'Lower than no-shuffle scenario' },
+    { field: 'Total Unallocated Pool (Post-Closing)', value: c0(postPoolSh),             note: 'Pre-existing unallocated + expansion' },
+    { field: 'Actual Post-Money Pool %',          value: cPct(actualPool),               note: 'Pool shares ÷ post-money FD' },
+    { field: 'Pool % Target Achieved',            value: poolOk == null ? 'N/A' : poolOk ? 'PASS' : 'FAIL', status: true,
+      note: poolOk === false ? 'Delta ' + cPct(Math.abs(actualPool - poolTarget)) + ' (tolerance: 0.10 pp)' : '' },
+    { field: 'Circular Reference Required',       value: circNeeded ? 'YES' : 'NO', status: true,
+      note: circNeeded ? 'Excel: File → Options → Formulas → Enable Iterative Calculation' : 'Not applicable (post-money method)' },
+    { field: 'Effective Pre-Money for Founders',  value: truePM != null ? cD(truePM) : 'N/A',
+      note: 'Pre-Money × (FD − Expansion) / FD — economic pre-money after shuffle dilution' },
+  ]));
+
+  // ── Section 5 ──────────────────────────────────────────────────
+  const ownTable = pf.ownershipTable || post.map(s => ({
+    name: s.name, type: s.type, shares: s.shares || 0,
+    pct: pf.postFD > 0 ? (s.shares || 0) / pf.postFD : 0,
+  }));
+  const totalFD  = pf.postFD || ownTable.reduce((a, r) => a + r.shares, 0);
+  const totC     = ownTable.filter(r => r.type === 'common').reduce((a, r) => a + r.shares, 0);
+  const totP     = ownTable.filter(r => r.type === 'preferred').reduce((a, r) => a + r.shares, 0);
+  const totW     = ownTable.filter(r => r.type === 'warrant').reduce((a, r) => a + r.shares, 0);
+  const totO     = ownTable.filter(r => r.type === 'option').reduce((a, r) => a + r.shares, 0);
+  const pctOf    = n => totalFD ? cPct(n / totalFD) : '—';
+  const postMoney = pf.postMoneyValuation;
+  const fdXpps    = (totalFD && pps) ? totalFD * pps : null;
+  const pmCheck   = (postMoney && fdXpps) ? Math.abs(postMoney - fdXpps) / postMoney <= 0.0005 : null;
+
+  const s5h  = [{ label: 'Holder' }, { label: 'Type' }, { label: 'Shares', right: true }, { label: 'Ownership %', right: true }];
+  const s5r  = ownTable.map(r => [e(r.name), e(r.type), c0(r.shares), cPct(r.pct)]);
+  const s5ft = ['Total (Fully Diluted)', 'all', c0(totalFD), '100.00%'];
+
+  sect(5, 'Final Output & Percentage Integrity',
+    dataTable(s5h, s5r, s5ft) +
+    kvTable([
+      { field: 'Total Common',                    value: c0(totC) + '  (' + pctOf(totC) + ')',   note: '' },
+      { field: 'Total Preferred (all series)',    value: c0(totP) + '  (' + pctOf(totP) + ')',   note: '' },
+      { field: 'Total Warrants',                  value: c0(totW) + '  (' + pctOf(totW) + ')',   note: '' },
+      { field: 'Total Unallocated Option Pool',   value: c0(totO) + '  (' + pctOf(totO) + ')',   note: '' },
+      { field: 'Post-Money Valuation',            value: cD(postMoney),                           note: 'Pre-Money + New Investment' },
+      { field: 'Cross-Check: FD Shares × PPS',   value: cD(fdXpps),                             note: '±0.05% tolerance' },
+      { field: 'Post-Money Arithmetic Check',     value: pmCheck == null ? 'N/A' : pmCheck ? 'PASS' : 'FAIL', status: true,
+        note: pmCheck === false ? 'Delta: ' + cD(Math.abs(postMoney - fdXpps)) : '' },
+    ])
+  );
+
+  // ── Section 6 ──────────────────────────────────────────────────
+  const ownSum    = ownTable.reduce((a, r) => a + r.shares, 0);
+  const sumOk     = Math.abs(ownSum - totalFD) < 1;
+  const pmArith   = (preMoney != null && newInv != null && postMoney != null) ? Math.abs(preMoney + newInv - postMoney) < 1 : null;
+  const poolArith = (totO != null && totalFD > 0 && actualPool != null) ? Math.abs(totO / totalFD - actualPool) < 0.0001 : null;
+  const ppsStr    = pps != null ? pps.toFixed(10).replace(/0+$/, '') : '';
+  const ppsDp     = ppsStr.includes('.') ? ppsStr.split('.')[1].length : 0;
+  const engIssues   = pf.issues   || [];
+  const engWarnings = pf.warnings || [];
+
+  const s6rows = [
+    { field: 'PPS = Pre-Money ÷ FD Shares', value: ppsOk == null ? 'N/A' : ppsOk ? 'PASS' : 'FAIL', status: true,
+      note: ppsOk === false ? 'Computed ' + cPPS(derivedPPS) + ' vs Reported ' + cPPS(pps) + ' — delta ' + cPPS(ppsDiff) : cPPS(pps) },
+    { field: 'Post-Money = Pre-Money + Investment', value: pmArith == null ? 'N/A' : pmArith ? 'PASS' : 'FAIL', status: true,
+      note: pmArith === false ? cD(preMoney) + ' + ' + cD(newInv) + ' ≠ ' + cD(postMoney) : cD(preMoney) + ' + ' + cD(newInv) + ' = ' + cD(postMoney) },
+    { field: 'Pool % = Pool Shares ÷ Total FD', value: poolArith == null ? 'N/A' : poolArith ? 'PASS' : 'FAIL', status: true,
+      note: poolArith === false ? c0(totO) + ' ÷ ' + c0(totalFD) + ' ≠ ' + cPct(actualPool) : c0(totO) + ' ÷ ' + c0(totalFD) + ' = ' + cPct(actualPool) },
+    { field: 'PPS Decimal Precision', value: ppsDp <= 4 ? 'OK (' + ppsDp + ' dp)' : 'REVIEW (' + ppsDp + ' dp)', status: true,
+      note: 'Recommended: 4 decimal places; excess precision causes share-count rounding drift' },
+    { field: 'Hardcode Detection', value: 'MANUAL CHECK REQUIRED', status: true,
+      note: 'Verify share counts and PPS are formula-derived in the spreadsheet — not manually typed' },
+    { field: 'Ownership Table Summation', value: sumOk ? 'PASS' : 'FAIL', status: true,
+      note: sumOk ? 'Row sum ' + c0(ownSum) + ' = FD ' + c0(totalFD) : 'Row sum ' + c0(ownSum) + ' ≠ FD ' + c0(totalFD) + ' — check for missing rows' },
+    { field: 'Circular Reference / Iterative Calc', value: circNeeded ? 'YES — Required' : 'NO', status: true,
+      note: circNeeded ? 'Excel: File → Options → Formulas → Enable Iterative Calculation (≥100 iterations)' : 'Not required (post-money pool method)' },
+    { field: 'Share Rounding Method', value: 'Math.round — nearest whole share',
+      note: 'Verify Excel uses ROUND() not INT() or TRUNC(); affects post-closing share counts by ±1' },
+    ...(engIssues.length === 0 && engWarnings.length === 0
+      ? [{ field: 'Engine Diagnostics', value: 'CLEAN', status: true, note: 'No issues or warnings flagged' }]
+      : [
+          ...engIssues.map(i   => ({ field: 'Engine Issue',   value: '[' + (i.code   || 'ERROR').toUpperCase() + ']', note: i.message   || '' })),
+          ...engWarnings.map(w => ({ field: 'Engine Warning', value: '[' + (w.code   || 'WARN').toUpperCase()  + ']', note: w.message   || '' })),
+        ]
+    ),
+  ];
+  sect(6, 'Formula & Structural Audit', kvTable(s6rows));
+
+  const dlRow = csvFn
+    ? `<div class="as-dl-row"><button class="dl-btn" style="font-size:12px;padding:8px 20px;" onclick="${csvFn}()">⬇ Download as CSV</button></div>`
+    : '';
+
+  return `<div class="analysis-view">${parts.join('')}${dlRow}</div>`;
+}
 
 // ── CSV Analysis Export ───────────────────────────────────────────
 
