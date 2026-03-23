@@ -793,6 +793,17 @@ async function parseCapTableOrProForma(file) {
     throw new Error('Upload .xlsx, .docx, or .zip');
   }
 
+  // If the spreadsheet stores monetary values in a non-USD currency (detected by
+  // finding €/£/¥ symbols adjacent to the label) AND it also contains an explicit
+  // FX-to-USD rate, convert so that the conformance comparison is apples-to-apples
+  // with a USD-denominated term sheet.
+  if (rc.fxRateToUSD && rc.fxRateToUSD !== 1) {
+    if (rc.preMoneyValuation && rc._preMoneyFx)
+      rc.preMoneyValuation = rc.preMoneyValuation * rc.fxRateToUSD;
+    if (rc.newInvestment && rc._investmentFx)
+      rc.newInvestment = rc.newInvestment * rc.fxRateToUSD;
+  }
+
   const builtRc = {
     roundName: rc.roundName || 'Round',
     preMoneyValuation: rc.preMoneyValuation || 0,
@@ -826,12 +837,58 @@ async function parseCapTableOrProForma(file) {
 
 function extractRoundConfig(rows, rc) {
   rows.forEach(row => {
-    for (let c = 0; c < Math.min(row.length, 5); c++) {
-      const cell = String(row[c] || '').trim(); if (!cell) continue;
-      const num = col => { for(let i=col;i<row.length;i++){const s=String(row[i]||'').replace(/[$,%\s,]/g,'');const n=parseFloat(s);if(!isNaN(n)&&n>0)return n;} return null; };
-      if (!rc.preMoneyValuation && /pre[\s-]?money/i.test(cell)) { const v=num(c+1); if(v) rc.preMoneyValuation=v; }
-      if (!rc.newInvestment && /investment|proceeds|round.size/i.test(cell)) { const v=num(c+1); if(v) rc.newInvestment=v; }
-      if (!rc.optionPoolTargetPct && /option.pool|esop/i.test(cell)) { const v=num(c+1); if(v) rc.optionPoolTargetPct=v>1?v:v*100; }
+    // Scan ALL columns — multi-panel spreadsheets (e.g. left params / right cap table)
+    // place labels beyond column 5, so we must not artificially limit the scan.
+    for (let c = 0; c < row.length; c++) {
+      const cell = String(row[c] || '').trim();
+      if (!cell) continue;
+
+      // Strip common currency symbols ($ € £ ¥ ₹), commas, percent signs, and
+      // whitespace before parsing.  Previously only $ was stripped, which caused
+      // every Euro-formatted cell ("€ 2,007,252,007.25") to return NaN and the
+      // parser to fall back to whatever small stray number it found later.
+      const num = col => {
+        for (let i = col; i < row.length; i++) {
+          const s = String(row[i] || '').replace(/[$€£¥₹,%\s]/g, '');
+          const n = parseFloat(s);
+          if (!isNaN(n) && n > 0) return n;
+        }
+        return null;
+      };
+
+      // Returns true when the value cell(s) immediately to the right of the label
+      // contain a non-USD currency symbol, indicating the amount is in EUR/GBP/etc.
+      const hasFxSymbol = col => {
+        for (let i = col; i < Math.min(col + 3, row.length); i++) {
+          if (/[€£¥₹]/.test(String(row[i] || ''))) return true;
+        }
+        return false;
+      };
+
+      if (!rc.preMoneyValuation && /pre[\s-]?money/i.test(cell)) {
+        const v = num(c + 1);
+        if (v) { rc.preMoneyValuation = v; if (hasFxSymbol(c + 1)) rc._preMoneyFx = true; }
+      }
+
+      // Exclude secondary / aggregate / shares-bought rows — those are not new money.
+      if (!rc.newInvestment &&
+          /(?:primary\s+)?investment|proceeds|round[\s.]size/i.test(cell) &&
+          !/secondary|shares\s+bought|aggregate/i.test(cell)) {
+        const v = num(c + 1);
+        if (v) { rc.newInvestment = v; if (hasFxSymbol(c + 1)) rc._investmentFx = true; }
+      }
+
+      if (!rc.optionPoolTargetPct && /option[\s.]?pool|esop/i.test(cell)) {
+        const v = num(c + 1);
+        if (v) rc.optionPoolTargetPct = v > 1 ? v : v * 100;
+      }
+
+      // EUR→USD FX rate — label examples: "Euro to USD FX rate", "EUR/USD rate"
+      if (!rc.fxRateToUSD &&
+          /(?:fx|exchange)[\s-]?rate|eur(?:o)?[\s\-\/]*(?:to[\s\-\/]*)?usd/i.test(cell)) {
+        const v = num(c + 1);
+        if (v && v > 0.3 && v < 10) rc.fxRateToUSD = v;
+      }
     }
   });
 }
