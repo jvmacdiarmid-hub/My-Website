@@ -479,21 +479,38 @@ async function parseTermSheet(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   let text = '';
   if (ext === 'docx' || ext === 'doc') {
+    // Primary: extract text directly from DOCX XML via JSZip.
+    // A .docx is a ZIP; word/document.xml holds all body text.
+    // This avoids mammoth's internal crashes on complex law firm documents.
     try {
-      const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-      text = r.value || '';
-    } catch (e) {
-      throw new Error(
-        'Could not read this Word document — it may contain track changes, ' +
-        'complex tables, or field codes that the parser cannot handle. ' +
-        'Try accepting all tracked changes (Review → Accept All), then re-save as .docx, or export a copy as .xlsx.'
-      );
+      const zip = await JSZip.loadAsync(await file.arrayBuffer());
+      const docEntry = zip.file('word/document.xml');
+      if (!docEntry) throw new Error('word/document.xml not found inside DOCX');
+      const xml = await docEntry.async('string');
+      text = xml
+        .replace(/<\/w:p>/gi,       '\n')   // paragraph ends → newline
+        .replace(/<w:br[^>]*\/?>/gi, '\n')  // explicit line breaks
+        .replace(/<w:tab[^>]*\/?>/gi, '\t') // tabs
+        .replace(/<[^>]+>/g,         '')    // strip all remaining tags
+        .replace(/&amp;/g,  '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+        .replace(/\r\n|\r/g, '\n');
+    } catch (zipErr) {
+      // Fallback: try mammoth (handles edge cases JSZip might miss)
+      try {
+        const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        text = r.value || '';
+      } catch (mErr) {
+        throw new Error(
+          'Could not extract text from this Word document. ' +
+          'Try saving a copy as .xlsx (File → Save As → Excel Workbook) and uploading that instead.'
+        );
+      }
     }
     if (!text.trim()) {
       throw new Error(
-        'The document was opened but no text could be extracted. ' +
-        'The content may be inside text boxes, shapes, or a scanned image. ' +
-        'Try copying the text into a plain .docx or .xlsx and uploading that instead.'
+        'No text could be extracted. The content may be inside shapes, images, or text boxes. ' +
+        'Copy the key terms into a plain .xlsx or new .docx and upload that instead.'
       );
     }
   } else if (ext === 'xlsx' || ext === 'xls') {
