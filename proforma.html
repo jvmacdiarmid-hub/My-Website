@@ -656,32 +656,52 @@ async function parseTermSheet(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   let text = '';
   if (ext === 'docx' || ext === 'doc') {
-    // Primary: extract text directly from DOCX XML via JSZip.
-    // A .docx is a ZIP; word/document.xml holds all body text.
-    // This avoids mammoth's internal crashes on complex law firm documents.
-    try {
-      const zip = await JSZip.loadAsync(await file.arrayBuffer());
-      const docEntry = zip.file('word/document.xml');
-      if (!docEntry) throw new Error('word/document.xml not found inside DOCX');
-      const xml = await docEntry.async('string');
-      text = xml
-        .replace(/<\/w:p>/gi,       '\n')   // paragraph ends → newline
-        .replace(/<w:br[^>]*\/?>/gi, '\n')  // explicit line breaks
-        .replace(/<w:tab[^>]*\/?>/gi, '\t') // tabs
-        .replace(/<[^>]+>/g,         '')    // strip all remaining tags
-        .replace(/&amp;/g,  '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
-        .replace(/\r\n|\r/g, '\n');
-    } catch (zipErr) {
-      // Fallback: try mammoth (handles edge cases JSZip might miss)
+    // .doc is a legacy OLE2/CFB binary format — JSZip cannot open it (not a ZIP).
+    // .docx is a ZIP containing XML — JSZip works; mammoth is a reliable fallback.
+    // Read the buffer once and reuse it to avoid consuming the stream twice.
+    if (ext === 'doc') {
+      // Legacy binary .doc: mammoth browser bundle does not support this format.
+      // Give the user a clear, actionable message immediately rather than
+      // attempting two parsers that will both fail.
       try {
-        const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        const buf = await file.arrayBuffer();
+        const r = await mammoth.extractRawText({ arrayBuffer: buf });
         text = r.value || '';
-      } catch (mErr) {
+        if (!text.trim()) throw new Error('empty');
+      } catch (_) {
         throw new Error(
-          'Could not extract text from this Word document. ' +
-          'Try saving a copy as .xlsx (File → Save As → Excel Workbook) and uploading that instead.'
+          'Legacy .doc files cannot be parsed in the browser. ' +
+          'Please open the file in Word and save it as .docx ' +
+          '(File → Save As → Word Document (.docx)), then re-upload.'
         );
+      }
+    } else {
+      // .docx — primary: JSZip + XML extraction (fast, reliable for law firm docs)
+      const buf = await file.arrayBuffer();
+      try {
+        const zip = await JSZip.loadAsync(buf);
+        const docEntry = zip.file('word/document.xml');
+        if (!docEntry) throw new Error('word/document.xml not found inside DOCX');
+        const xml = await docEntry.async('string');
+        text = xml
+          .replace(/<\/w:p>/gi,       '\n')   // paragraph ends → newline
+          .replace(/<w:br[^>]*\/?>/gi, '\n')  // explicit line breaks
+          .replace(/<w:tab[^>]*\/?>/gi, '\t') // tabs
+          .replace(/<[^>]+>/g,         '')    // strip all remaining tags
+          .replace(/&amp;/g,  '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+          .replace(/\r\n|\r/g, '\n');
+      } catch (zipErr) {
+        // Fallback: mammoth handles edge cases JSZip might miss (same buffer reused)
+        try {
+          const r = await mammoth.extractRawText({ arrayBuffer: buf });
+          text = r.value || '';
+        } catch (mErr) {
+          throw new Error(
+            'Could not extract text from this Word document. ' +
+            'Try saving a copy as .docx (File → Save As → Word Document) and uploading that instead.'
+          );
+        }
       }
     }
     if (!text.trim()) {
