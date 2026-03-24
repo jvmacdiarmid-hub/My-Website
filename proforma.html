@@ -716,6 +716,18 @@ async function parseTermSheet(file) {
     const mult = /^(million|m)$/i.test(last) ? 1e6 : /^(billion|b)$/i.test(last) ? 1e9 : 1;
     const v = parseFloat(s); return isNaN(v) ? null : v * mult;
   }
+  // Reverse of money(): value appears BEFORE keyword (e.g. "$5B post-money valuation")
+  function moneyBefore(pat) {
+    const r = new RegExp(
+      '\\$\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?[0-9]*)[^\\n]{0,60}' + pat,
+      'i'
+    );
+    const x = text.match(r); if (!x || x[1] == null) return null;
+    let s = x[1].replace(/,/g, '').replace(/([a-z])\d+\s*$/i, '$1').trim();
+    const last = s.split(/\s+/).pop();
+    const mult = /^(million|m)$/i.test(last) ? 1e6 : /^(billion|b)$/i.test(last) ? 1e9 : 1;
+    const v = parseFloat(s); return isNaN(v) ? null : v * mult;
+  }
   function pct(pat) {
     const r = new RegExp(pat + '[^\\n]{0,80}([0-9]+(?:\\.[0-9]+)?)\\s*%', 'i');
     const x = text.match(r); return x ? parseFloat(x[1]) : null;
@@ -732,6 +744,15 @@ async function parseTermSheet(file) {
     money('pre[\\s\\-]?money\\s+(?:equity\\s+)?valuation\\s+of') ||
     money('pre[\\s\\-]?money\\s+(?:equity\\s+)?valuation(?:\\s*[:=])') ||
     money('pre[\\s\\-]?money(?:\\s*[:=])');
+
+  // Post-money: try keyword-before-number ("Post-Money Valuation: $5B") and
+  // number-before-keyword ("$5B post-money fully-diluted valuation")
+  ts.postMoneyValuation =
+    money('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted\\s+)?(?:equity\\s+)?valuation\\s*[:=]') ||
+    money('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted\\s+)?(?:equity\\s+)?valuation\\s+of') ||
+    moneyBefore('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted)?\\s+valuation') ||
+    moneyBefore('post[\\s\\-]?money\\s+fully[\\s\\-]?diluted') ||
+    null;
 
   // Investment: require a colon/equals or a very specific phrase to avoid
   // matching "return on investment" or "investment committee" etc.

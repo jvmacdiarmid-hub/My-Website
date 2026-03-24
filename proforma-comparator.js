@@ -87,6 +87,7 @@ const ProFormaComparator = (function () {
 
       // Core economics
       preMoneyValuation:      toNum(raw.preMoneyValuation),
+      postMoneyValuation:     toNum(raw.postMoneyValuation),
       investmentAmount:       toNum(raw.investmentAmount),
       targetOptionPool:       toNum(raw.targetOptionPool),
       optionPoolMethod:       raw.optionPoolMethod      || null,
@@ -155,18 +156,35 @@ const ProFormaComparator = (function () {
     }
 
     // 1. Pre-money valuation
-    numCheck('preMoneyValuation', 'Pre-money valuation',
-      ts.preMoneyValuation, pf.preMoneyValuation, 'error', fmtCurrency);
+    // If TS states pre-money explicitly → error.
+    // If TS states only post-money + investment → derive and check as warning.
+    {
+      const impliedPre = (ts.postMoneyValuation != null && ts.investmentAmount != null)
+        ? ts.postMoneyValuation - ts.investmentAmount : null;
+      const expectedPre = ts.preMoneyValuation ?? impliedPre;
+      if (expectedPre != null) {
+        numCheck('preMoneyValuation', 'Pre-money valuation',
+          expectedPre, pf.preMoneyValuation,
+          ts.preMoneyValuation != null ? 'error' : 'warning', fmtCurrency);
+      }
+    }
 
     // 2. New investment
     numCheck('investmentAmount', 'New investment',
       ts.investmentAmount, pf.newInvestment, 'error', fmtCurrency);
 
-    // 3. Post-money valuation (derived — sanity cross-check)
-    if (ts.preMoneyValuation && ts.investmentAmount) {
-      const expectedPM = ts.preMoneyValuation + ts.investmentAmount;
-      numCheck('postMoneyValuation', 'Post-money valuation',
-        expectedPM, pf.postMoneyValuation, 'warning', fmtCurrency);
+    // 3. Post-money valuation
+    // If TS states post-money explicitly → error.
+    // If TS states only pre-money + investment → derive and check as warning.
+    {
+      const impliedPost = (ts.preMoneyValuation != null && ts.investmentAmount != null)
+        ? ts.preMoneyValuation + ts.investmentAmount : null;
+      const expectedPost = ts.postMoneyValuation ?? impliedPost;
+      if (expectedPost != null) {
+        numCheck('postMoneyValuation', 'Post-money valuation',
+          expectedPost, pf.postMoneyValuation,
+          ts.postMoneyValuation != null ? 'error' : 'warning', fmtCurrency);
+      }
     }
 
     // 4. Stated PPS (if the term sheet explicitly specifies it)
