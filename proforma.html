@@ -651,29 +651,93 @@ function updateHints() {
     : (!store.a.ts ? 'Upload the term sheet first.' : 'Now upload the pro forma.');
 }
 
+// ── Legacy .doc binary text extractor ────────────────────────────
+// Word 97-2003 (.doc) is an OLE2/CFB binary container.  JSZip can't open it
+// (not a ZIP) and mammoth browser bundle doesn't support the binary format.
+// Strategy:
+//   1. Use XLSX.CFB (already loaded via SheetJS) to open the OLE2 container
+//      and isolate the /WordDocument stream, which holds the document body.
+//   2. Scan that stream for consecutive printable UTF-16LE code units —
+//      the encoding Word 97-2003 uses for body text.
+//   3. If UTF-16LE yields too little, fall back to an ASCII/Latin-1 scan of
+//      the full file (handles older single-byte-encoded .doc files).
+function extractDocBinaryText(arrayBuffer) {
+  const allBytes = new Uint8Array(arrayBuffer);
+
+  // Prefer the WordDocument stream so we don't pick up OLE metadata noise.
+  let scanTarget = allBytes;
+  try {
+    if (typeof XLSX !== 'undefined' && XLSX.CFB) {
+      const cfb = XLSX.CFB.read(allBytes, { type: 'array' });
+      const wd  = XLSX.CFB.find(cfb, '/WordDocument');
+      if (wd && wd.content && wd.content.length > 128) {
+        scanTarget = wd.content;
+      }
+    }
+  } catch (_) { /* fall through to full-file scan */ }
+
+  // UTF-16LE scan: high byte === 0x00, low byte is a printable character.
+  const u16Chunks = [];
+  let i = 0;
+  while (i < scanTarget.length - 1) {
+    if (scanTarget[i + 1] === 0 &&
+        (scanTarget[i] >= 0x20 || scanTarget[i] === 0x09 ||
+         scanTarget[i] === 0x0A || scanTarget[i] === 0x0D)) {
+      const start = i;
+      while (i + 1 < scanTarget.length &&
+             scanTarget[i + 1] === 0 &&
+             (scanTarget[i] >= 0x20 || scanTarget[i] === 0x09 ||
+              scanTarget[i] === 0x0A || scanTarget[i] === 0x0D)) {
+        i += 2;
+      }
+      const charCount = (i - start) / 2;
+      if (charCount >= 4) {
+        u16Chunks.push(new TextDecoder('utf-16le').decode(scanTarget.slice(start, i)));
+      }
+    } else {
+      i++;
+    }
+  }
+  if (u16Chunks.length >= 3) return u16Chunks.join('\n');
+
+  // ASCII / Latin-1 fallback (older single-byte .doc files, or scan entire file).
+  const asciiChunks = [];
+  i = 0;
+  while (i < allBytes.length) {
+    if ((allBytes[i] >= 0x20 && allBytes[i] <= 0x7E) ||
+        allBytes[i] === 0x09 || allBytes[i] === 0x0A || allBytes[i] === 0x0D) {
+      const start = i;
+      while (i < allBytes.length &&
+             ((allBytes[i] >= 0x20 && allBytes[i] <= 0x7E) ||
+              allBytes[i] === 0x09 || allBytes[i] === 0x0A || allBytes[i] === 0x0D)) {
+        i++;
+      }
+      if (i - start >= 6) {
+        asciiChunks.push(new TextDecoder('latin1').decode(allBytes.slice(start, i)));
+      }
+    } else {
+      i++;
+    }
+  }
+  return asciiChunks.join('\n');
+}
+
 // ── Term sheet parser ─────────────────────────────────────────────
 async function parseTermSheet(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   let text = '';
   if (ext === 'docx' || ext === 'doc') {
-    // .doc is a legacy OLE2/CFB binary format — JSZip cannot open it (not a ZIP).
-    // .docx is a ZIP containing XML — JSZip works; mammoth is a reliable fallback.
     // Read the buffer once and reuse it to avoid consuming the stream twice.
     if (ext === 'doc') {
-      // Legacy binary .doc: mammoth browser bundle does not support this format.
-      // Give the user a clear, actionable message immediately rather than
-      // attempting two parsers that will both fail.
+      // Legacy OLE2 binary: use our built-in CFB/UTF-16LE extractor.
+      // mammoth is attempted first in case a future version adds .doc support.
+      const buf = await file.arrayBuffer();
       try {
-        const buf = await file.arrayBuffer();
-        const r = await mammoth.extractRawText({ arrayBuffer: buf });
+        const r = await mammoth.extractRawText({ arrayBuffer: buf.slice(0) });
         text = r.value || '';
-        if (!text.trim()) throw new Error('empty');
-      } catch (_) {
-        throw new Error(
-          'Legacy .doc files cannot be parsed in the browser. ' +
-          'Please open the file in Word and save it as .docx ' +
-          '(File → Save As → Word Document (.docx)), then re-upload.'
-        );
+      } catch (_) { /* expected — mammoth doesn't support .doc; use binary extractor */ }
+      if (!text.trim()) {
+        text = extractDocBinaryText(buf);
       }
     } else {
       // .docx — primary: JSZip + XML extraction (fast, reliable for law firm docs)
