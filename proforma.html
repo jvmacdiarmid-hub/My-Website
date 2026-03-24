@@ -889,12 +889,22 @@ async function parseCapTableOrProForma(file) {
       newInvestment: builtRc.newInvestment,
       postMoneyValuation: builtRc.preMoneyValuation + builtRc.newInvestment,
       pps: null, actualOptionPoolPct: builtRc.optionPoolTargetPct || null,
+      actualUnallocatedOptionPoolPct: null,
       roundConfig: builtRc, convertedInstruments: [], postRoundCap: stakeholders, postFD: null
     };
   }
   result._stakeholderCount = stakeholders.length;
   result._stakeholders = stakeholders;
   result._rc = builtRc;
+
+  // Override actualUnallocatedOptionPoolPct with the value read directly from the
+  // spreadsheet's post-closing section (secondary scan in extractStakeholders).
+  // This is the authoritative figure — it matches what the spreadsheet displays —
+  // and avoids engine recomputation errors caused by inflated pre-closing inputs.
+  if (stakeholders._postClosingUnallocPct != null) {
+    result.actualUnallocatedOptionPoolPct = stakeholders._postClosingUnallocPct;
+  }
+
   return result;
 }
 
@@ -1108,6 +1118,12 @@ function extractStakeholders(rows, out) {
     if (!name) continue;
     if (/^total\b|^subtotal\b|fully.?diluted|^-{2,}$/i.test(name)) continue;
 
+    // Skip round-adjustment rows — these represent new shares being ISSUED as part of the
+    // current round (pool increase, pool expansion, pool supplement), not pre-closing holdings.
+    // Including them as pre-closing stakeholders inflates the option pool count and causes
+    // the engine to report a wrong actualOptionPoolPct.
+    if (/pool\s*(increase|expansion|addition|supplement|shuffle|top.?up)/i.test(name)) continue;
+
     // Section header: non-empty name but no positive numeric value anywhere after cN
     const hasNum = row.some((c, i) => {
       if (i <= cN) return false;
@@ -1140,6 +1156,28 @@ function extractStakeholders(rows, out) {
       const shares = cS >= 0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
       out.push({ name, shares, type });
     }
+  }
+
+  // ── 6. Post-closing unallocated pool % (secondary scan) ───────────
+  // Scan ALL rows (including those with no positive pre-closing values) for the
+  // "Available EIP Shares" row and read its rightmost percentage-like value.
+  // This gives the actual post-closing unallocated pool % straight from the
+  // spreadsheet — more reliable than reconstructing it from the engine.
+  for (let ri = hIdx + 1; ri < rows.length; ri++) {
+    const rn = String(rows[ri][cN]||'').trim();
+    if (!/available.*eip|eip.*avail|available.*option.*pool/i.test(rn)) continue;
+    const rowData = rows[ri];
+    for (let c = rowData.length - 1; c > cN; c--) {
+      const cell = rowData[c];
+      if (cell == null || cell === '') continue;
+      const v = typeof cell === 'number' ? cell
+              : parseFloat(String(cell).replace(/[%,\s]/g, ''));
+      if (isNaN(v) || v <= 0) continue;
+      // Excel stores percentages as decimals (0.035) or as the raw % value (3.5)
+      if (v > 0 && v < 1)    { out._postClosingUnallocPct = v;       break; }
+      if (v >= 1 && v <= 50) { out._postClosingUnallocPct = v / 100; break; }
+    }
+    if (out._postClosingUnallocPct != null) break;
   }
 }
 
@@ -1895,9 +1933,8 @@ function renderAnalysisHTML(pf, rc, csvFn) {
   // Unallocated post-closing shares (names match pool/unalloc/available/reserve)
   const postUnallocSh = post.filter(s => s.type === 'option' && /pool|unalloc|available|reserve/i.test(s.name))
                             .reduce((a, s) => a + (s.shares || 0), 0);
-  // Pool % target check: term sheet specifies UNALLOCATED when language says so; otherwise total.
-  const tsIsUnalloc  = rcData._optionPoolIsUnallocated || false;
-  const checkPool    = tsIsUnalloc && actualUnalloc != null ? actualUnalloc : actualPool;
+  // Always prefer unallocated pool % when available (matches what term sheets specify).
+  const checkPool    = actualUnalloc != null ? actualUnalloc : actualPool;
   const poolOk       = (poolTarget != null && checkPool != null) ? Math.abs(checkPool - poolTarget) <= 0.001 : null;
   const circNeeded   = poolMethod === 'pre-money' && poolTarget > 0;
   const truePM       = (preMoney != null && preFD && poolExp) ? preMoney * (preFD - poolExp) / preFD : null;
@@ -2188,8 +2225,8 @@ function generateCSVAnalysis(pf, rc) {
   const postPoolSh    = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
   const postUnallocSh = post.filter(s => s.type === 'option' && /pool|unalloc|available|reserve/i.test(s.name))
                             .reduce((a, s) => a + (s.shares || 0), 0);
-  const tsIsUnalloc   = rcData._optionPoolIsUnallocated || false;
-  const checkPool     = tsIsUnalloc && actualUnalloc != null ? actualUnalloc : actualPool;
+  // Always prefer unallocated pool % when available.
+  const checkPool     = actualUnalloc != null ? actualUnalloc : actualPool;
   const poolOk        = (poolTarget != null && checkPool != null)
     ? Math.abs(checkPool - poolTarget) <= 0.001 : null;
   const circNeeded    = poolMethod === 'pre-money' && poolTarget > 0;

@@ -196,16 +196,17 @@ const ProFormaComparator = (function () {
     }
 
     // 5. Option pool target %
-    // When the term sheet says "X% unallocated" (exclusive of granted/promised shares),
-    // compare against pf.actualUnallocatedOptionPoolPct (pool/available entries only).
-    // Fall back to pf.actualOptionPoolPct for term sheets that specify a total-pool target.
+    // Always prefer actualUnallocatedOptionPoolPct when available — term sheets virtually
+    // always specify UNALLOCATED pool (exclusive of granted/promised shares).  The value is
+    // read directly from the spreadsheet's post-closing "Available EIP Shares %" column and
+    // is therefore independent of any engine recomputation.  Only fall back to the total-pool
+    // figure when the unallocated value was not extracted.
     if (ts.targetOptionPool) {
-      const useUnalloc = ts.targetOptionPoolIsUnallocated &&
-                         pf.actualUnallocatedOptionPoolPct != null;
-      const actualPool = useUnalloc
+      const hasUnalloc = pf.actualUnallocatedOptionPoolPct != null;
+      const actualPool = hasUnalloc
         ? pf.actualUnallocatedOptionPoolPct
         : pf.actualOptionPoolPct;
-      const poolLabel  = useUnalloc
+      const poolLabel  = hasUnalloc
         ? 'Option pool target (unallocated)'
         : 'Option pool target';
       numCheck('optionPool', poolLabel,
