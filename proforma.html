@@ -740,10 +740,17 @@ async function parseTermSheet(file) {
     money('subscribing\\s+for') ||
     money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?') ||
     money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)\\s+of');
+  // Option pool % — keyword-first ("option pool … 3.5%") or pct-first ("3.5% … option pool")
   const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
-  if (p != null) ts.targetOptionPool = p / 100;
-  if (/pre[\s-]?money\s+option\s+pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
-  else if (/post[\s-]?money\s+option\s+pool/i.test(text)) ts.optionPoolMethod = 'post-money';
+  if (p != null) {
+    ts.targetOptionPool = p / 100;
+  } else {
+    const rp = text.match(/([0-9]+(?:\.[0-9]+)?)\s*%[^\n]{0,120}(?:unallocated\s+)?option\s+pool/i);
+    if (rp) ts.targetOptionPool = parseFloat(rp[1]) / 100;
+  }
+  // Pool method — also catches "option pool … on a post-money fully-diluted basis"
+  if (/pre[\s-]?money\s+(?:option\s+)?pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
+  else if (/post[\s-]?money\s+option\s+pool|option\s+pool[^\n]{0,150}post[\s-]?money/i.test(text)) ts.optionPoolMethod = 'post-money';
   ts.statedPPS = money('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|oip');
   const lm = liqMult('liquidation\\s+(?:preference|multiple)(?:\\s*[:=])?');
   if (lm != null) ts.liquidationMultiple = lm;
@@ -1007,7 +1014,17 @@ function runAnalyzer() {
     showError('analyzer-results', 'Analysis error: ' + e.message);
     return;
   }
-  _csvData.a = { pf: store.a.pf, rc: store.a.pf?._rc || store.a.pf?.roundConfig };
+  const _pfRc = store.a.pf?._rc || store.a.pf?.roundConfig || {};
+  const _ts   = store.a.ts || {};
+  _csvData.a = {
+    pf: store.a.pf,
+    rc: {
+      ..._pfRc,
+      // Prefer term sheet values for target pool — the TS is the agreed contract
+      optionPoolTargetPct: _ts.targetOptionPool ?? _pfRc.optionPoolTargetPct,
+      optionPoolMethod:    _ts.optionPoolMethod  || _pfRc.optionPoolMethod || 'pre-money',
+    },
+  };
   renderAnalyzerResults(report, _csvData.a.pf, _csvData.a.rc);
   document.getElementById('analyzer-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
