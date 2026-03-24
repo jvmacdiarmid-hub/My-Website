@@ -990,11 +990,7 @@ function renderBuilderResults(pf, rc) {
         <tfoot><tr><td colspan="2">Total (Fully Diluted)</td><td class="num">${fmt0(total)}</td><td class="pct">100.0%</td></tr></tfoot>
       </table>
     </div>
-    <div class="dl-wrap">
-      <button class="dl-btn" onclick="toggleBuilderAnalysis(this)">▼ View Full Analysis</button>
-      <div class="dl-btn-sub">6 sections: cap table · conversions · PPS formula · option pool · integrity · audit</div>
-    </div>
-    <div id="builder-analysis" class="analysis-container" style="display:none"></div>`;
+    <div id="builder-analysis" class="analysis-container">${renderAnalysisHTML(pf, rc, 'downloadBuilderCSV')}</div>`;
 }
 
 // ── Analyzer ──────────────────────────────────────────────────────
@@ -1012,11 +1008,11 @@ function runAnalyzer() {
     return;
   }
   _csvData.a = { pf: store.a.pf, rc: store.a.pf?._rc || store.a.pf?.roundConfig };
-  renderAnalyzerResults(report);
+  renderAnalyzerResults(report, _csvData.a.pf, _csvData.a.rc);
   document.getElementById('analyzer-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function renderAnalyzerResults(report) {
+function renderAnalyzerResults(report, pf, rc) {
   const score = Math.round(report.score * 100);
   const isPass = report.conformant;
   const pass = report.passed.length, errs = report.criticalFailures.length, warns = report.warningFailures.length;
@@ -1056,11 +1052,7 @@ function renderAnalyzerResults(report) {
       </div>
     </div>
     <div class="conf-cards">${cards || '<p style="color:#888;font-size:13px;">No comparable terms found. Check that your documents contain labelled financial figures.</p>'}</div>
-    <div class="dl-wrap">
-      <button class="dl-btn" onclick="toggleAnalyzerAnalysis(this)">▼ View Full Analysis</button>
-      <div class="dl-btn-sub">6 sections: cap table · conversions · PPS formula · option pool · integrity · audit</div>
-    </div>
-    <div id="analyzer-analysis" class="analysis-container" style="display:none"></div>`;
+    <div id="analyzer-analysis" class="analysis-container">${pf ? renderAnalysisHTML(pf, rc, 'downloadAnalyzerCSV') : ''}</div>`;
 }
 
 // ── Version Comparator ────────────────────────────────────────────
@@ -1464,27 +1456,6 @@ function downloadNoteCSV() {
 
 // ── In-page Analysis Renderer ─────────────────────────────────────
 
-function toggleBuilderAnalysis(btn) {
-  const container = document.getElementById('builder-analysis');
-  if (!container.dataset.rendered) {
-    container.innerHTML = renderAnalysisHTML(_csvData.b.pf, _csvData.b.rc, 'downloadBuilderCSV');
-    container.dataset.rendered = '1';
-  }
-  const show = container.style.display === 'none' || !container.style.display;
-  container.style.display = show ? 'block' : 'none';
-  btn.textContent = show ? '▲ Hide Analysis' : '▼ View Full Analysis';
-}
-
-function toggleAnalyzerAnalysis(btn) {
-  const container = document.getElementById('analyzer-analysis');
-  if (!container.dataset.rendered) {
-    container.innerHTML = renderAnalysisHTML(_csvData.a.pf, _csvData.a.rc, 'downloadAnalyzerCSV');
-    container.dataset.rendered = '1';
-  }
-  const show = container.style.display === 'none' || !container.style.display;
-  container.style.display = show ? 'block' : 'none';
-  btn.textContent = show ? '▲ Hide Analysis' : '▼ View Full Analysis';
-}
 
 /**
  * Render the 6-section pro forma analysis as styled HTML for in-page display.
