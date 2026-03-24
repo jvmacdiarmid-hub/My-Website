@@ -717,9 +717,10 @@ async function parseTermSheet(file) {
     const v = parseFloat(s); return isNaN(v) ? null : v * mult;
   }
   // Reverse of money(): value appears BEFORE keyword (e.g. "$5B post-money valuation")
-  function moneyBefore(pat) {
+  // window controls how many non-newline chars may appear between the $ amount and the keyword.
+  function moneyBefore(pat, window = 60) {
     const r = new RegExp(
-      '\\$\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?[0-9]*)[^\\n]{0,60}' + pat,
+      '\\$\\s*([0-9][0-9,]*(?:\\.[0-9]+)?(?:\\s*(?:million|m|billion|b))?[0-9]*)[^\\n]{0,' + window + '}' + pat,
       'i'
     );
     const x = text.match(r); if (!x || x[1] == null) return null;
@@ -745,22 +746,45 @@ async function parseTermSheet(file) {
     money('pre[\\s\\-]?money\\s+(?:equity\\s+)?valuation(?:\\s*[:=])') ||
     money('pre[\\s\\-]?money(?:\\s*[:=])');
 
-  // Post-money: try keyword-before-number ("Post-Money Valuation: $5B") and
-  // number-before-keyword ("$5B post-money fully-diluted valuation")
+  // Post-money: narrow-window "number THEN keyword" patterns come FIRST so the
+  // opening-paragraph phrasing ("at a $5.0 billion post-money fully-diluted
+  // valuation") wins over any summary-table entry ("Post-Money Valuation:
+  // $4,500,000,000") that may appear elsewhere and carry a different value.
+  // Also handles "FD" as shorthand for "fully-diluted".
   ts.postMoneyValuation =
-    money('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted\\s+)?(?:equity\\s+)?valuation\\s*[:=]') ||
-    money('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted\\s+)?(?:equity\\s+)?valuation\\s+of') ||
+    moneyBefore('post[\\s\\-]?money\\s+fully[\\s\\-]?diluted', 15) ||   // "$5B post-money fully-diluted"
+    moneyBefore('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted)?\\s+valuation', 15) ||
+    money('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted\\s+|fd\\s+)?(?:equity\\s+)?valuation\\s*[:=]') ||
+    money('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted\\s+|fd\\s+)?(?:equity\\s+)?valuation\\s+of') ||
     moneyBefore('post[\\s\\-]?money\\s+(?:fully[\\s\\-]?diluted)?\\s+valuation') ||
     moneyBefore('post[\\s\\-]?money\\s+fully[\\s\\-]?diluted') ||
     null;
 
-  // Investment: require a colon/equals or a very specific phrase to avoid
-  // matching "return on investment" or "investment committee" etc.
+  // Investment: narrow-window patterns first (opening sentence format: "$300M in
+  // new primary capital"), then table/label patterns.
   ts.investmentAmount  =
+    moneyBefore('in\\s+new\\s+(?:primary\\s+)?capital', 15) ||     // "$300M in new primary capital"
     money('(?:aggregate\\s+)?(?:total\\s+)?(?:new\\s+)?(?:gross\\s+)?(?:investment|proceeds|round\\s+size)\\s*[:=]') ||
     money('subscribing\\s+for') ||
     money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?') ||
     money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)\\s+of');
+
+  // ── Cross-validate post-money, pre-money, investment ────────────────────
+  // The opening paragraph ("$300M ... at a $5B post-money") is the authoritative
+  // source.  If the three parsed values are mutually inconsistent (e.g. because
+  // a summary table carried a stale/different number), trust post-money +
+  // investment and re-derive pre-money.  Tolerance: 0.5% of post-money.
+  const pmTol = ts.postMoneyValuation ? ts.postMoneyValuation * 0.005 : 0;
+  if (ts.postMoneyValuation && ts.investmentAmount) {
+    const derivedPre = ts.postMoneyValuation - ts.investmentAmount;
+    if (!ts.preMoneyValuation ||
+        Math.abs((ts.preMoneyValuation - derivedPre)) > pmTol) {
+      ts.preMoneyValuation = derivedPre;
+    }
+  } else if (ts.preMoneyValuation && ts.investmentAmount && !ts.postMoneyValuation) {
+    ts.postMoneyValuation = ts.preMoneyValuation + ts.investmentAmount;
+  }
+
   // Option pool % — keyword-first ("option pool … 3.5%") or pct-first ("3.5% … option pool")
   const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
   if (p != null) {
