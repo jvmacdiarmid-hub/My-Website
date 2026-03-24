@@ -158,17 +158,13 @@ const ProFormaComparator = (function () {
     }
 
     // 1. Pre-money valuation
-    // If TS states pre-money explicitly → error.
-    // If TS states only post-money + investment → derive and check as warning.
-    {
-      const impliedPre = (ts.postMoneyValuation != null && ts.investmentAmount != null)
-        ? ts.postMoneyValuation - ts.investmentAmount : null;
-      const expectedPre = ts.preMoneyValuation ?? impliedPre;
-      if (expectedPre != null) {
-        numCheck('preMoneyValuation', 'Pre-money valuation',
-          expectedPre, pf.preMoneyValuation,
-          ts.preMoneyValuation != null ? 'error' : 'warning', fmtCurrency);
-      }
+    // Only check when the term sheet explicitly states a pre-money value.
+    // When the term sheet is expressed in post-money terms (postMoneyValuation set,
+    // preMoneyValuation not stated), pre-money is not a term of the deal and should
+    // not be evaluated as a conformance factor.
+    if (ts.preMoneyValuation != null) {
+      numCheck('preMoneyValuation', 'Pre-money valuation',
+        ts.preMoneyValuation, pf.preMoneyValuation, 'error', fmtCurrency);
     }
 
     // 2. New investment
