@@ -89,8 +89,10 @@ const ProFormaComparator = (function () {
       preMoneyValuation:      toNum(raw.preMoneyValuation),
       postMoneyValuation:     toNum(raw.postMoneyValuation),
       investmentAmount:       toNum(raw.investmentAmount),
-      targetOptionPool:       toNum(raw.targetOptionPool),
-      optionPoolMethod:       raw.optionPoolMethod      || null,
+      targetOptionPool:           toNum(raw.targetOptionPool),
+      optionPoolMethod:           raw.optionPoolMethod      || null,
+      // true when the TS says "X% unallocated" (exclusive of grants); false/null = total pool
+      targetOptionPoolIsUnallocated: raw._optionPoolIsUnallocated || false,
 
       // Preferred stock terms
       liquidationMultiple:    toNum(raw.liquidationMultiple) ?? 1,
@@ -194,9 +196,20 @@ const ProFormaComparator = (function () {
     }
 
     // 5. Option pool target %
+    // When the term sheet says "X% unallocated" (exclusive of granted/promised shares),
+    // compare against pf.actualUnallocatedOptionPoolPct (pool/available entries only).
+    // Fall back to pf.actualOptionPoolPct for term sheets that specify a total-pool target.
     if (ts.targetOptionPool) {
-      numCheck('optionPool', 'Option pool target',
-        ts.targetOptionPool, pf.actualOptionPoolPct, 'warning', fmtPct, POOL_TOL);
+      const useUnalloc = ts.targetOptionPoolIsUnallocated &&
+                         pf.actualUnallocatedOptionPoolPct != null;
+      const actualPool = useUnalloc
+        ? pf.actualUnallocatedOptionPoolPct
+        : pf.actualOptionPoolPct;
+      const poolLabel  = useUnalloc
+        ? 'Option pool target (unallocated)'
+        : 'Option pool target';
+      numCheck('optionPool', poolLabel,
+        ts.targetOptionPool, actualPool, 'warning', fmtPct, POOL_TOL);
     }
 
     // 6. Option pool method

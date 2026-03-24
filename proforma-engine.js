@@ -409,6 +409,14 @@ const ProFormaEngine = (function () {
     const postMoneyValuation   = preMoneyValuation + newInvestment;
     const actualOptionPoolPct  = postFD > 0 ? getOptionPool(postRoundCap) / postFD : 0;
 
+    // Unallocated pool: entries whose names indicate they are available/reserved
+    // (not yet granted).  This is what VC term sheets mean when they say "X%
+    // unallocated option pool (exclusive of granted or promised shares)".
+    const unallocPoolShares = postRoundCap
+      .filter(s => s.type === 'option' && /pool|unalloc|available|reserve/i.test(s.name))
+      .reduce((sum, s) => sum + (s.shares || 0), 0);
+    const actualUnallocatedOptionPoolPct = postFD > 0 ? unallocPoolShares / postFD : 0;
+
     // Ownership with pre/post dilution
     const preRoundFDforPct = getFullyDiluted(preRoundCap);
     const ownershipTable = postRoundCap.map(s => ({
@@ -434,6 +442,7 @@ const ProFormaEngine = (function () {
       newInvestorShares,
       optionExpansion,
       actualOptionPoolPct,
+      actualUnallocatedOptionPoolPct,
 
       // Tables
       postRoundCap,

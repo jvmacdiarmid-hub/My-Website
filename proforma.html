@@ -785,13 +785,24 @@ async function parseTermSheet(file) {
     ts.postMoneyValuation = ts.preMoneyValuation + ts.investmentAmount;
   }
 
-  // Option pool % — keyword-first ("option pool … 3.5%") or pct-first ("3.5% … option pool")
-  const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
-  if (p != null) {
-    ts.targetOptionPool = p / 100;
+  // Option pool %
+  // Most specific first: "X% unallocated option pool" — NVCA standard language
+  // (exclusive of granted / promised shares).  This must win over any generic
+  // "option pool … Y%" references that may appear elsewhere in the document.
+  const ruAlloc = text.match(/([0-9]+(?:\.[0-9]+)?)\s*%\s+unallocated\s+(?:option\s+)?pool/i);
+  if (ruAlloc) {
+    ts.targetOptionPool = parseFloat(ruAlloc[1]) / 100;
+    ts._optionPoolIsUnallocated = true;           // signals the conformance check to compare
+                                                  // against unallocated pool %, not total
   } else {
-    const rp = text.match(/([0-9]+(?:\.[0-9]+)?)\s*%[^\n]{0,120}(?:unallocated\s+)?option\s+pool/i);
-    if (rp) ts.targetOptionPool = parseFloat(rp[1]) / 100;
+    // Fallback: keyword-first ("option pool … 3.5%") or pct-first
+    const p = pct('(?:employee\\s+)?(?:stock\\s+)?option\\s+pool|esop|equity\\s+incentive');
+    if (p != null) {
+      ts.targetOptionPool = p / 100;
+    } else {
+      const rp = text.match(/([0-9]+(?:\.[0-9]+)?)\s*%[^\n]{0,120}(?:unallocated\s+)?option\s+pool/i);
+      if (rp) ts.targetOptionPool = parseFloat(rp[1]) / 100;
+    }
   }
   // Pool method — also catches "option pool … on a post-money fully-diluted basis"
   if (/pre[\s-]?money\s+(?:option\s+)?pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
@@ -1231,8 +1242,10 @@ function runAnalyzer() {
     rc: {
       ..._pfRc,
       // Prefer term sheet values for target pool — the TS is the agreed contract
-      optionPoolTargetPct: _ts.targetOptionPool ?? _pfRc.optionPoolTargetPct,
-      optionPoolMethod:    _ts.optionPoolMethod  || _pfRc.optionPoolMethod || 'pre-money',
+      optionPoolTargetPct:        _ts.targetOptionPool ?? _pfRc.optionPoolTargetPct,
+      optionPoolMethod:           _ts.optionPoolMethod  || _pfRc.optionPoolMethod || 'pre-money',
+      // Propagate the "unallocated" flag so Section 4 renders the right check
+      _optionPoolIsUnallocated:   _ts._optionPoolIsUnallocated || false,
     },
   };
   renderAnalyzerResults(report, _csvData.a.pf, _csvData.a.rc);
@@ -1874,27 +1887,38 @@ function renderAnalysisHTML(pf, rc, csvFn) {
   // ── Section 4 ──────────────────────────────────────────────────
   const poolMethod = rcData.optionPoolMethod || 'pre-money';
   const poolTarget = rcData.optionPoolTargetPct;
-  const poolExp    = pf.optionExpansion || 0;
-  const actualPool = pf.actualOptionPoolPct;
+  const poolExp        = pf.optionExpansion || 0;
+  const actualPool     = pf.actualOptionPoolPct;             // total (all options / postFD)
+  const actualUnalloc  = pf.actualUnallocatedOptionPoolPct;  // unallocated only
   const prePoolSh  = pre.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
   const postPoolSh = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
-  const poolOk     = (poolTarget != null && actualPool != null) ? Math.abs(actualPool - poolTarget) <= 0.001 : null;
-  const circNeeded = poolMethod === 'pre-money' && poolTarget > 0;
-  const truePM     = (preMoney != null && preFD && poolExp) ? preMoney * (preFD - poolExp) / preFD : null;
+  // Unallocated post-closing shares (names match pool/unalloc/available/reserve)
+  const postUnallocSh = post.filter(s => s.type === 'option' && /pool|unalloc|available|reserve/i.test(s.name))
+                            .reduce((a, s) => a + (s.shares || 0), 0);
+  // Pool % target check: term sheet specifies UNALLOCATED when language says so; otherwise total.
+  const tsIsUnalloc  = rcData._optionPoolIsUnallocated || false;
+  const checkPool    = tsIsUnalloc && actualUnalloc != null ? actualUnalloc : actualPool;
+  const poolOk       = (poolTarget != null && checkPool != null) ? Math.abs(checkPool - poolTarget) <= 0.001 : null;
+  const circNeeded   = poolMethod === 'pre-money' && poolTarget > 0;
+  const truePM       = (preMoney != null && preFD && poolExp) ? preMoney * (preFD - poolExp) / preFD : null;
 
   sect(4, 'Option Pool Management (The Shuffle)', kvTable([
     { field: 'Option Pool Method',                value: poolMethod,
       note: poolMethod === 'pre-money' ? 'Pool expanded before PPS is set (pool shuffle)' : 'Pool expanded after closing' },
-    { field: 'Target Post-Money Pool %',          value: poolTarget != null ? cPct(poolTarget) : 'Not specified', note: 'Required unallocated pool after closing' },
+    { field: 'Target Post-Money Pool % (Unallocated)', value: poolTarget != null ? cPct(poolTarget) : 'Not specified',
+      note: 'Required unallocated (available for future grants) pool after closing, per term sheet' },
     { field: 'Existing Pool Shares (Pre-Expansion)', value: c0(prePoolSh), note: 'Unallocated options before this round' },
     { field: 'Pool Expansion (New Shares)',        value: c0(poolExp),
       note: poolMethod === 'pre-money' ? 'Issued pre-money — lowers PPS, dilutes founders before investors price the round' : 'Issued post-money — no effect on PPS' },
     { field: 'Pre-Money FD After Expansion',      value: c0(preFD),                      note: 'Denominator used to calculate PPS' },
     { field: 'PPS After Shuffle',                 value: cPPS(pps),                      note: 'Lower than no-shuffle scenario' },
-    { field: 'Total Unallocated Pool (Post-Closing)', value: c0(postPoolSh),             note: 'Pre-existing unallocated + expansion' },
-    { field: 'Actual Post-Money Pool %',          value: cPct(actualPool),               note: 'Pool shares ÷ post-money FD' },
+    { field: 'Total Option Pool Shares (Post-Closing)', value: c0(postPoolSh),           note: 'All option-type shares (granted + available)' },
+    { field: 'Unallocated Pool Shares (Post-Closing)',  value: c0(postUnallocSh),        note: 'Available for future grants (exclusive of issued/promised options)' },
+    { field: 'Total Pool % (Post-Money FD)',       value: cPct(actualPool),              note: 'All option shares ÷ post-money FD' },
+    { field: 'Unallocated Pool % (Post-Money FD)', value: actualUnalloc != null ? cPct(actualUnalloc) : 'N/A',
+      note: 'Available pool shares ÷ post-money FD — this is the metric specified in the term sheet' },
     { field: 'Pool % Target Achieved',            value: poolOk == null ? 'N/A' : poolOk ? 'PASS' : 'FAIL', status: true,
-      note: poolOk === false ? 'Delta ' + cPct(Math.abs(actualPool - poolTarget)) + ' (tolerance: 0.10 pp)' : '' },
+      note: poolOk === false ? 'Unallocated pool ' + cPct(checkPool) + ' vs target ' + cPct(poolTarget) + ' (tolerance: 0.10 pp)' : 'Unallocated pool matches term sheet target' },
     { field: 'Circular Reference Required',       value: circNeeded ? 'YES' : 'NO', status: true,
       note: circNeeded ? 'Excel: File → Options → Formulas → Enable Iterative Calculation' : 'Not applicable (post-money method)' },
     { field: 'Effective Pre-Money for Founders',  value: truePM != null ? cD(truePM) : 'N/A',
@@ -2155,22 +2179,27 @@ function generateCSVAnalysis(pf, rc) {
   sect('SECTION 4: OPTION POOL MANAGEMENT (THE SHUFFLE)');
   row('Field', 'Value', 'Notes');
 
-  const poolMethod = rcData.optionPoolMethod || 'pre-money';
-  const poolTarget = rcData.optionPoolTargetPct;
-  const poolExp    = pf.optionExpansion || 0;
-  const actualPool = pf.actualOptionPoolPct;
-  const prePoolSh  = pre.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
-  const postPoolSh = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
-  const poolOk     = (poolTarget != null && actualPool != null)
-    ? Math.abs(actualPool - poolTarget) <= 0.001 : null;
-  const circNeeded = poolMethod === 'pre-money' && poolTarget > 0;
+  const poolMethod    = rcData.optionPoolMethod || 'pre-money';
+  const poolTarget    = rcData.optionPoolTargetPct;
+  const poolExp       = pf.optionExpansion || 0;
+  const actualPool    = pf.actualOptionPoolPct;
+  const actualUnalloc = pf.actualUnallocatedOptionPoolPct;
+  const prePoolSh     = pre.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const postPoolSh    = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const postUnallocSh = post.filter(s => s.type === 'option' && /pool|unalloc|available|reserve/i.test(s.name))
+                            .reduce((a, s) => a + (s.shares || 0), 0);
+  const tsIsUnalloc   = rcData._optionPoolIsUnallocated || false;
+  const checkPool     = tsIsUnalloc && actualUnalloc != null ? actualUnalloc : actualPool;
+  const poolOk        = (poolTarget != null && checkPool != null)
+    ? Math.abs(checkPool - poolTarget) <= 0.001 : null;
+  const circNeeded    = poolMethod === 'pre-money' && poolTarget > 0;
 
   row('Option Pool Method', poolMethod,
     poolMethod === 'pre-money'
       ? 'Pool expanded before PPS is set — dilutes existing holders (pool shuffle)'
       : 'Pool expanded after new investment closes — no effect on PPS');
-  row('Target Post-Money Pool %', poolTarget != null ? cPct(poolTarget) : 'Not specified',
-    'Required unallocated pool after closing');
+  row('Target Post-Money Pool % (Unallocated)', poolTarget != null ? cPct(poolTarget) : 'Not specified',
+    'Required unallocated (available for future grants) pool after closing, per term sheet');
   row('Existing Pool Shares (Pre-Expansion)', c0(prePoolSh), 'Unallocated options before this round');
   row('Pool Expansion (New Shares Issued)', c0(poolExp),
     poolMethod === 'pre-money'
@@ -2178,10 +2207,13 @@ function generateCSVAnalysis(pf, rc) {
       : 'Issued post-money — no effect on PPS');
   row('Pre-Money FD After Pool Expansion', c0(preFD), 'Denominator used to calculate PPS');
   row('PPS After Shuffle', cPPS(pps), 'Lower than no-shuffle scenario by design');
-  row('Total Unallocated Pool (Post-Closing)', c0(postPoolSh), 'Pre-existing unallocated + expansion');
-  row('Actual Post-Money Pool %', cPct(actualPool), 'Pool shares ÷ post-money fully diluted');
+  row('Total Option Pool Shares (Post-Closing)', c0(postPoolSh), 'All option-type shares (granted + available)');
+  row('Unallocated Pool Shares (Post-Closing)', c0(postUnallocSh), 'Available for future grants (exclusive of issued/promised options)');
+  row('Total Pool % (Post-Money FD)', cPct(actualPool), 'All option shares ÷ post-money FD');
+  row('Unallocated Pool % (Post-Money FD)', actualUnalloc != null ? cPct(actualUnalloc) : 'N/A',
+    'Available pool shares ÷ post-money FD — metric specified in term sheet');
   row('Pool % Target Achieved', poolOk == null ? 'N/A' : poolOk ? 'PASS' : 'FAIL',
-    poolOk === false ? 'Delta ' + cPct(Math.abs(actualPool - poolTarget)) + ' (tolerance: 0.10 pp)' : '');
+    poolOk === false ? 'Unallocated pool ' + cPct(checkPool) + ' vs target ' + cPct(poolTarget) + ' (tolerance: 0.10 pp)' : 'Unallocated pool matches term sheet target');
   row('Circular Reference Required', circNeeded ? 'YES' : 'NO',
     circNeeded
       ? 'Pool size depends on PPS; PPS depends on pool size — iterative calc required in Excel'
