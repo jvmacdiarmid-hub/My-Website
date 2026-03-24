@@ -923,108 +923,154 @@ function extractRoundConfig(rows, rc) {
 
 function extractStakeholders(rows, out) {
   // ── 1. Find header row ────────────────────────────────────────────
-  // Check up to 25 rows; also merge two consecutive rows so multi-row
-  // merged-cell headers (common in NVCA spreadsheets) can be detected.
-  let hIdx = -1;
-  const headerKw = ['name','shares','type','class','holder','investor','stockholder','shareholder','principal','total','outstanding','common','preferred'];
-  for (let i = 0; i < Math.min(rows.length, 25); i++) {
-    const merged = rows[i].map((c,ci) => String(c||'').toLowerCase() + (rows[i+1]?(' '+String(rows[i+1][ci]||'')).toLowerCase():''));
+  // NVCA pro formas have 2–3 header rows (company name, group labels,
+  // column labels). We look for the row that has the most equity-class
+  // keywords so we land on the actual column-header row.
+  const headerKw = ['common','preferred','series','option','warrant','holder',
+                    'stockholder','investor','name','shares','outstanding'];
+  let hIdx = -1, bestScore = 0;
+  for (let i = 0; i < Math.min(rows.length, 30); i++) {
     let hits = 0;
-    for (const cell of merged) { if (headerKw.some(k => cell.includes(k))) hits++; }
-    if (hits >= 2) { hIdx = i; break; }
+    for (const cell of rows[i]) {
+      const s = String(cell||'').toLowerCase();
+      if (headerKw.some(k => s.includes(k))) hits++;
+    }
+    if (hits > bestScore) { bestScore = hits; hIdx = i; }
+    if (hits >= 4) break;   // good enough — stop early
   }
-  if (hIdx === -1) return;
+  if (hIdx === -1 || bestScore < 1) return;
 
-  // Merge two header rows so sub-headers (e.g. "Common\nOutstanding") become one string
+  // Build per-column header strings by concatenating this row + the next
+  // (handles "Common\nStock" spread across two merged-cell rows).
   const hdrs = rows[hIdx].map((h, ci) => {
     const a = String(h||'').toLowerCase().trim();
     const b = rows[hIdx+1] ? String(rows[hIdx+1][ci]||'').toLowerCase().trim() : '';
     return b ? a + ' ' + b : a;
   });
-  const col = opts => { for (const o of opts) { const i = hdrs.findIndex(h => h.includes(o)); if (i >= 0) return i; } return -1; };
 
-  const cN = col(['name','holder','stockholder','shareholder','investor']);
-  if (cN < 0) return;
-  const cT = col(['type','class','security','instrument','series']);
-
-  // ── 2. Shares column: broad keyword search, then numeric fallback ─
-  // Prefer "total" / "fully diluted" over individual class columns so we
-  // capture the aggregate share count per holder in one pass.
-  let cS = col([
-    'total shares','total fd','fd shares','fully diluted shares',
-    'fully-diluted shares','shares outstanding','outstanding shares',
-    'aggregate shares','total outstanding','total equity',
-    'fully diluted','fully-diluted',
-    'shares','# shares','number of shares','outstanding','total','stock',
-  ]);
-
-  // Numeric fallback: if no keyword matched, scan data rows and pick the
-  // column (after cN) that most frequently holds large positive integers.
-  // Among ties, prefer the rightmost column (totals are usually last).
-  if (cS < 0) {
-    const sample = rows.slice(hIdx + 1, hIdx + 50).filter(r => {
-      const n = String(r[cN]||'').trim();
-      return n && !/^total|subtotal|fully.diluted/i.test(n);
-    });
-    const scores = {};
-    for (const row of sample) {
-      for (let c = cN + 1; c < (row.length || 0); c++) {
-        const raw = String(row[c]||'').replace(/,/g,'').trim();
-        if (!raw || raw === '-' || raw.includes('%')) continue;
-        const v = parseFloat(raw);
-        if (!isNaN(v) && v > 0 && Math.round(v) === v) scores[c] = (scores[c]||0) + 1;
+  // ── 2. Name column ────────────────────────────────────────────────
+  // Try keyword match first; fall back to column 0 (NVCA sheets often
+  // leave the name column header blank).
+  const colBy = opts => { for (const o of opts) { const i = hdrs.findIndex(h => h.includes(o)); if (i >= 0) return i; } return -1; };
+  let cN = colBy(['name','holder','stockholder','shareholder','investor']);
+  if (cN < 0) {
+    // Use the first column whose data-row values are mostly non-numeric strings
+    outer: for (let c = 0; c < (rows[hIdx]||[]).length; c++) {
+      let strHits = 0;
+      for (let r = hIdx + 1; r < Math.min(hIdx + 10, rows.length); r++) {
+        const v = String(rows[r][c]||'').trim();
+        if (v && isNaN(parseFloat(v.replace(/,/g,'')))) strHits++;
       }
+      if (strHits >= 3) { cN = c; break outer; }
     }
-    const cands = Object.entries(scores).map(([c,s]) => [+c, s]).filter(([,s]) => s >= 2);
-    cands.sort((a,b) => b[1]-a[1] || b[0]-a[0]);   // most hits, then rightmost
-    if (cands.length > 0) cS = cands[0][0];
+  }
+  if (cN < 0) return;
+
+  // ── 3. Share-class columns ────────────────────────────────────────
+  // Scan headers left-to-right from cN+1. Classify each column as a
+  // specific equity class or skip it. STOP at the first "total" /
+  // "fully diluted" column so we only read pre-money class columns and
+  // don't double-count post-money panels that repeat the same headers.
+  const skipRe   = /total|fully.?diluted|\bfd\b|allocation|cash\s+paid|primary|post.?money|financing|dilut.*%|ownership|%\s*of/i;
+  const classMap = [
+    { re: /\bcommon\b/i,              type: 'common',    seriesFn: ()   => ''        },
+    { re: /\boption|warrant\b/i,      type: 'option',    seriesFn: ()   => ''        },
+    { re: /series\s+([a-z0-9\-]+)/i,  type: 'preferred', seriesFn: m   => m[1].toUpperCase() },
+    { re: /\bpreferred\b/i,           type: 'preferred', seriesFn: ()   => ''        },
+    { re: /\bsafe\b/i,                type: 'safe',      seriesFn: ()   => ''        },
+    { re: /note|convert/i,            type: 'note',      seriesFn: ()   => ''        },
+  ];
+
+  const classCols = [];   // [{c, type, series}]
+  for (let c = cN + 1; c < hdrs.length; c++) {
+    const h = hdrs[c];
+    if (!h) continue;
+    // A "total" / "FD" column ends the pre-money section
+    if (/total|fully.?diluted|\bfd\b/i.test(h)) break;
+    if (skipRe.test(h)) continue;
+    for (const { re, type, seriesFn } of classMap) {
+      const m = h.match(re);
+      if (m) { classCols.push({ c, type, series: seriesFn(m) }); break; }
+    }
   }
 
-  // ── 3. Extract rows with section-based type tracking ─────────────
-  // Many NVCA spreadsheets group holders under section headers like
-  // "Common Stockholders" / "Series D Preferred" with no numeric data
-  // in the section-header row itself.
-  const typeRe = [
+  // ── 4. Fallback: single-column mode for simple cap tables ─────────
+  // Used when no class columns were found (e.g. a plain two-column sheet).
+  let cS = -1;
+  if (classCols.length === 0) {
+    cS = colBy(['total shares','total fd','fd shares','fully diluted shares',
+                'shares outstanding','outstanding shares','fully diluted',
+                'shares','# shares','outstanding','total','stock']);
+    if (cS < 0) {
+      // Numeric heuristic: column after cN with most large-integer cells
+      const sample = rows.slice(hIdx + 1, hIdx + 50).filter(r => {
+        const n = String(r[cN]||'').trim();
+        return n && !/^total|subtotal|fully.diluted/i.test(n);
+      });
+      const scores = {};
+      for (const row of sample) {
+        for (let c = cN + 1; c < (row.length||0); c++) {
+          const raw = String(row[c]||'').replace(/,/g,'').trim();
+          if (!raw || raw === '-' || raw.includes('%')) continue;
+          const v = parseFloat(raw);
+          if (!isNaN(v) && v > 0 && Math.round(v) === v) scores[c] = (scores[c]||0) + 1;
+        }
+      }
+      const cands = Object.entries(scores).map(([c,s])=>[+c,s]).filter(([,s])=>s>=2);
+      cands.sort((a,b) => b[1]-a[1] || b[0]-a[0]);
+      if (cands.length > 0) cS = cands[0][0];
+    }
+  }
+
+  // ── 5. Row extraction with section-header type tracking ───────────
+  const sectionTypeRe = [
     [/preferred|series\s+[a-z0-9]/i, 'preferred'],
-    [/common/i,                        'common'   ],
-    [/option|warrant|eip|equity.incentive/i, 'option'],
-    [/\bsafe\b/i,                      'safe'     ],
-    [/note|convert/i,                  'note'     ],
+    [/\bcommon\b/i,                   'common'   ],
+    [/option|warrant|eip/i,           'option'   ],
+    [/\bsafe\b/i,                     'safe'     ],
+    [/note|convert/i,                 'note'     ],
   ];
   let sectionType = 'common';
+  const cT = colBy(['type','class','security','instrument']);
 
-  // Skip the merged second header row if we used it
-  const dataStart = hIdx + 1;
-  for (let ri = dataStart; ri < rows.length; ri++) {
+  for (let ri = hIdx + 1; ri < rows.length; ri++) {
     const row  = rows[ri];
     const name = String(row[cN]||'').trim();
     if (!name) continue;
-    if (/^total|subtotal|fully.diluted|^-{2,}$/i.test(name)) continue;
+    if (/^total\b|^subtotal\b|fully.?diluted|^-{2,}$/i.test(name)) continue;
 
-    // Section header: name cell is populated but all numeric cells are empty/zero
+    // Section header: non-empty name but no positive numeric value anywhere after cN
     const hasNum = row.some((c, i) => {
       if (i <= cN) return false;
       const v = parseFloat(String(c||'').replace(/,/g,''));
       return !isNaN(v) && v > 0;
     });
     if (!hasNum) {
-      for (const [re, t] of typeRe) { if (re.test(name)) { sectionType = t; break; } }
+      for (const [re, t] of sectionTypeRe) { if (re.test(name)) { sectionType = t; break; } }
       continue;
     }
 
-    // Explicit type column takes priority, then fall back to section type
-    let type = sectionType;
-    if (cT >= 0) {
-      const rawT = String(row[cT]||'').toLowerCase();
-      if      (rawT.includes('safe'))                               type = 'safe';
-      else if (rawT.includes('note') || rawT.includes('conv'))      type = 'note';
-      else if (rawT.includes('option') || rawT.includes('warrant')) type = 'option';
-      else if (rawT.includes('pref')  || rawT.includes('series'))   type = 'preferred';
-      else if (rawT.includes('common'))                             type = 'common';
+    if (classCols.length > 0) {
+      // Multi-class mode: emit one stakeholder entry per class column that
+      // has a non-zero share count for this holder.
+      for (const { c, type, series } of classCols) {
+        const shares = parseFloat(String(row[c]||'').replace(/,/g,'')) || 0;
+        if (shares > 0) out.push({ name, shares, type, ...(series ? { series } : {}) });
+      }
+    } else {
+      // Single-column fallback
+      let type = sectionType;
+      if (cT >= 0) {
+        const rawT = String(row[cT]||'').toLowerCase();
+        if      (rawT.includes('safe'))                               type = 'safe';
+        else if (rawT.includes('note') || rawT.includes('conv'))      type = 'note';
+        else if (rawT.includes('option') || rawT.includes('warrant')) type = 'option';
+        else if (rawT.includes('pref')  || rawT.includes('series'))   type = 'preferred';
+        else if (rawT.includes('common'))                             type = 'common';
+      }
+      const shares = cS >= 0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
+      out.push({ name, shares, type });
     }
-
-    const shares = cS >= 0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
-    out.push({ name, shares, type });
   }
 }
 
