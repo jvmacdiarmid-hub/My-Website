@@ -922,23 +922,108 @@ function extractRoundConfig(rows, rc) {
 }
 
 function extractStakeholders(rows, out) {
+  // ── 1. Find header row ────────────────────────────────────────────
+  // Check up to 25 rows; also merge two consecutive rows so multi-row
+  // merged-cell headers (common in NVCA spreadsheets) can be detected.
   let hIdx = -1;
-  for (let i = 0; i < Math.min(rows.length, 20); i++) {
-    const r = rows[i]; let hits = 0;
-    for (const cell of r) { const s=String(cell||'').toLowerCase(); if(['name','shares','type','class','holder','investor','principal'].some(k=>s.includes(k))) hits++; }
+  const headerKw = ['name','shares','type','class','holder','investor','stockholder','shareholder','principal','total','outstanding','common','preferred'];
+  for (let i = 0; i < Math.min(rows.length, 25); i++) {
+    const merged = rows[i].map((c,ci) => String(c||'').toLowerCase() + (rows[i+1]?(' '+String(rows[i+1][ci]||'')).toLowerCase():''));
+    let hits = 0;
+    for (const cell of merged) { if (headerKw.some(k => cell.includes(k))) hits++; }
     if (hits >= 2) { hIdx = i; break; }
   }
   if (hIdx === -1) return;
-  const hdrs = rows[hIdx].map(h=>String(h||'').toLowerCase().trim());
-  const col = opts => { for(const o of opts){const i=hdrs.findIndex(h=>h.includes(o));if(i>=0)return i;} return -1; };
-  const cN=col(['name','holder','stockholder','investor']), cS=col(['shares','# shares','number']), cT=col(['type','class','security','instrument']);
+
+  // Merge two header rows so sub-headers (e.g. "Common\nOutstanding") become one string
+  const hdrs = rows[hIdx].map((h, ci) => {
+    const a = String(h||'').toLowerCase().trim();
+    const b = rows[hIdx+1] ? String(rows[hIdx+1][ci]||'').toLowerCase().trim() : '';
+    return b ? a + ' ' + b : a;
+  });
+  const col = opts => { for (const o of opts) { const i = hdrs.findIndex(h => h.includes(o)); if (i >= 0) return i; } return -1; };
+
+  const cN = col(['name','holder','stockholder','shareholder','investor']);
   if (cN < 0) return;
-  for (let r = hIdx+1; r < rows.length; r++) {
-    const row=rows[r]; const name=String(row[cN]||'').trim();
-    if (!name || /total|fully.diluted/i.test(name)) continue;
-    const shares = cS>=0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
-    const rawT = cT>=0 ? String(row[cT]||'').toLowerCase() : '';
-    const type = rawT.includes('safe')?'safe':rawT.includes('note')||rawT.includes('conv')?'note':rawT.includes('option')||rawT.includes('warrant')?'option':rawT.includes('pref')?'preferred':'common';
+  const cT = col(['type','class','security','instrument','series']);
+
+  // ── 2. Shares column: broad keyword search, then numeric fallback ─
+  // Prefer "total" / "fully diluted" over individual class columns so we
+  // capture the aggregate share count per holder in one pass.
+  let cS = col([
+    'total shares','total fd','fd shares','fully diluted shares',
+    'fully-diluted shares','shares outstanding','outstanding shares',
+    'aggregate shares','total outstanding','total equity',
+    'fully diluted','fully-diluted',
+    'shares','# shares','number of shares','outstanding','total','stock',
+  ]);
+
+  // Numeric fallback: if no keyword matched, scan data rows and pick the
+  // column (after cN) that most frequently holds large positive integers.
+  // Among ties, prefer the rightmost column (totals are usually last).
+  if (cS < 0) {
+    const sample = rows.slice(hIdx + 1, hIdx + 50).filter(r => {
+      const n = String(r[cN]||'').trim();
+      return n && !/^total|subtotal|fully.diluted/i.test(n);
+    });
+    const scores = {};
+    for (const row of sample) {
+      for (let c = cN + 1; c < (row.length || 0); c++) {
+        const raw = String(row[c]||'').replace(/,/g,'').trim();
+        if (!raw || raw === '-' || raw.includes('%')) continue;
+        const v = parseFloat(raw);
+        if (!isNaN(v) && v > 0 && Math.round(v) === v) scores[c] = (scores[c]||0) + 1;
+      }
+    }
+    const cands = Object.entries(scores).map(([c,s]) => [+c, s]).filter(([,s]) => s >= 2);
+    cands.sort((a,b) => b[1]-a[1] || b[0]-a[0]);   // most hits, then rightmost
+    if (cands.length > 0) cS = cands[0][0];
+  }
+
+  // ── 3. Extract rows with section-based type tracking ─────────────
+  // Many NVCA spreadsheets group holders under section headers like
+  // "Common Stockholders" / "Series D Preferred" with no numeric data
+  // in the section-header row itself.
+  const typeRe = [
+    [/preferred|series\s+[a-z0-9]/i, 'preferred'],
+    [/common/i,                        'common'   ],
+    [/option|warrant|eip|equity.incentive/i, 'option'],
+    [/\bsafe\b/i,                      'safe'     ],
+    [/note|convert/i,                  'note'     ],
+  ];
+  let sectionType = 'common';
+
+  // Skip the merged second header row if we used it
+  const dataStart = hIdx + 1;
+  for (let ri = dataStart; ri < rows.length; ri++) {
+    const row  = rows[ri];
+    const name = String(row[cN]||'').trim();
+    if (!name) continue;
+    if (/^total|subtotal|fully.diluted|^-{2,}$/i.test(name)) continue;
+
+    // Section header: name cell is populated but all numeric cells are empty/zero
+    const hasNum = row.some((c, i) => {
+      if (i <= cN) return false;
+      const v = parseFloat(String(c||'').replace(/,/g,''));
+      return !isNaN(v) && v > 0;
+    });
+    if (!hasNum) {
+      for (const [re, t] of typeRe) { if (re.test(name)) { sectionType = t; break; } }
+      continue;
+    }
+
+    // Explicit type column takes priority, then fall back to section type
+    let type = sectionType;
+    if (cT >= 0) {
+      const rawT = String(row[cT]||'').toLowerCase();
+      if      (rawT.includes('safe'))                               type = 'safe';
+      else if (rawT.includes('note') || rawT.includes('conv'))      type = 'note';
+      else if (rawT.includes('option') || rawT.includes('warrant')) type = 'option';
+      else if (rawT.includes('pref')  || rawT.includes('series'))   type = 'preferred';
+      else if (rawT.includes('common'))                             type = 'common';
+    }
+
+    const shares = cS >= 0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
     out.push({ name, shares, type });
   }
 }
