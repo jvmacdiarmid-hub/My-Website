@@ -1139,13 +1139,17 @@ function extractRoundConfig(rows, rc) {
         if (v) { rc.preMoneyValuation = v; if (hasFxSymbol(c + 1)) rc._preMoneyFx = true; }
       }
 
-      // Exclude secondary / aggregate / shares-bought rows — those are not new money.
-      // Also exclude entity/fund names: cells containing "investment(s)" as part of a
-      // company name (e.g. "Accel Growth Investments, L.P.") are NOT round-size labels.
-      // Guards: (a) skip legal-entity suffixes, (b) cap label length at 60 chars.
+      // New investment label matching.
+      // "aggregate" is ALLOWED when it qualifies investment/proceeds (e.g. "Aggregate
+      // Proceeds", "Aggregate Investment") — those ARE the new-money total.
+      // Only exclude "aggregate" when it describes outstanding shares or total cap
+      // (e.g. "Aggregate Outstanding", "Aggregate Capitalization").
+      // Also exclude entity/fund names — cells containing "investment(s)" as part of a
+      // company name ("Accel Growth Investments, L.P.") are NOT round-size labels.
       if (!rc.newInvestment &&
-          /(?:primary\s+)?investment|proceeds|round[\s.]size/i.test(cell) &&
-          !/secondary|shares\s+bought|aggregate/i.test(cell) &&
+          /(?:aggregate\s+)?(?:primary\s+)?(?:new\s+)?(?:total\s+)?(?:gross\s+)?(?:investment|proceeds|round[\s.]size)/i.test(cell) &&
+          !/secondary|shares\s+bought/i.test(cell) &&
+          !/aggregate\s+(?:outstanding|capitalization|authorized|shares|options|equity)/i.test(cell) &&
           !/\b(?:l\.?p\.?|llc|ltd\.?|inc\.?|corp\.?|fund|partners?|capital|management|group|holdings?|ventures?|llp|plc|s\.?a\.?|n\.?v\.?|gp\b)\b/i.test(cell) &&
           cell.length <= 60) {
         const v = num(c + 1);
@@ -1166,32 +1170,57 @@ function extractRoundConfig(rows, rc) {
     }
   });
 
-  // ── Cash Paid column fallback ────────────────────────────────────────────
-  // NVCA pro formas do not have a standalone "Investment: $X" label cell.
-  // The actual round size is the grand total at the bottom of the "Cash Paid"
-  // column in the Primary Financing panel.  Strategy: find the column whose
-  // header is exactly "Cash Paid" (or close variant), then take the MAXIMUM
-  // value in that column — the grand total is always ≥ any individual row,
-  // so max() reliably returns the column total regardless of row order.
+  // ── Cash Paid / Proceeds column fallback ─────────────────────────────────
+  // NVCA pro formas list each investor's cash paid in a dedicated column.
+  // Strategy:
+  //   1. Scan up to 60 rows (not 30) for the column header — long header blocks
+  //      in some pro formas push column labels below row 30.
+  //   2. Recognise a wide set of header names (the NVCA model uses "Cash Paid";
+  //      other common variants: "Proceeds", "Amount Invested", "Purchase Price").
+  //   3. Once the column is found, prefer an explicit "Total" / "Aggregate" row
+  //      (most reliable).  For tranched deals the column may have two equal-sized
+  //      tranche totals (e.g. $1.5M + $1.5M) with no grand total row — in that
+  //      case fall back to summing ALL positive values in the column, which gives
+  //      the correct aggregate.  max() is intentionally NOT used because it would
+  //      return only one tranche instead of the round total.
   if (!rc.newInvestment) {
+    const cpHeaders = new Set([
+      'cash paid', 'cash invested', 'aggregate cash paid', 'total cash paid',
+      'gross cash paid', 'proceeds', 'gross proceeds', 'aggregate proceeds',
+      'total proceeds', 'amount invested', 'amount paid', 'dollars invested',
+      'purchase price', 'investment amount', 'total investment', 'new investment',
+    ]);
     let cpCol = -1, cpHdrRow = -1;
-    for (let ri = 0; ri < Math.min(rows.length, 30) && cpCol < 0; ri++) {
+    for (let ri = 0; ri < Math.min(rows.length, 60) && cpCol < 0; ri++) {
       for (let c = 0; c < rows[ri].length; c++) {
-        const h = String(rows[ri][c]||'').trim().toLowerCase();
-        if (h === 'cash paid' || h === 'cash invested' || h === 'aggregate cash paid' ||
-            h === 'total cash paid' || h === 'gross cash paid') {
+        if (cpHeaders.has(String(rows[ri][c]||'').trim().toLowerCase())) {
           cpCol = c; cpHdrRow = ri; break;
         }
       }
     }
     if (cpCol >= 0) {
-      let maxVal = 0;
+      // Pass 1: look for an explicit total / aggregate row label in the same section.
+      let totalVal = 0;
       for (let ri = cpHdrRow + 1; ri < rows.length; ri++) {
-        const s = String(rows[ri][cpCol]||'').replace(/[$,\s]/g, '');
-        const v = parseFloat(s);
-        if (!isNaN(v) && v > maxVal) maxVal = v;
+        const lbl = String(rows[ri][0]||'').trim().toLowerCase();
+        if (/^(?:total|aggregate|grand\s+total|subtotal)/.test(lbl)) {
+          const s = String(rows[ri][cpCol]||'').replace(/[$,\s]/g, '');
+          const v = parseFloat(s);
+          if (!isNaN(v) && v > 0) { totalVal = v; break; }
+        }
       }
-      if (maxVal > 0) rc.newInvestment = maxVal;
+      // Pass 2: sum all positive values in the column (handles tranched deals
+      // where no single row equals the full round total).
+      if (!totalVal) {
+        let colSum = 0;
+        for (let ri = cpHdrRow + 1; ri < rows.length; ri++) {
+          const s = String(rows[ri][cpCol]||'').replace(/[$,\s]/g, '');
+          const v = parseFloat(s);
+          if (!isNaN(v) && v > 0) colSum += v;
+        }
+        totalVal = colSum;
+      }
+      if (totalVal > 0) rc.newInvestment = totalVal;
     }
   }
 }
