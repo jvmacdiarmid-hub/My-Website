@@ -844,13 +844,34 @@ async function parseTermSheet(file) {
     moneyBefore('post[\\s\\-]?money\\s+fully[\\s\\-]?diluted') ||
     null;
 
-  // Investment: narrow-window patterns first (opening sentence format: "$300M in
-  // new primary capital"), then table/label patterns.
+  // Multi-investor tranche deals describe each investor's commitment as:
+  //   "(i) $X in the First Tranche, and (ii) no less than $Y ... in the Second Tranche"
+  // The actual committed amount is the SUM of all (i) + all (ii) minimums.
+  // This must run BEFORE broad patterns because those patterns often match an
+  // AUTHORIZED ROUND CAP ("The Series Seed financing shall not exceed $25,000,000")
+  // — a ceiling set by the company, not the actual dollar amount being invested.
+  function sumTrancheDeal() {
+    const re1 = /\(\s*i\s*\)\s*\$\s*([0-9][0-9,]+(?:\.[0-9]+)?)\s+in\s+the\s+first\s+tranche/gi;
+    const re2 = /\(\s*ii\s*\)\s*no\s+less\s+than\s+\$\s*([0-9][0-9,]+(?:\.[0-9]+)?)/gi;
+    let t1 = 0, c1 = 0, m;
+    while ((m = re1.exec(text)) !== null) { t1 += parseFloat(m[1].replace(/,/g, '')); c1++; }
+    let t2 = 0;
+    while ((m = re2.exec(text)) !== null) { t2 += parseFloat(m[1].replace(/,/g, '')); }
+    // Require 2+ investors to confirm this is a multi-investor tranche structure
+    // and not a single investor with one (i)/(ii) tranche split.
+    return c1 >= 2 ? t1 + t2 : null;
+  }
+
+  // Investment: committed tranche sum first, then explicit label patterns.
+  // Pattern for "Series Seed financing/round" is tightened to require : or = so
+  // a loose sentence reference ("... in the Series Seed financing ...") cannot
+  // accidentally match the authorized cap amount that typically follows it.
   ts.investmentAmount  =
-    moneyBefore('in\\s+new\\s+(?:primary\\s+)?capital', 15) ||     // "$300M in new primary capital"
+    moneyBefore('in\\s+new\\s+(?:primary\\s+)?capital', 15) ||
+    sumTrancheDeal() ||
     money('(?:aggregate\\s+)?(?:total\\s+)?(?:new\\s+)?(?:gross\\s+)?(?:investment|proceeds|round\\s+size)\\s*[:=]') ||
     money('subscribing\\s+for') ||
-    money('series\\s+[a-z]\\s+(?:investment|financing|round)(?:\\s*[:=])?') ||
+    money('series\\s+[a-z]\\s+(?:investment|financing|round)\\s*[:=]') ||
     money('(?:aggregate\\s+)?(?:new\\s+)?(?:investment|proceeds|round\\s+size|gross\\s+proceeds)\\s+of');
 
   // ── Cross-validate post-money, pre-money, investment ────────────────────
