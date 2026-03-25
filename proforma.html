@@ -851,15 +851,22 @@ async function parseTermSheet(file) {
   // AUTHORIZED ROUND CAP ("The Series Seed financing shall not exceed $25,000,000")
   // — a ceiling set by the company, not the actual dollar amount being invested.
   function sumTrancheDeal() {
-    const re1 = /\(\s*i\s*\)\s*\$\s*([0-9][0-9,]+(?:\.[0-9]+)?)\s+in\s+the\s+first\s+tranche/gi;
-    const re2 = /\(\s*ii\s*\)\s*no\s+less\s+than\s+\$\s*([0-9][0-9,]+(?:\.[0-9]+)?)/gi;
-    let t1 = 0, c1 = 0, m;
-    while ((m = re1.exec(text)) !== null) { t1 += parseFloat(m[1].replace(/,/g, '')); c1++; }
-    let t2 = 0;
-    while ((m = re2.exec(text)) !== null) { t2 += parseFloat(m[1].replace(/,/g, '')); }
-    // Require 2+ investors to confirm this is a multi-investor tranche structure
-    // and not a single investor with one (i)/(ii) tranche split.
-    return c1 >= 2 ? t1 + t2 : null;
+    // Match "$X in the First Tranche" without requiring a leading "(i)" marker.
+    // The (i)/(ii) notation is a Word formatting choice and may not survive binary
+    // extraction intact — parentheses can be split into separate text runs or
+    // dropped entirely.  Looking for the dollar amount + "in the First Tranche"
+    // is sufficient and more robust across extraction methods.
+    const re1 = /\$\s*([0-9][0-9,]+(?:\.[0-9]+)?)\s+in\s+the\s+first\s+tranche/gi;
+    // Second-tranche minimum: "no less than $Y" is the standard NVCA phrasing and
+    // appears once per investor in the second-tranche clause.
+    const re2 = /no\s+less\s+than\s+\$\s*([0-9][0-9,]+(?:\.[0-9]+)?)/gi;
+    const a1 = [], a2 = [];
+    let m;
+    while ((m = re1.exec(text)) !== null) a1.push(parseFloat(m[1].replace(/,/g, '')));
+    while ((m = re2.exec(text)) !== null) a2.push(parseFloat(m[1].replace(/,/g, '')));
+    // Require 2+ first-tranche entries to confirm multi-investor tranche structure.
+    if (a1.length < 2) return null;
+    return a1.reduce((s, v) => s + v, 0) + a2.reduce((s, v) => s + v, 0);
   }
 
   // Investment: committed tranche sum first, then explicit label patterns.
@@ -909,9 +916,27 @@ async function parseTermSheet(file) {
       if (rp) ts.targetOptionPool = parseFloat(rp[1]) / 100;
     }
   }
-  // Pool method — also catches "option pool … on a post-money fully-diluted basis"
-  if (/pre[\s-]?money\s+(?:option\s+)?pool|pool\s+shuffle/i.test(text)) ts.optionPoolMethod = 'pre-money';
-  else if (/post[\s-]?money\s+option\s+pool|option\s+pool[^\n]{0,150}post[\s-]?money/i.test(text)) ts.optionPoolMethod = 'post-money';
+  // Pool method detection.
+  // Pre-money (pool shuffle): expand the pool BEFORE pricing the new investor.
+  // Post-money: the target % is measured against the fully-diluted POST-closing cap,
+  //   and the existing available pool already counts toward the target — only the
+  //   shortfall is issued as new shares.
+  //
+  // "Inclusive of existing issued and available shares" means the existing
+  // unissued/available pool already satisfies part of the target; this is the
+  // post-money method.  We also catch "fully-diluted basis", "post-closing basis",
+  // and similar phrases that indicate a post-closing denominator.
+  if (/pre[\s-]?money\s+(?:option\s+)?pool|pool\s+shuffle/i.test(text)) {
+    ts.optionPoolMethod = 'pre-money';
+  } else if (
+    /post[\s-]?money\s+option\s+pool|option\s+pool[^\n]{0,150}post[\s-]?money/i.test(text) ||
+    /inclusive\s+of\s+(?:existing\s+)?(?:issued\s+and\s+)?available\s+shares/i.test(text) ||
+    /inclusive\s+of\s+existing\s+issued\s+and\s+available/i.test(text) ||
+    /(?:fully[\s-]?diluted|post[\s-]?closing)\s+(?:capitalization|equity|basis)[^\n]{0,80}(?:option\s+)?pool/i.test(text) ||
+    /(?:option\s+)?pool[^\n]{0,80}(?:fully[\s-]?diluted|post[\s-]?closing)\s+(?:capitalization|equity|basis)/i.test(text)
+  ) {
+    ts.optionPoolMethod = 'post-money';
+  }
   ts.statedPPS = money('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|oip');
   const lm = liqMult('liquidation\\s+(?:preference|multiple)(?:\\s*[:=])?');
   if (lm != null) ts.liquidationMultiple = lm;
