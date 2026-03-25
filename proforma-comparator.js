@@ -192,19 +192,32 @@ const ProFormaComparator = (function () {
     }
 
     // 5. Option pool target %
-    // Always prefer actualUnallocatedOptionPoolPct when available — term sheets virtually
-    // always specify UNALLOCATED pool (exclusive of granted/promised shares).  The value is
-    // read directly from the spreadsheet's post-closing "Available EIP Shares %" column and
-    // is therefore independent of any engine recomputation.  Only fall back to the total-pool
-    // figure when the unallocated value was not extracted.
+    // Select the correct actual pool metric based on the method stated in the term sheet.
+    //
+    //  issued-and-outstanding → actualOptionPoolIssuedOutstandingPct
+    //    (pool / (common + preferred); options/warrants excluded from denominator)
+    //
+    //  post-money / fully-diluted → actualUnallocatedOptionPoolPct if available
+    //    (read directly from the spreadsheet's post-closing "Available EIP %" column),
+    //    otherwise fall back to actualOptionPoolPct (total pool / fully-diluted FD).
+    //
+    //  pre-money → same fully-diluted pool % (the expansion is sized so that post-closing
+    //    pool / post-FD = target, so the fully-diluted metric is still the right comparator).
+    //
+    //  no method stated → prefer unallocated if available, otherwise total pool.
     if (ts.targetOptionPool) {
-      const hasUnalloc = pf.actualUnallocatedOptionPoolPct != null;
-      const actualPool = hasUnalloc
-        ? pf.actualUnallocatedOptionPoolPct
-        : pf.actualOptionPoolPct;
-      const poolLabel  = hasUnalloc
-        ? 'Option pool target (unallocated)'
-        : 'Option pool target';
+      let actualPool, poolLabel;
+      if (ts.optionPoolMethod === 'issued-and-outstanding' &&
+          pf.actualOptionPoolIssuedOutstandingPct != null) {
+        actualPool = pf.actualOptionPoolIssuedOutstandingPct;
+        poolLabel  = 'Option pool target (issued & outstanding basis)';
+      } else if (pf.actualUnallocatedOptionPoolPct != null) {
+        actualPool = pf.actualUnallocatedOptionPoolPct;
+        poolLabel  = 'Option pool target (unallocated, fully-diluted)';
+      } else {
+        actualPool = pf.actualOptionPoolPct;
+        poolLabel  = 'Option pool target (fully-diluted)';
+      }
       numCheck('optionPool', poolLabel,
         ts.targetOptionPool, actualPool, 'warning', fmtPct, POOL_TOL);
     }

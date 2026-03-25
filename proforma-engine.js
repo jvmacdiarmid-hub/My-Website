@@ -389,7 +389,7 @@ const ProFormaEngine = (function () {
       participationCap,
     });
 
-    // Post-money option pool expansion (if method is post-money)
+    // Post-money option pool expansion (fully-diluted basis)
     // Solve: (curPool + expansion) / (tempFD + expansion) = T
     //   → expansion = (T*tempFD - curPool) / (1 - T)
     if (optionPoolTargetPct > 0 && optionPoolMethod === 'post-money') {
@@ -401,6 +401,21 @@ const ProFormaEngine = (function () {
         const poolEntry = postRoundCap.find(s => s.type === 'option' && /pool/i.test(s.name));
         if (poolEntry) { poolEntry.shares += expansion; poolEntry._expansion = (poolEntry._expansion || 0) + expansion; }
         else postRoundCap.push({ name: 'Option Pool (Post-money)', type: 'option', shares: expansion, _expansion: expansion });
+      }
+    }
+
+    // Issued-and-outstanding option pool expansion
+    // Target: (curPool + expansion) / issuedAndOutstanding = T
+    //   → expansion = T * issuedAndOutstanding - curPool
+    // Denominator is common + preferred only; options and warrants are excluded.
+    if (optionPoolTargetPct > 0 && optionPoolMethod === 'issued-and-outstanding') {
+      const issuedOS  = getFullyDiluted(postRoundCap, ['common', 'preferred']);
+      const curPool   = getOptionPool(postRoundCap);
+      const expansion = Math.max(0, roundShares(optionPoolTargetPct * issuedOS - curPool, roundingMethod));
+      if (expansion > 0) {
+        const poolEntry = postRoundCap.find(s => s.type === 'option' && /pool/i.test(s.name));
+        if (poolEntry) { poolEntry.shares += expansion; poolEntry._expansion = (poolEntry._expansion || 0) + expansion; }
+        else postRoundCap.push({ name: 'Option Pool (Issued & Outstanding)', type: 'option', shares: expansion, _expansion: expansion });
       }
     }
 
@@ -416,6 +431,13 @@ const ProFormaEngine = (function () {
       .filter(s => s.type === 'option' && /pool|unalloc|available|reserve/i.test(s.name))
       .reduce((sum, s) => sum + (s.shares || 0), 0);
     const actualUnallocatedOptionPoolPct = postFD > 0 ? unallocPoolShares / postFD : 0;
+
+    // Issued-and-outstanding pool %: total option pool / (common + preferred only).
+    // Used when the term sheet specifies the pool target on an issued-and-outstanding
+    // (non-diluted) basis rather than a fully-diluted basis.
+    const issuedOutstandingShares = getFullyDiluted(postRoundCap, ['common', 'preferred']);
+    const actualOptionPoolIssuedOutstandingPct = issuedOutstandingShares > 0
+      ? getOptionPool(postRoundCap) / issuedOutstandingShares : 0;
 
     // Ownership with pre/post dilution
     const preRoundFDforPct = getFullyDiluted(preRoundCap);
@@ -442,6 +464,7 @@ const ProFormaEngine = (function () {
       newInvestorShares,
       optionExpansion,
       actualOptionPoolPct,
+      actualOptionPoolIssuedOutstandingPct,
       actualUnallocatedOptionPoolPct,
 
       // Tables

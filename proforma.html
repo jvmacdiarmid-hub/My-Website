@@ -916,26 +916,92 @@ async function parseTermSheet(file) {
       if (rp) ts.targetOptionPool = parseFloat(rp[1]) / 100;
     }
   }
-  // Pool method detection.
-  // Pre-money (pool shuffle): expand the pool BEFORE pricing the new investor.
-  // Post-money: the target % is measured against the fully-diluted POST-closing cap,
-  //   and the existing available pool already counts toward the target — only the
-  //   shortfall is issued as new shares.
+  // ── Option pool method detection ────────────────────────────────────────────
+  // Three methods are recognised.  Pre-money is tested first because its signals
+  // are the most explicit and unambiguous.  Issued-and-outstanding is tested
+  // before post-money because "issued and outstanding" is a specific phrase;
+  // post-money catches the broader fully-diluted / post-closing language last.
   //
-  // "Inclusive of existing issued and available shares" means the existing
-  // unissued/available pool already satisfies part of the target; this is the
-  // post-money method.  We also catch "fully-diluted basis", "post-closing basis",
-  // and similar phrases that indicate a post-closing denominator.
-  if (/pre[\s-]?money\s+(?:option\s+)?pool|pool\s+shuffle/i.test(text)) {
-    ts.optionPoolMethod = 'pre-money';
-  } else if (
-    /post[\s-]?money\s+option\s+pool|option\s+pool[^\n]{0,150}post[\s-]?money/i.test(text) ||
-    /inclusive\s+of\s+(?:existing\s+)?(?:issued\s+and\s+)?available\s+shares/i.test(text) ||
-    /inclusive\s+of\s+existing\s+issued\s+and\s+available/i.test(text) ||
-    /(?:fully[\s-]?diluted|post[\s-]?closing)\s+(?:capitalization|equity|basis)[^\n]{0,80}(?:option\s+)?pool/i.test(text) ||
-    /(?:option\s+)?pool[^\n]{0,80}(?:fully[\s-]?diluted|post[\s-]?closing)\s+(?:capitalization|equity|basis)/i.test(text)
-  ) {
-    ts.optionPoolMethod = 'post-money';
+  //  'pre-money'              Pool shuffle: the pool is expanded BEFORE the new
+  //                           investor is priced in.  Expansion dilutes existing
+  //                           holders only.
+  //                           Key phrases: "pool shuffle", "pre-money option pool",
+  //                           pool "established/expanded prior to / before closing
+  //                           or financing", "pre-closing", "pre-financing".
+  //
+  //  'post-money'             Target % is measured against the fully-diluted
+  //   (fully-diluted)         POST-closing cap — common, preferred, options,
+  //                           warrants, the new investor, AND the expanded pool
+  //                           itself all count.  Existing available pool already
+  //                           credits toward the target.
+  //                           Key phrases: "post-money option pool", "fully diluted
+  //                           [basis/capitalization]", "post-closing [basis/cap]",
+  //                           "post-financing", "inclusive of existing … available
+  //                           shares", "after giving effect to", "as a percentage
+  //                           of the fully diluted".
+  //
+  //  'issued-and-outstanding' Target % is measured against ISSUED AND OUTSTANDING
+  //                           shares only (common + preferred); options, warrants,
+  //                           and other reserved-but-unissued shares are excluded
+  //                           from the denominator.
+  //                           Key phrases: "issued and outstanding" near pool
+  //                           language, "outstanding capital stock/shares" near
+  //                           pool, "non-diluted basis", "excluding options/warrants"
+  //                           near pool.
+  {
+    const isPreMoney =
+      /pre[\s-]?money\s+(?:option\s+)?pool/i.test(text) ||
+      /(?:option\s+)?pool\s+shuffle/i.test(text) ||
+      // pool language appearing near "prior to / before closing/financing"
+      /(?:option\s+)?(?:pool|eip|incentive\s+plan)[^\n]{0,200}(?:prior\s+to\s+(?:the\s+)?closing|pre[\s-]?closing|before\s+(?:the\s+)?(?:closing|financing|investment))/i.test(text) ||
+      /(?:prior\s+to\s+(?:the\s+)?closing|pre[\s-]?closing|before\s+(?:the\s+)?(?:closing|financing|investment))[^\n]{0,200}(?:option\s+)?(?:pool|eip|incentive\s+plan)/i.test(text) ||
+      // pool "established/expanded/increased/created prior to/before closing"
+      /(?:option\s+)?(?:pool|eip|incentive\s+plan)[^\n]{0,200}(?:established|expanded|increased|created)\s+(?:prior\s+to|before)\s+(?:the\s+)?(?:closing|financing|investment)/i.test(text) ||
+      /(?:established|expanded|increased|created)\s+(?:prior\s+to|before)\s+(?:the\s+)?(?:closing|financing|investment)[^\n]{0,200}(?:option\s+)?(?:pool|eip|incentive\s+plan)/i.test(text) ||
+      // "pre-financing" / "pre-closing" in pool context
+      /(?:option\s+)?(?:pool|eip|incentive\s+plan)[^\n]{0,150}pre[\s-]?(?:financing|investment)/i.test(text) ||
+      /pre[\s-]?(?:financing|investment)[^\n]{0,150}(?:option\s+)?(?:pool|eip|incentive\s+plan)/i.test(text) ||
+      // explicit "pre-money fully-diluted" near pool
+      /pre[\s-]?money[^\n]{0,100}fully[\s-]?diluted[^\n]{0,100}(?:option\s+)?(?:pool|eip)/i.test(text);
+
+    const isIssuedAndOutstanding =
+      // "issued and outstanding" within ~150 chars of pool language (same sentence / clause)
+      /(?:option\s+)?(?:pool|eip|incentive\s+plan)[^\n]{0,150}(?:issued\s+and\s+outstanding|outstanding\s+(?:capital\s+stock|common\s+stock|shares(?!\s+(?:subject|reserved|issued))))/i.test(text) ||
+      /(?:issued\s+and\s+outstanding|outstanding\s+(?:capital\s+stock|common\s+stock|shares(?!\s+(?:subject|reserved|issued))))[^\n]{0,150}(?:option\s+)?(?:pool|eip|incentive\s+plan)/i.test(text) ||
+      // "as a percentage of … outstanding shares … pool"
+      /(?:as\s+a\s+)?percentage\s+of[^\n]{0,80}(?:issued\s+and\s+outstanding|outstanding\s+shares)[^\n]{0,80}(?:pool|option|equity|incentive)/i.test(text) ||
+      /(?:pool|option|equity|incentive)[^\n]{0,80}(?:as\s+a\s+)?percentage\s+of[^\n]{0,80}(?:issued\s+and\s+outstanding|outstanding\s+shares)/i.test(text) ||
+      // "non-diluted basis" near pool
+      /(?:option\s+)?(?:pool|eip|incentive\s+plan)[^\n]{0,120}non[\s-]?diluted(?:\s+basis)?/i.test(text) ||
+      /non[\s-]?diluted(?:\s+basis)?[^\n]{0,120}(?:option\s+)?(?:pool|eip|incentive\s+plan)/i.test(text) ||
+      // "excluding options/warrants" near pool (means options not in denominator)
+      /(?:option\s+)?(?:pool|eip)[^\n]{0,120}excluding[^\n]{0,60}(?:options?|warrants?|unissued)/i.test(text);
+
+    const isPostMoney =
+      /post[\s-]?money\s+(?:option\s+)?pool/i.test(text) ||
+      /(?:option\s+)?pool[^\n]{0,150}post[\s-]?money/i.test(text) ||
+      // "inclusive of existing/available shares" — existing pool credits toward target
+      /inclusive\s+of\s+(?:existing\s+)?(?:issued\s+and\s+)?available\s+shares/i.test(text) ||
+      /inclusive\s+of\s+existing\s+issued\s+and\s+available/i.test(text) ||
+      /inclusive\s+of\s+(?:all\s+)?(?:existing\s+)?(?:issued\s+(?:and\s+)?)?(?:shares|equity|stock)/i.test(text) ||
+      // "fully diluted [basis/capitalization/equity]" near pool
+      /(?:fully[\s-]?diluted|post[\s-]?closing|post[\s-]?financing)\s+(?:capitalization|equity|basis)[^\n]{0,120}(?:option\s+)?(?:pool|eip|incentive)/i.test(text) ||
+      /(?:option\s+)?(?:pool|eip|incentive)[^\n]{0,120}(?:fully[\s-]?diluted|post[\s-]?closing|post[\s-]?financing)\s+(?:capitalization|equity|basis)/i.test(text) ||
+      // "as a percentage of the fully diluted [capitalization]"
+      /as\s+a\s+(?:percentage|%)\s+of\s+(?:the\s+)?(?:total\s+)?fully[\s-]?diluted/i.test(text) ||
+      // "on a fully diluted basis" near pool
+      /on\s+a\s+fully[\s-]?diluted\s+basis[^\n]{0,120}(?:pool|option|equity|incentive)/i.test(text) ||
+      /(?:pool|option|equity|incentive)[^\n]{0,120}on\s+a\s+fully[\s-]?diluted\s+basis/i.test(text) ||
+      // "after giving effect to" (pool expansion happens post-pricing)
+      /after\s+giving\s+effect\s+to[^\n]{0,120}(?:pool|option|equity|investment|financing)/i.test(text) ||
+      /(?:pool|option|equity|financing)[^\n]{0,80}after\s+giving\s+effect\s+to/i.test(text) ||
+      // "post-closing fully diluted" anywhere near pool
+      /post[\s-]?(?:closing|financing)\s+fully[\s-]?diluted[^\n]{0,120}(?:pool|option|equity|incentive)/i.test(text) ||
+      /(?:pool|option|equity|incentive)[^\n]{0,120}post[\s-]?(?:closing|financing)\s+fully[\s-]?diluted/i.test(text);
+
+    if (isPreMoney)               ts.optionPoolMethod = 'pre-money';
+    else if (isIssuedAndOutstanding) ts.optionPoolMethod = 'issued-and-outstanding';
+    else if (isPostMoney)         ts.optionPoolMethod = 'post-money';
   }
   ts.statedPPS = money('(?:original\\s+)?issue\\s+price|price\\s+per\\s+share|oip');
   const lm = liqMult('liquidation\\s+(?:preference|multiple)(?:\\s*[:=])?');
