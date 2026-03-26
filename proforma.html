@@ -1105,6 +1105,57 @@ async function parseCapTableOrProForma(file) {
 }
 
 function extractRoundConfig(rows, rc) {
+  // ── Tranche column detection (highest priority — runs before label scan) ──────
+  // Pro formas with "Tranche 1" / "Tranche 2" column headers define the new
+  // investment split across those columns.  Detect them first so the generic
+  // label scan below cannot overwrite the result with a spurious cell match.
+  //
+  // Convention detection:
+  //   Cumulative — last tranche column shows a running total (T2 col = T1+T2).
+  //                Total = last column's bottom value.
+  //                Detected when: last column total > first column total × 1.5
+  //   Additive   — each tranche column shows only that tranche's amounts.
+  //                Total = sum of all column totals.
+  (function detectTrancheCols() {
+    const trancheColRe = /^tranche\s*\d+/i;
+    let tHdrRow = -1;
+    const tCols = [];
+    outer:
+    for (let ri = 0; ri < Math.min(rows.length, 60); ri++) {
+      for (let c = 0; c < rows[ri].length; c++) {
+        if (trancheColRe.test(String(rows[ri][c]||'').trim())) {
+          if (tHdrRow < 0) tHdrRow = ri;
+          tCols.push(c);
+        }
+      }
+      if (tCols.length > 0 && ri > tHdrRow) break outer;
+    }
+    if (tCols.length === 0 || tHdrRow < 0) return;
+
+    const getColTotal = col => {
+      let totalRowVal = 0, lastVal = 0;
+      for (let ri = tHdrRow + 1; ri < rows.length; ri++) {
+        const lbl = String(rows[ri][0]||'').trim().toLowerCase();
+        const raw = String(rows[ri][col]||'').replace(/[$,\s]/g, '');
+        const v = parseFloat(raw);
+        if (!isNaN(v) && v > 0) {
+          lastVal = v;
+          if (/^(?:total|aggregate|grand\s+total|subtotal)/.test(lbl)) totalRowVal = v;
+        }
+      }
+      return totalRowVal || lastVal;
+    };
+
+    const colTotals = tCols.map(getColTotal);
+    const first = colTotals[0] || 0;
+    const last  = colTotals[colTotals.length - 1] || 0;
+    // Cumulative: last column is ≥150% of first → grand total is the last value.
+    // Additive (including equal tranches like $1.5M + $1.5M): sum all columns.
+    const roundTotal = (tCols.length > 1 && last > first * 1.5) ? last
+                     : colTotals.reduce((s, v) => s + v, 0);
+    if (roundTotal > 0) rc.newInvestment = roundTotal;
+  })();
+
   rows.forEach(row => {
     // Scan ALL columns — multi-panel spreadsheets (e.g. left params / right cap table)
     // place labels beyond column 5, so we must not artificially limit the scan.
@@ -1224,68 +1275,6 @@ function extractRoundConfig(rows, rc) {
     }
   }
 
-  // ── Tranche column fallback ───────────────────────────────────────────────
-  // Some NVCA seed/bridge pro formas split the new investment across columns
-  // labelled "Tranche 1", "Tranche 2", etc.  None of the approaches above
-  // will find these because the column headers don't contain the words
-  // "cash paid", "proceeds", "investment", etc.
-  //
-  // Two column conventions exist:
-  //   Additive   — each tranche column shows ONLY that tranche's amounts.
-  //                Total = sum of all tranche column totals.
-  //   Cumulative — each tranche column shows the RUNNING total through that
-  //                tranche (T2 column = T1 + T2 combined).
-  //                Total = last tranche column's bottom row value.
-  //
-  // Heuristic: if the last tranche column total ≥ the first tranche column
-  // total the columns are likely cumulative → use the last column total.
-  // Otherwise (last < first, which can happen if later tranches are smaller)
-  // treat as additive and sum all column totals.
-  if (!rc.newInvestment) {
-    // Find all columns headed "Tranche N" (N = any digit sequence) within 60 rows.
-    const trancheColRe = /^tranche\s*\d+/i;
-    let tHdrRow = -1;
-    const tCols = [];
-    outer:
-    for (let ri = 0; ri < Math.min(rows.length, 60); ri++) {
-      for (let c = 0; c < rows[ri].length; c++) {
-        if (trancheColRe.test(String(rows[ri][c]||'').trim())) {
-          if (tHdrRow < 0) tHdrRow = ri;
-          tCols.push(c);
-        }
-      }
-      if (tCols.length > 0 && ri > tHdrRow) break outer; // found all on header row
-    }
-
-    if (tCols.length > 0 && tHdrRow >= 0) {
-      // For each tranche column: prefer an explicit total/aggregate row label,
-      // otherwise use the last non-zero numeric value in the column.
-      const getColTotal = col => {
-        let totalRowVal = 0, lastVal = 0;
-        for (let ri = tHdrRow + 1; ri < rows.length; ri++) {
-          const lbl = String(rows[ri][0]||'').trim().toLowerCase();
-          const raw = String(rows[ri][col]||'').replace(/[$,\s]/g, '');
-          const v = parseFloat(raw);
-          if (!isNaN(v) && v > 0) {
-            lastVal = v;
-            if (/^(?:total|aggregate|grand\s+total|subtotal)/.test(lbl)) totalRowVal = v;
-          }
-        }
-        return totalRowVal || lastVal;
-      };
-
-      const colTotals = tCols.map(getColTotal);
-      const first = colTotals[0] || 0;
-      const last  = colTotals[colTotals.length - 1] || 0;
-
-      // Cumulative convention: last column ≥ first → grand total is the last value.
-      // Additive convention:   sum all column totals.
-      const roundTotal = (last >= first && tCols.length > 1) ? last
-                       : colTotals.reduce((s, v) => s + v, 0);
-
-      if (roundTotal > 0) rc.newInvestment = roundTotal;
-    }
-  }
 }
 
 function extractStakeholders(rows, out) {
