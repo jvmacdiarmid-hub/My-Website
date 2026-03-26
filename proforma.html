@@ -1132,30 +1132,20 @@ function extractRoundConfig(rows, rc) {
     }
     if (tCols.length === 0 || tHdrRow < 0) return;
 
-    // Scan only the contiguous data block for this tranche column.
-    // Skip any leading empty rows (some pro formas have many blank rows
-    // between the header and the first data row).  Once data values start
-    // appearing, stop after 2 consecutive empty cells — that marks the
-    // end of the section.  Without this guard the scan bleeds into
-    // unrelated sections further down the spreadsheet and returns a
-    // wildly inflated total.
+    // The total row in a tranche column is ALWAYS the maximum value —
+    // every individual investor row is a component of that total and
+    // therefore smaller.  Scan up to 80 rows below the header (bounded
+    // to prevent bleedthrough into unrelated spreadsheet sections far
+    // below) and return the maximum value found.
     const getColTotal = col => {
-      let lastVal = 0;
-      let dataStarted = false;
-      let emptyStreak = 0;
-      for (let ri = tHdrRow + 1; ri < rows.length; ri++) {
+      let maxVal = 0;
+      const limit = Math.min(rows.length, tHdrRow + 80);
+      for (let ri = tHdrRow + 1; ri < limit; ri++) {
         const raw = String(rows[ri][col]||'').replace(/[$,\s]/g, '');
         const v = parseFloat(raw);
-        if (!isNaN(v) && v > 0) {
-          lastVal = v;
-          dataStarted = true;
-          emptyStreak = 0;
-        } else if (dataStarted) {
-          emptyStreak++;
-          if (emptyStreak >= 2) break; // end of this section
-        }
+        if (!isNaN(v) && v > maxVal) maxVal = v;
       }
-      return lastVal;
+      return maxVal;
     };
 
     const colTotals = tCols.map(getColTotal);
