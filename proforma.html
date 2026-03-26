@@ -1132,18 +1132,30 @@ function extractRoundConfig(rows, rc) {
     }
     if (tCols.length === 0 || tHdrRow < 0) return;
 
+    // Scan only the contiguous data block for this tranche column.
+    // Skip any leading empty rows (some pro formas have many blank rows
+    // between the header and the first data row).  Once data values start
+    // appearing, stop after 2 consecutive empty cells — that marks the
+    // end of the section.  Without this guard the scan bleeds into
+    // unrelated sections further down the spreadsheet and returns a
+    // wildly inflated total.
     const getColTotal = col => {
-      let totalRowVal = 0, lastVal = 0;
+      let lastVal = 0;
+      let dataStarted = false;
+      let emptyStreak = 0;
       for (let ri = tHdrRow + 1; ri < rows.length; ri++) {
-        const lbl = String(rows[ri][0]||'').trim().toLowerCase();
         const raw = String(rows[ri][col]||'').replace(/[$,\s]/g, '');
         const v = parseFloat(raw);
         if (!isNaN(v) && v > 0) {
           lastVal = v;
-          if (/^(?:total|aggregate|grand\s+total|subtotal)/.test(lbl)) totalRowVal = v;
+          dataStarted = true;
+          emptyStreak = 0;
+        } else if (dataStarted) {
+          emptyStreak++;
+          if (emptyStreak >= 2) break; // end of this section
         }
       }
-      return totalRowVal || lastVal;
+      return lastVal;
     };
 
     const colTotals = tCols.map(getColTotal);
