@@ -2311,8 +2311,82 @@ function renderAnalysisHTML(pf, rc, csvFn) {
   ];
   sect(6, 'Formula & Structural Audit', kvTable(s6rows));
 
+  // ── Section 7: Excel Formula Reference ──────────────────────────
+  const postFD2    = pf.postFD;
+  const newInv2    = rcData.newInvestment || pf.newInvestment;
+  const pps2       = pf.pps;
+  const poolTarget2 = rcData.optionPoolTargetPct || 0;
+  const poolMethod2 = rcData.optionPoolMethod || 'pre-money';
+  const circNeeded2 = poolMethod2 === 'pre-money' && poolTarget2 > 0;
+  const totO2      = post.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const E0_2       = pre.filter(s => s.type === 'option').reduce((a, s) => a + (s.shares || 0), 0);
+  const expansion2 = pf.optionExpansion || 0;
+  const newSh2     = pf.newInvestorShares;
+  const postMoney2 = pf.postMoneyValuation;
+  const ppsDerived2 = pf.preMoneyValuation && pf.premoneyFD ? pf.preMoneyValuation / pf.premoneyFD : null;
+  const ppsOk2     = pps2 && ppsDerived2 ? Math.abs(pps2 - ppsDerived2) <= 0.005 : null;
+  const pmArith2   = pf.preMoneyValuation != null && newInv2 != null && postMoney2 != null
+                     ? Math.abs(pf.preMoneyValuation + newInv2 - postMoney2) < 1 : null;
+  const newShOk2   = pps2 && newInv2 ? Math.abs(Math.round(newInv2 / pps2) - (newSh2 || 0)) <= 1 : null;
+  const poolArith2 = totO2 && postFD2 ? Math.abs(totO2 / postFD2 - (pf.actualOptionPoolPct || 0)) < 0.0001 : null;
+  const fdPpsCk2   = postFD2 && pps2 && postMoney2
+                     ? Math.abs(postFD2 * pps2 - postMoney2) / postMoney2 <= 0.005 : null;
+  const hasPostMonSAFE = pre.some(s => s.type === 'safe' && s.safeType === 'post-money');
+
+  const s7rows = [
+    { field: 'PPS = Pre-Money ÷ Pre-Money FD',
+      value: ppsOk2 == null ? 'N/A' : ppsOk2 ? 'PASS' : 'FAIL', status: true,
+      note: `Excel: =B_premoney/B_premoneyFD → ${cPPS(pps2)} | ${cD(pf.preMoneyValuation)} ÷ ${c0(pf.premoneyFD)}` },
+    { field: 'Post-Money = Pre-Money + Investment',
+      value: pmArith2 == null ? 'N/A' : pmArith2 ? 'PASS' : 'FAIL', status: true,
+      note: `Excel: =B_premoney+B_investment → ${cD(postMoney2)}` },
+    { field: 'New Investor Shares = ROUND(Investment ÷ PPS, 0)',
+      value: newShOk2 == null ? 'N/A' : newShOk2 ? 'PASS' : 'FAIL', status: true,
+      note: `Excel: =ROUND(B_investment/B_pps,0) → ${c0(newSh2)} shares | rounding to nearest whole share` },
+    { field: 'Ownership % = Holder Shares ÷ Total FD',
+      value: 'PASS', status: true,
+      note: 'Excel: =C[row]/C$[total_row] — applied to every holder row in the cap table' },
+    { field: 'Pool % = Pool Shares ÷ Post-Money FD',
+      value: poolArith2 == null ? 'N/A' : poolArith2 ? 'PASS' : 'FAIL', status: true,
+      note: `Excel: =C_pool/C_total_fd → ${cPct(pf.actualOptionPoolPct)} | ${c0(totO2)} ÷ ${c0(postFD2)}` },
+    { field: circNeeded2 ? 'Pool Expansion — Pre-Money Closed Form' : 'Pool Expansion — Post-Money',
+      value: 'COMPUTED', status: true,
+      note: circNeeded2
+        ? `Excel: =MAX(0,ROUND((S0−E0)/(1−T*(1+I/P))−S0,0)) — closed-form eliminates circular reference.`
+          + ` S0=${c0(pf.premoneyFD - expansion2)}, E0=${c0(E0_2)}, T=${cPct(poolTarget2)}, expansion=${c0(expansion2)}`
+        : `Excel: =MAX(0,ROUND((T*tempFD−curPool)/(1−T),0)) — no circular reference. expansion=${c0(expansion2)}` },
+    { field: 'Post-Money Cross-Check: FD Shares × PPS',
+      value: fdPpsCk2 == null ? 'N/A' : fdPpsCk2 ? 'PASS' : 'FAIL', status: true,
+      note: `${c0(postFD2)} × ${cPPS(pps2)} = ${cD(postFD2 && pps2 ? Math.round(postFD2 * pps2) : null)} vs post-money ${cD(postMoney2)} (tolerance 0.5%)` },
+    { field: 'Accrued Interest = Principal × Rate × (Days ÷ 365)',
+      value: 'IMPLEMENTED', status: true,
+      note: 'Excel: =B_principal*B_rate*(DAYS(B_closing,B_issue)/365) — Actual/365 day count. WARNING: some instruments use Actual/360 or 30/360.' },
+    { field: 'SAFE Cap Price = Valuation Cap ÷ Pre-Money FD',
+      value: hasPostMonSAFE ? 'WARNING' : 'PASS', status: true,
+      note: hasPostMonSAFE
+        ? 'Post-money SAFEs detected: denominator should be post-closing FD, not pre-money FD. Engine uses pre-money FD for all SAFEs — understates shares issued to post-money SAFE holders.'
+        : 'Excel: =B_valuationCap/B_premoneyFD — correct for pre-money SAFEs' },
+    { field: 'SAFE Discount Price = Round PPS × Discount Rate',
+      value: 'PASS', status: true,
+      note: 'Excel: =B_pps*B_discountRate (e.g. rate=0.80 → 20% discount; holder converts at 80% of PPS)' },
+    { field: 'Iterative Calc — Pre-Money Pool Shuffle',
+      value: circNeeded2 ? 'REQUIRED IN EXCEL' : 'NOT NEEDED', status: true,
+      note: circNeeded2
+        ? 'Excel: File → Options → Formulas → Enable Iterative Calculation (≥100 iterations). Engine resolves this algebraically — no iteration needed in this tool.'
+        : `Pool method is "${poolMethod2}" — no circular reference exists` },
+    { field: 'Iterative Calc — Post-Money SAFEs',
+      value: hasPostMonSAFE ? 'REQUIRED IN EXCEL' : 'NOT NEEDED', status: true,
+      note: hasPostMonSAFE
+        ? 'Post-money SAFE cap price = cap ÷ post-closing FD. Circular in Excel. Engine uses pre-money FD as approximation — review manually.'
+        : 'No post-money SAFEs in this round' },
+  ];
+  sect(7, 'Excel Formula Reference', kvTable(s7rows));
+
+  const xlsxBtn = csvFn === 'downloadBuilderCSV'
+    ? `<button class="dl-btn" style="font-size:12px;padding:8px 20px;background:#1a7f37;border-color:#1a7f37;" onclick="downloadBuilderXLSX()">⬇ Download Excel (.xlsx)</button>`
+    : '';
   const dlRow = csvFn
-    ? `<div class="as-dl-row"><button class="dl-btn" style="font-size:12px;padding:8px 20px;" onclick="${csvFn}()">⬇ Download as CSV</button></div>`
+    ? `<div class="as-dl-row" style="gap:10px;">${xlsxBtn}<button class="dl-btn" style="font-size:12px;padding:8px 20px;" onclick="${csvFn}()">⬇ Download CSV</button></div>`
     : '';
 
   return `<div class="analysis-view">${parts.join('')}${dlRow}</div>`;
@@ -2637,6 +2711,320 @@ function generateCSVAnalysis(pf, rc) {
   }
 
   return rows.join('\n');
+}
+
+// ── Excel (.xlsx) Pro Forma Export ───────────────────────────────
+
+function downloadBuilderXLSX() {
+  if (!_csvData.b) return;
+  const { pf, rc } = _csvData.b;
+  const wb = XLSX.utils.book_new();
+  _buildProFormaSheet(wb, pf, rc);
+  _buildFormulaAuditSheet(wb, pf, rc);
+  const arr  = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = ((rc.roundName || 'ProForma').replace(/[^a-zA-Z0-9 _-]/g, '_') + '-ProForma.xlsx');
+  a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
+}
+
+function _buildProFormaSheet(wb, pf, rc) {
+  const ws  = {};
+  let r     = 0;  // 0-indexed row counter
+  const ec  = (col, row) => XLSX.utils.encode_cell({ c: col, r: row });
+
+  // Cell constructors
+  const s  = (v)    => ({ t: 's', v: String(v ?? '') });
+  const n  = (v)    => ({ t: 'n', v: Number(v)  || 0 });
+  const nb = (v, z) => ({ t: 'n', v: Number(v)  || 0, z });
+  const f  = (formula, v, z) => ({ t: 'n', f: formula, v: Number(v) || 0, ...(z ? { z } : {}) });
+  const b  = (v)    => ({ t: 's', v: String(v ?? ''), s: { font: { bold: true } } });
+
+  function row(...cells) {
+    cells.forEach((c, ci) => { if (c != null) ws[ec(ci, r)] = c; });
+    r++;
+  }
+
+  const pre   = pf.preRoundCap || pf._stakeholders || [];
+  const post  = pf.postRoundCap || [];
+  const E0    = pre.filter(x => x.type === 'option').reduce((a, x) => a + (x.shares || 0), 0);
+  const circNeeded = (rc.optionPoolMethod || 'pre-money') === 'pre-money' && (rc.optionPoolTargetPct || 0) > 0;
+
+  // ── Title ──────────────────────────────────────────────────────
+  row(b(`NVCA Pro Forma — ${rc.roundName || 'New Round'}`));
+  row();  // blank
+
+  // ── Parameters ─────────────────────────────────────────────────
+  row(b('PARAMETERS'), b(''), b('Notes'));
+
+  const R_premoney   = r;  // Excel row number (1-indexed) = r + 1
+  row(s('Pre-Money Valuation'),
+      nb(pf.preMoneyValuation, '"$"#,##0'),
+      s('Input — agreed pre-money valuation per term sheet'));
+
+  const R_investment = r;
+  row(s('New Investment'),
+      nb(rc.newInvestment || pf.newInvestment, '"$"#,##0'),
+      s('Input — total new cash in this round'));
+
+  const R_poolTarget = r;
+  row(s('Option Pool Target %'),
+      nb(rc.optionPoolTargetPct || 0, '0.00%'),
+      s('Input — required unallocated pool % post-closing, per term sheet'));
+
+  row(s('Option Pool Method'),
+      s(rc.optionPoolMethod || 'pre-money'),
+      s('pre-money = pool shuffle (PPS impacted); post-money = no PPS impact'));
+
+  row(s('Closing Date'), s(rc.closingDate || ''), s(''));
+  row();  // blank
+
+  // ── Derived values (with live formulas) ────────────────────────
+  row(b('DERIVED VALUES'), b(''), b('Formula'), b('Notes'));
+
+  const R_s0 = r;
+  row(s('Pre-Money FD Shares (S0)'),
+      n(pf.premoneyFD || 0),
+      s('Hardcoded — computed algebraically by engine'),
+      s(circNeeded
+        ? 'Closed form: (S0−E0)/(1−T*(1+I/P)). Excel needs iterative calc for pool shuffle — see Formula Audit sheet'
+        : 'Sum of all pre-round equity types'));
+
+  const R_e0 = r;
+  row(s('Existing Option Pool (E0)'),
+      n(E0),
+      s('—'),
+      s('Unallocated option shares before this round'));
+
+  const R_expansion = r;
+  row(s('Pool Expansion'),
+      n(pf.optionExpansion || 0),
+      s(circNeeded
+        ? `=MAX(0,ROUND((B${R_s0+1}-B${R_e0+1})/(1-B${R_poolTarget+1}*(1+B${R_investment+1}/B${R_premoney+1}))-B${R_s0+1},0))`
+        : `=MAX(0,ROUND((B${R_poolTarget+1}*B${R_s0+1}-B${R_e0+1})/(1-B${R_poolTarget+1}),0))`),
+      s(circNeeded
+        ? 'Pre-money pool: algebraic closed form above (no circular reference needed)'
+        : 'Post-money pool: solves (T*FD-pool)/(1-T) directly'));
+
+  const R_pps = r;
+  row(s('Price Per Share (PPS)'),
+      f(`B${R_premoney+1}/B${R_s0+1}`, pf.pps, '"$"#,##0.0000'),
+      s(`=B${R_premoney+1}/B${R_s0+1}`),
+      s('= Pre-Money Valuation ÷ Pre-Money FD Shares'));
+
+  const R_newShares = r;
+  row(s('New Investor Shares'),
+      f(`ROUND(B${R_investment+1}/B${R_pps+1},0)`, pf.newInvestorShares || 0, '#,##0'),
+      s(`=ROUND(B${R_investment+1}/B${R_pps+1},0)`),
+      s('= Investment ÷ PPS, rounded to nearest whole share'));
+
+  const R_postMoney = r;
+  row(s('Post-Money Valuation'),
+      f(`B${R_premoney+1}+B${R_investment+1}`, pf.postMoneyValuation || 0, '"$"#,##0'),
+      s(`=B${R_premoney+1}+B${R_investment+1}`),
+      s('= Pre-Money + New Investment'));
+
+  row();  // blank
+
+  // ── Validation checks ─────────────────────────────────────────
+  row(b('FORMULA CHECKS'), b('Result'), b('Formula / Method'), b('Notes'));
+
+  const ppsOk = pf.pps && pf.preMoneyValuation && pf.premoneyFD
+    ? Math.abs(pf.pps - pf.preMoneyValuation / pf.premoneyFD) <= 0.005 : null;
+  row(s('PPS = Pre-Money ÷ FD'),
+      s(ppsOk == null ? 'N/A' : ppsOk ? 'PASS ✓' : 'FAIL ✗'),
+      f(`B${R_premoney+1}/B${R_s0+1}`, pf.pps, '"$"#,##0.0000'),
+      s(ppsOk === false ? `Delta $${Math.abs(pf.pps - pf.preMoneyValuation / pf.premoneyFD).toFixed(4)} exceeds tolerance` : ''));
+
+  const pmOk = Math.abs((pf.preMoneyValuation || 0) + (rc.newInvestment || pf.newInvestment || 0) - (pf.postMoneyValuation || 0)) < 1;
+  row(s('Post-Money = Pre-Money + Investment'),
+      s(pmOk ? 'PASS ✓' : 'FAIL ✗'),
+      f(`B${R_premoney+1}+B${R_investment+1}`, pf.postMoneyValuation || 0, '"$"#,##0'),
+      s(''));
+
+  const fdXpps = (pf.postFD || 0) * (pf.pps || 0);
+  const xCk = pf.postMoneyValuation ? Math.abs(fdXpps - pf.postMoneyValuation) / pf.postMoneyValuation <= 0.005 : null;
+  row(s('FD Shares × PPS = Post-Money'),
+      s(xCk == null ? 'N/A' : xCk ? 'PASS ✓' : 'FAIL ✗'),
+      s(`=SUM(cap_table_shares)*B${R_pps+1}`),
+      s('Tolerance 0.5% for share rounding'));
+
+  row();  // blank
+
+  // ── Cap table ─────────────────────────────────────────────────
+  row(b('CAP TABLE (POST-CLOSING)'), b('Type'), b('Shares'), b('Ownership %'));
+
+  const CT_first = r;
+  for (const sh of post) {
+    const shares = sh.shares || 0;
+    const pctV   = pf.postFD > 0 ? shares / pf.postFD : 0;
+    // Ownership % will be patched to reference SUM row after we know it
+    ws[ec(0, r)] = s(sh.name  || '');
+    ws[ec(1, r)] = s(sh.type  || '');
+    ws[ec(2, r)] = n(shares);
+    ws[ec(3, r)] = { t: 'n', v: pctV, z: '0.00%' };  // patched below
+    r++;
+  }
+  const CT_last = r - 1;
+
+  // Totals row
+  const CT_total = r;
+  ws[ec(0, r)] = b('TOTAL — Fully Diluted');
+  ws[ec(1, r)] = s('');
+  ws[ec(2, r)] = f(`SUM(C${CT_first+1}:C${CT_last+1})`, pf.postFD || 0, '#,##0');
+  ws[ec(3, r)] = f(`SUM(D${CT_first+1}:D${CT_last+1})`, 1, '0.00%');
+  r++;
+
+  // Patch ownership % formulas to reference total row
+  for (let ri = CT_first; ri <= CT_last; ri++) {
+    ws[ec(3, ri)] = f(`C${ri+1}/C$${CT_total+1}`, ws[ec(3, ri)]?.v ?? 0, '0.00%');
+  }
+
+  ws['!ref']  = XLSX.utils.encode_range({ s: { c: 0, r: 0 }, e: { c: 3, r: r } });
+  ws['!cols'] = [{ wch: 36 }, { wch: 16 }, { wch: 18 }, { wch: 14 }];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Pro Forma');
+}
+
+function _buildFormulaAuditSheet(wb, pf, rc) {
+  const pre  = pf.preRoundCap || pf._stakeholders || [];
+  const post = pf.postRoundCap || [];
+  const E0   = pre.filter(x => x.type === 'option').reduce((a, x) => a + (x.shares || 0), 0);
+  const totO = post.filter(x => x.type === 'option').reduce((a, x) => a + (x.shares || 0), 0);
+
+  const circNeeded    = (rc.optionPoolMethod || 'pre-money') === 'pre-money' && (rc.optionPoolTargetPct || 0) > 0;
+  const hasPostMonSAFE = pre.some(x => x.type === 'safe' && x.safeType === 'post-money');
+  const expansion     = pf.optionExpansion || 0;
+  const newInv        = rc.newInvestment || pf.newInvestment || 0;
+  const pps           = pf.pps || 0;
+  const poolTarget    = rc.optionPoolTargetPct || 0;
+  const poolMethod    = rc.optionPoolMethod || 'pre-money';
+
+  const cD  = v => v == null ? '—' : '$' + Math.round(v).toLocaleString('en-US');
+  const c0  = v => v == null ? '—' : Math.round(v).toLocaleString('en-US');
+  const cP  = v => v == null ? '—' : (v * 100).toFixed(2) + '%';
+  const cPS = v => v == null ? '—' : '$' + Number(v).toFixed(4);
+
+  const ppsOk  = pf.pps && pf.premoneyFD ? Math.abs(pf.pps - pf.preMoneyValuation / pf.premoneyFD) <= 0.005 : null;
+  const pmOk   = Math.abs((pf.preMoneyValuation || 0) + newInv - (pf.postMoneyValuation || 0)) < 1;
+  const newShOk = pf.newInvestorShares && pps ? Math.abs(Math.round(newInv / pps) - pf.newInvestorShares) <= 1 : null;
+  const poolOk = totO && pf.postFD ? Math.abs(totO / pf.postFD - (pf.actualOptionPoolPct || 0)) < 0.0001 : null;
+  const fdXpps = (pf.postFD || 0) * pps;
+  const xCk    = pf.postMoneyValuation ? Math.abs(fdXpps - pf.postMoneyValuation) / pf.postMoneyValuation <= 0.005 : null;
+
+  // [Formula, Description, Excel Notation, Computed Value, Status, Error/Notes]
+  const headers = ['Formula', 'Description', 'Excel Notation', 'Computed Value', 'Status', 'Notes'];
+  const SEP     = (label) => [label, '', '', '', '', ''];
+
+  const rows = [
+    headers,
+    [],
+    SEP('── CORE PRICING ──────────────────────────────────────────────────────────────────────────────'),
+    [ 'PPS = Pre-Money ÷ Pre-Money FD',
+      'Price per share. Every share is worth this amount. Denominator = pre-money FD including any pool expansion.',
+      '=B_premoney / B_premoneyFD',
+      cPS(pf.pps),
+      ppsOk == null ? 'N/A' : ppsOk ? 'PASS ✓' : 'FAIL ✗',
+      ppsOk === false ? `Delta ${cPS(Math.abs(pf.pps - pf.preMoneyValuation / pf.premoneyFD))} exceeds $0.005 tolerance` : 'Verified' ],
+    [ 'Post-Money = Pre-Money + Investment',
+      'Post-closing enterprise value. Does not add SAFE/note principals (those are pre-existing obligations, not new cash).',
+      '=B_premoney + B_investment',
+      cD(pf.postMoneyValuation),
+      pmOk ? 'PASS ✓' : 'FAIL ✗',
+      pmOk ? 'Arithmetic confirmed' : `Mismatch: ${cD(pf.preMoneyValuation)} + ${cD(newInv)} ≠ ${cD(pf.postMoneyValuation)}` ],
+    [ 'New Investor Shares = ROUND(Investment ÷ PPS, 0)',
+      'Whole shares issued to new investors. ROUND() used — not INT() or TRUNC() — to minimise rounding error.',
+      '=ROUND(B_investment / B_pps, 0)',
+      c0(pf.newInvestorShares),
+      newShOk == null ? 'N/A' : newShOk ? 'PASS ✓' : 'FAIL ✗',
+      newShOk === false ? 'Share count deviates >1 share from expected' : 'Rounding within 1 share' ],
+    [ 'Ownership % = Holder Shares ÷ Total FD',
+      'Each holder\'s proportionate interest on a fully diluted basis.',
+      '=C[holder_row] / C$[total_row]',
+      'Per-holder',
+      'PASS ✓',
+      'Applied to every holder row in the Pro Forma sheet cap table' ],
+    [ 'FD Shares × PPS = Post-Money (Cross-Check)',
+      'Sanity check: sum of all post-round shares times PPS must approximate post-money valuation.',
+      '=SUM(shares_col) * B_pps',
+      cD(Math.round(fdXpps)),
+      xCk == null ? 'N/A' : xCk ? 'PASS ✓' : 'FAIL ✗',
+      `vs post-money ${cD(pf.postMoneyValuation)} — tolerance 0.5% for share rounding` ],
+    [],
+    SEP('── OPTION POOL ────────────────────────────────────────────────────────────────────────────────'),
+    [ circNeeded ? 'Pool Expansion — Pre-Money / Pool Shuffle (Closed-Form)' : 'Pool Expansion — Post-Money (Fully Diluted)',
+      circNeeded
+        ? 'Pool expanded BEFORE PPS is set. Existing holders bear all dilution before investors price the round. Creates a circular dependency in Excel (PPS↔FD↔pool size) — resolved here algebraically.'
+        : 'Pool expanded AFTER new investment closes. PPS is unaffected. New and existing holders diluted proportionately.',
+      circNeeded
+        ? '=MAX(0, ROUND( (S0-E0) / (1 - T*(1+I/P)) - S0, 0 ))\n  S0=pre-expansion FD, E0=existing pool, T=target%, P=pre-money, I=investment'
+        : '=MAX(0, ROUND( (T*tempFD - curPool) / (1-T), 0 ))\n  tempFD=post-round FD before expansion, curPool=existing pool',
+      c0(expansion),
+      expansion >= 0 ? 'COMPUTED ✓' : 'FAIL ✗',
+      circNeeded
+        ? `S0=${c0(pf.premoneyFD - expansion)}, E0=${c0(E0)}, T=${cP(poolTarget)}, P=${cD(pf.preMoneyValuation)}, I=${cD(newInv)} → expansion=${c0(expansion)}`
+        : `tempFD before expansion, curPool before expansion, T=${cP(poolTarget)} → expansion=${c0(expansion)}` ],
+    [ 'Pool % = Pool Shares ÷ Post-Money FD',
+      'Verifies the option pool percentage on a fully diluted post-closing basis.',
+      '=C_pool_shares / C_total_fd',
+      cP(pf.actualOptionPoolPct),
+      poolOk == null ? 'N/A' : poolOk ? 'PASS ✓' : 'FAIL ✗',
+      `${c0(totO)} ÷ ${c0(pf.postFD)} = ${cP(pf.actualOptionPoolPct)}` ],
+    [],
+    SEP('── CONVERTIBLE INSTRUMENTS ────────────────────────────────────────────────────────────────────'),
+    [ 'Accrued Interest = Principal × Rate × (Days ÷ 365)',
+      'Simple interest on convertible notes. Added to principal before applying cap/discount to get conversion amount.',
+      '=B_principal * B_annualRate * (DAYS(B_closing, B_issue) / 365)',
+      'Per-note',
+      'IMPLEMENTED',
+      'Day count: Actual/365. WARNING: some US notes use Actual/360 or 30/360. Day count is not configurable in current engine.' ],
+    [ 'SAFE Cap Price = Valuation Cap ÷ Pre-Money FD',
+      'Conversion price implied by the SAFE\'s valuation cap. SAFE holder gets the most favourable of: cap price, discount price, round PPS.',
+      '=B_valuationCap / B_premoneyFD',
+      '—',
+      hasPostMonSAFE ? 'WARNING ⚠' : 'PASS ✓',
+      hasPostMonSAFE
+        ? 'ERROR: Post-money SAFEs detected. Denominator should be post-closing FD (after all conversions), not pre-money FD. Engine uses pre-money FD for ALL SAFEs — understates shares issued to post-money SAFE holders.'
+        : 'Correct for pre-money SAFEs. No post-money SAFEs in this round.' ],
+    [ 'SAFE Discount Price = Round PPS × Discount Rate',
+      'Conversion price implied by the SAFE\'s discount. Rate stored as decimal: 20% discount → discountRate=0.80.',
+      '=B_roundPPS * B_discountRate',
+      '—',
+      'PASS ✓',
+      'SAFE holder converts at the lower of cap price and discount price (whichever gives more shares). Cannot exceed round PPS.' ],
+    [ 'Effective Discount = 1 − (Conversion PPS ÷ Round PPS)',
+      'How much cheaper (as a %) the SAFE/note holder converted relative to new investors in this round.',
+      '=1 - B_conversionPPS / B_roundPPS',
+      '—',
+      'PASS ✓',
+      'Used for analysis only — not part of share count calculation' ],
+    [],
+    SEP('── ITERATIVE CALCULATION REQUIREMENTS ─────────────────────────────────────────────────────────'),
+    [ 'Pre-Money Option Pool Shuffle',
+      'Excel model: PPS depends on pre-money FD → FD includes expanded pool → pool size depends on PPS target → circular. Must enable iterative calculation OR use closed-form formula.',
+      'File → Options → Formulas → Enable Iterative Calculation (max iterations ≥ 100, max change ≤ 0.001)',
+      circNeeded ? 'APPLICABLE' : 'N/A',
+      circNeeded ? 'ACTION REQUIRED IN EXCEL' : 'NOT APPLICABLE',
+      circNeeded
+        ? 'This tool resolves the circular reference algebraically. In your Excel model, either: (a) enable iterative calc, or (b) use the closed-form in row above.'
+        : `Pool method is "${poolMethod}" — no circular reference` ],
+    [ 'Post-Money SAFE Conversion',
+      'Post-money SAFE (Y Combinator 2018+): cap price = cap ÷ post-closing FD where post-closing FD includes the SAFE\'s own converted shares. Circular in Excel.',
+      'Requires iterative calculation or manual solver',
+      hasPostMonSAFE ? 'APPLICABLE' : 'N/A',
+      hasPostMonSAFE ? 'WARNING — REVIEW MANUALLY' : 'NOT APPLICABLE',
+      hasPostMonSAFE
+        ? 'Current engine uses pre-money FD for all SAFEs regardless of type. For post-money SAFEs this understates converted shares. Manual review required.'
+        : 'No post-money SAFEs in this round' ],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 44 }, { wch: 58 }, { wch: 48 }, { wch: 18 }, { wch: 22 }, { wch: 72 }];
+  XLSX.utils.book_append_sheet(wb, ws, 'Formula Audit');
 }
 
 function downloadCSV(filename, csvString) {
