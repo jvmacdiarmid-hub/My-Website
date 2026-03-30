@@ -368,11 +368,11 @@
           <div class="slot-num">1</div>
           <div class="slot-label">Term Sheet</div>
         </div>
-        <p class="slot-desc">The signed or draft agreement containing negotiated terms — pre-money valuation, investment size, option pool, liquidation preference, etc. (.docx or .xlsx)</p>
+        <p class="slot-desc">The signed or draft agreement containing negotiated terms — pre-money valuation, investment size, option pool, liquidation preference, etc. (.docx, .xlsx, or .pdf)</p>
         <div class="file-row">
           <label class="choose-btn">
             📄 Choose Term Sheet
-            <input type="file" id="b-ts-input" accept=".docx,.doc,.xlsx,.xls" onchange="handleSlot('b','ts',this)">
+            <input type="file" id="b-ts-input" accept=".docx,.doc,.xlsx,.xls,.pdf" onchange="handleSlot('b','ts',this)">
           </label>
           <span class="file-status" id="b-ts-status">No file chosen</span>
         </div>
@@ -385,11 +385,11 @@
           <div class="slot-num">2</div>
           <div class="slot-label">Current Cap Table</div>
         </div>
-        <p class="slot-desc">Your existing pre-financing cap table listing current shareholders, share counts, and security types. (.xlsx or .docx)</p>
+        <p class="slot-desc">Your existing pre-financing cap table listing current shareholders, share counts, and security types. (.xlsx, .docx, or .pdf)</p>
         <div class="file-row">
           <label class="choose-btn">
             📊 Choose Cap Table
-            <input type="file" id="b-ct-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="handleSlot('b','ct',this)">
+            <input type="file" id="b-ct-input" accept=".docx,.doc,.xlsx,.xls,.pdf,.zip" onchange="handleSlot('b','ct',this)">
           </label>
           <span class="file-status" id="b-ct-status">No file chosen</span>
         </div>
@@ -424,11 +424,11 @@
           <div class="slot-num">1</div>
           <div class="slot-label">Term Sheet</div>
         </div>
-        <p class="slot-desc">The signed or draft agreement containing negotiated terms. (.docx or .xlsx)</p>
+        <p class="slot-desc">The signed or draft agreement containing negotiated terms. (.docx, .xlsx, or .pdf)</p>
         <div class="file-row">
           <label class="choose-btn">
             📄 Choose Term Sheet
-            <input type="file" id="a-ts-input" accept=".docx,.doc,.xlsx,.xls" onchange="handleSlot('a','ts',this)">
+            <input type="file" id="a-ts-input" accept=".docx,.doc,.xlsx,.xls,.pdf" onchange="handleSlot('a','ts',this)">
           </label>
           <span class="file-status" id="a-ts-status">No file chosen</span>
         </div>
@@ -441,11 +441,11 @@
           <div class="slot-num">2</div>
           <div class="slot-label">Pro Forma to Analyze</div>
         </div>
-        <p class="slot-desc">The cap table or pro forma document you want to verify against the term sheet. (.xlsx, .docx, or .zip)</p>
+        <p class="slot-desc">The cap table or pro forma document you want to verify against the term sheet. (.xlsx, .docx, .pdf, or .zip)</p>
         <div class="file-row">
           <label class="choose-btn">
             📊 Choose Pro Forma
-            <input type="file" id="a-pf-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="handleSlot('a','pf',this)">
+            <input type="file" id="a-pf-input" accept=".docx,.doc,.xlsx,.xls,.pdf,.zip" onchange="handleSlot('a','pf',this)">
           </label>
           <span class="file-status" id="a-pf-status">No file chosen</span>
         </div>
@@ -480,11 +480,11 @@
         <div class="slot-num">A</div>
         <span class="slot-ver ver-a">Earlier / Baseline</span>
       </div>
-      <p class="slot-desc">The earlier or baseline version of the pro forma. (.xlsx, .docx, or .zip)</p>
+      <p class="slot-desc">The earlier or baseline version of the pro forma. (.xlsx, .docx, .pdf, or .zip)</p>
       <div class="file-row">
         <label class="choose-btn">
           📂 Choose Version A
-          <input type="file" id="c-pfA-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="handleCompSlot('pfA',this)">
+          <input type="file" id="c-pfA-input" accept=".docx,.doc,.xlsx,.xls,.pdf,.zip" onchange="handleCompSlot('pfA',this)">
         </label>
         <span class="file-status" id="c-pfA-status">No file chosen</span>
       </div>
@@ -497,11 +497,11 @@
         <div class="slot-num" style="background:var(--green)">B</div>
         <span class="slot-ver ver-b">Later / Revised</span>
       </div>
-      <p class="slot-desc">The later or revised version of the pro forma. (.xlsx, .docx, or .zip)</p>
+      <p class="slot-desc">The later or revised version of the pro forma. (.xlsx, .docx, .pdf, or .zip)</p>
       <div class="file-row">
         <label class="choose-btn">
           📂 Choose Version B
-          <input type="file" id="c-pfB-input" accept=".docx,.doc,.xlsx,.xls,.zip" onchange="handleCompSlot('pfB',this)">
+          <input type="file" id="c-pfB-input" accept=".docx,.doc,.xlsx,.xls,.pdf,.zip" onchange="handleCompSlot('pfB',this)">
         </label>
         <span class="file-status" id="c-pfB-status">No file chosen</span>
       </div>
@@ -586,9 +586,45 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="proforma-engine.js?v=20260312"></script>
 <script src="proforma-comparator.js?v=20260312"></script>
 <script>
+
+// ── PDF.js worker (must be set before any getDocument() call) ────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
+
+/**
+ * Extract plain text from a PDF file using PDF.js.
+ * Works for text-based PDFs (term sheets, agreements); scanned PDFs return empty string.
+ */
+async function extractPdfText(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js library not loaded.');
+  const buf  = await file.arrayBuffer();
+  const pdf  = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+  const parts = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page    = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    // Join items; insert a newline when the y-position changes significantly
+    let lastY = null;
+    let line  = '';
+    for (const item of content.items) {
+      if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
+        parts.push(line);
+        line = '';
+      }
+      line  += item.str;
+      lastY  = item.transform[5];
+    }
+    if (line) parts.push(line);
+    parts.push('');   // blank line between pages
+  }
+  return parts.join('\n');
+}
 
 // ── Parsed data store ─────────────────────────────────────────────
 const store = { b: { ts: null, ct: null }, a: { ts: null, pf: null } };
@@ -777,8 +813,16 @@ async function parseTermSheet(file) {
   } else if (ext === 'xlsx' || ext === 'xls') {
     const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
     wb.SheetNames.forEach(n => { text += XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n'; });
+  } else if (ext === 'pdf') {
+    text = await extractPdfText(file);
+    if (!text.trim()) {
+      throw new Error(
+        'No text could be extracted from this PDF. It may be a scanned image. ' +
+        'Try uploading the original .docx or .xlsx version of the term sheet.'
+      );
+    }
   } else {
-    throw new Error('Upload a .docx or .xlsx term sheet.');
+    throw new Error('Upload a .docx, .xlsx, or .pdf term sheet.');
   }
 
   const ts = { dealName: '', safeConversions: [], noteConversions: [] };
@@ -1022,7 +1066,7 @@ async function parseCapTableOrProForma(file) {
     zip.forEach((path, entry) => {
       if (inner || entry.dir || path.startsWith('__MACOSX/')) return;
       const e = path.split('.').pop().toLowerCase();
-      if (['xlsx','xls','docx','doc'].includes(e)) inner = { path, entry, ext: e };
+      if (['xlsx','xls','docx','doc','pdf'].includes(e)) inner = { path, entry, ext: e };
     });
     if (!inner) throw new Error('No Excel or Word file found inside the ZIP.');
     const blob = await inner.entry.async('blob');
@@ -1048,8 +1092,25 @@ async function parseCapTableOrProForma(file) {
       const x = line.match(/^([A-Za-z][\w\s&,.-]{2,35})\s+([\d,]+)\s+(common|preferred|option|safe|note)/i);
       if (x) stakeholders.push({ name: x[1].trim(), shares: parseInt(x[2].replace(/,/g,'')), type: x[3].toLowerCase() });
     }
+  } else if (ext === 'pdf') {
+    // PDFs can carry term sheet text; extract and parse as term-sheet-style text.
+    // Structured cap table data (share counts, holder rows) is rarely recoverable
+    // from PDF layout, so this path is best-effort for parameter extraction.
+    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() }).catch(() => ({ value: '' }));
+    let text = r.value || '';
+    if (!text.trim()) text = await extractPdfText(file);
+    if (!text.trim()) throw new Error('No text could be extracted from this PDF. Try the original .xlsx or .docx.');
+    const moneyM = pat => { const x=text.match(new RegExp(pat+'[^\\n]{0,80}\\$?([0-9][0-9,]+(?:\\.\\d+)?(?:\\s*m(?:illion)?)?)', 'i')); if(!x)return null; const s=x[1].replace(/,/g,'').trim(); const mult=/m(?:illion)?$/i.test(s.split(/\s+/).pop())?1e6:1; return parseFloat(s)*mult||null; };
+    rc.preMoneyValuation = moneyM('pre[\\s-]?money');
+    rc.newInvestment = moneyM('investment|proceeds|round.size');
+    const pv = text.match(/option.pool[^\\n]{0,60}([0-9]+(?:\.[0-9]+)?)\s*%/i);
+    if (pv) rc.optionPoolTargetPct = parseFloat(pv[1]);
+    for (const line of text.split('\n')) {
+      const x = line.match(/^([A-Za-z][\w\s&,.-]{2,35})\s+([\d,]+)\s+(common|preferred|option|safe|note)/i);
+      if (x) stakeholders.push({ name: x[1].trim(), shares: parseInt(x[2].replace(/,/g,'')), type: x[3].toLowerCase() });
+    }
   } else {
-    throw new Error('Upload .xlsx, .docx, or .zip');
+    throw new Error('Upload .xlsx, .docx, .pdf, or .zip');
   }
 
   // If the spreadsheet stores monetary values in a non-USD currency (detected by
