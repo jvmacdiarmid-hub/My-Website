@@ -2851,226 +2851,243 @@ function downloadBuilderXLSX() {
 }
 
 function _buildProFormaSheet(wb, pf, rc) {
-  // NVCA 14-col layout: A=Name | B-D=Current Cap | E-K=Pre-Money Cap | L-N=Post-Money Cap
+  // Full NVCA-style 14-col pro forma with live Excel formulas
+  // Layout: A=Series | B-D=Current Cap | E-K=Pre-Money Cap | L-N=Post-Money Cap
   const ws = {}, merges = [];
-  const ec  = (col, row) => XLSX.utils.encode_cell({ c: col, r: row });
-  const s   = v        => ({ t: 's', v: String(v ?? '') });
-  const n   = (v, z)   => ({ t: 'n', v: Number(v) || 0, ...(z ? { z } : {}) });
-  const fml = (fm,v,z) => ({ t: 'n', f: fm, v: Number(v)||0, ...(z?{z}:{}) });
-  const b   = v        => ({ t: 's', v: String(v ?? ''), s: { font: { bold: true } } });
-  const sc  = (col, row, cell) => { if (cell != null) ws[ec(col, row)] = cell; };
-  const mg  = (r1,c1,r2,c2)   => merges.push({ s:{r:r1,c:c1}, e:{r:r2,c:c2} });
+  const ec  = (col,row) => XLSX.utils.encode_cell({c:col,r:row});
+  const s   = v       => ({t:'s', v:String(v??'')});
+  const n   = (v,z)   => ({t:'n', v:Number(v)||0, ...(z?{z}:{})});
+  const fml = (fm,v,z)=> ({t:'n', f:fm, v:Number(v)||0, ...(z?{z}:{})});
+  const b   = v       => ({t:'s', v:String(v??''), s:{font:{bold:true}}});
+  const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
+  const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
   let r = 0;
 
-  const pre      = pf.preRoundCap || pf._stakeholders || [];
-  const post     = pf.postRoundCap || [];
-  const conv     = pf.convertedInstruments || [];
-  const pps      = pf.pps || 0;
-  const preFD    = pf.premoneyFD || 0;
-  const postFD   = pf.postFD || 0;
-  const inv      = rc.newInvestment || pf.newInvestment || 0;
-  const premV    = pf.preMoneyValuation || 0;
-  const postV    = pf.postMoneyValuation || 0;
-  const exp      = pf.optionExpansion || 0;
-  const rndName  = rc.roundName || 'New Round';
+  const pre      = pf.preRoundCap||pf._stakeholders||[];
+  const post     = pf.postRoundCap||[];
+  const conv     = pf.convertedInstruments||[];
+  const pps      = pf.pps||0;
+  const preFD    = pf.premoneyFD||0;
+  const postFD   = pf.postFD||0;
+  const inv      = rc.newInvestment||pf.newInvestment||0;
+  const premV    = pf.preMoneyValuation||0;
+  const postV    = pf.postMoneyValuation||0;
+  const exp      = pf.optionExpansion||0;
+  const poolT    = rc.optionPoolTargetPct||0;
+  const rndName  = rc.roundName||'New Round';
 
-  const commons    = pre.filter(x => x.type === 'common');
-  const preferreds = pre.filter(x => x.type === 'preferred');
-  const safes      = pre.filter(x => x.type === 'safe');
-  const notes      = pre.filter(x => x.type === 'note');
-  const warrants   = pre.filter(x => x.type === 'warrant');
-  const optGranted = pre.filter(x => x.type === 'option' && !/pool|unalloc|available|reserve/i.test(x.name));
-  const optPool    = pre.filter(x => x.type === 'option' &&  /pool|unalloc|available|reserve/i.test(x.name));
-  const optPoolSh  = optPool.reduce((a,x) => a+(x.shares||0), 0);
-  const optGrantSh = optGranted.reduce((a,x) => a+(x.shares||0), 0);
-  const curFDTotal = pre.filter(x => x.type!=='safe'&&x.type!=='note').reduce((a,x)=>a+(x.shares||0),0);
+  const commons    = pre.filter(x=>x.type==='common');
+  const preferreds = pre.filter(x=>x.type==='preferred');
+  const safes      = pre.filter(x=>x.type==='safe');
+  const notes      = pre.filter(x=>x.type==='note');
+  const warrants   = pre.filter(x=>x.type==='warrant');
+  const optGranted = pre.filter(x=>x.type==='option'&&!/pool|unalloc|available|reserve/i.test(x.name));
+  const optPool    = pre.filter(x=>x.type==='option'&&/pool|unalloc|available|reserve/i.test(x.name));
+  const optPoolSh  = optPool.reduce((a,x)=>a+(x.shares||0),0);
+  const optGrantSh = optGranted.reduce((a,x)=>a+(x.shares||0),0);
+  const curFDTotal = pre.filter(x=>x.type!=='safe'&&x.type!=='note').reduce((a,x)=>a+(x.shares||0),0);
 
-  const newInvEnt  = post.find(x => x.type==='preferred' && Math.abs((x.originalIssuePrice||0)-pps)<0.0001 && !pre.some(p=>p.name===x.name));
-  const newInvName = newInvEnt?.name || rc.newInvestorName || 'New Investor(s)';
-  const newInvSh   = pf.newInvestorShares || 0;
-  const newSeries  = rc.newShareClass || newInvEnt?.series || rndName;
+  const newInvEnt  = post.find(x=>x.type==='preferred'&&Math.abs((x.originalIssuePrice||0)-pps)<0.0001&&!pre.some(p=>p.name===x.name));
+  const newInvName = newInvEnt?.name||rc.newInvestorName||'New Investor(s)';
+  const newInvSh   = pf.newInvestorShares||0;
+  const newSeries  = rc.newShareClass||newInvEnt?.series||rndName;
+  const pfInv      = (rc.investors&&rc.investors.length>0)?rc.investors:[{name:newInvName,amount:inv}];
 
-  // ── Row 0: Title ──────────────────────────────────────────────────────
-  sc(0,r, b(`NVCA Pro Forma — ${rndName}${rc.closingDate ? '  |  Closing: '+rc.closingDate : ''}`));
-  mg(r,0,r,13); r++;
+  // ── Rows 0-1: Title ──────────────────────────────────────────────────────
+  const dealTitle = (rc.companyName||pf.companyName||rndName)+' — '+rndName+' Pro Forma';
+  sc(0,r,b(dealTitle)); mg(r,0,r,14); r++;
+
+  // ── Row 1: "Dilutive Financing" header (right) ───────────────────────────
+  sc(4,r,b('Dilutive Financing')); mg(r,4,r,12);
+  sc(13,r,b('COI Dilution Minimums')); mg(r,13,r,14);
+  r++;
+
+  // ── Row 2: Sub-headers for params and DF sections ────────────────────────
+  sc(4,r,b('Source')); sc(5,r,b('Investment')); sc(6,r,b('Price Per Share')); sc(7,r,b('Shares'));
+  sc(13,r,s('')); r++;
+
+  // ── Rows 3-8: Parameters (left A-C) + Dilutive Financing (right E-H) ─────
+  const R_premoney = r;
+  sc(0,r,s('Pre Money Valuation')); sc(1,r,n(premV,'"$"#,##0')); sc(2,r,s(''));
+  sc(4,r,s('Cash')); sc(5,r,n(inv,'"$"#,##0.00')); sc(6,r,n(pps,'"$"#,##0.00000')); sc(7,r,n(newInvSh,'#,##0'));
+  sc(13,r,s('Round New Price')); sc(14,r,n(4,'0')); r++;
+
+  const R_inv = r;
+  sc(0,r,s('New Money')); sc(1,r,n(inv,'"$"#,##0')); sc(2,r,s('new_money'));
+  const df0=conv[0];
+  sc(4,r,s(df0?'Note/SAFE #1':'Note/SAFE #1 (NA)'));
+  sc(5,r,df0?n(df0.principal||0,'"$"#,##0.00'):s('-'));
+  sc(6,r,n(df0?df0.conversionPPS||0:0,'"$"#,##0.00000'));
+  sc(7,r,df0?n(df0.shares||0,'#,##0'):s('-'));
+  sc(13,r,s('Minimum Change')); sc(14,r,n(0.001,'0.000')); r++;
+
+  const R_poolT = r;
+  sc(0,r,s('Option Pool Target %')); sc(1,r,n(poolT,'0.00%')); sc(2,r,s(''));
+  const df1=conv[1];
+  sc(4,r,s(df1?'Note/SAFE #2':'Note/SAFE #2 (NA)'));
+  sc(5,r,df1?n(df1.principal||0,'"$"#,##0.00'):s('-'));
+  sc(6,r,n(df1?df1.conversionPPS||0:0,'"$"#,##0.00000'));
+  sc(7,r,df1?n(df1.shares||0,'#,##0'):s('-')); r++;
+
+  const R_sigdig = r;
+  sc(0,r,s('Round Share Price To')); sc(1,r,n(4,'0')); sc(2,r,s('sig_dig'));
+  const df2=conv[2];
+  sc(4,r,s(df2?'Note/SAFE #3':'Note/SAFE #3 (NA)'));
+  sc(5,r,df2?n(df2.principal||0,'"$"#,##0.00'):s('-'));
+  sc(6,r,n(df2?df2.conversionPPS||0:0,'"$"#,##0.00000'));
+  sc(7,r,df2?n(df2.shares||0,'#,##0'):s('-')); r++;
+
+  sc(0,r,s('Post Money Available Pool')); sc(1,r,s('-')); r++;
+
+  const R_pps = r;
+  sc(0,r,s('Price Per Share')); sc(2,r,s('pps'));
+  // DF Total row
+  const dfInv = inv + conv.reduce((a,c)=>a+(c.principal||0),0);
+  const dfSh  = newInvSh + conv.reduce((a,c)=>a+(c.shares||0),0);
+  sc(4,r,b('Total')); sc(5,r,n(dfInv,'"$"#,##0.00')); sc(7,r,n(dfSh,'#,##0'));
+  r++;
+
   r++; // blank
 
-  // ── Rows 2+: Parameters (left A-C) and Dilutive Financing (right H-M) ──
-  sc(0,r, b('PARAMETERS')); mg(r,0,r,2);
-  sc(7,r, b('DILUTIVE FINANCING')); mg(r,7,r,12);
-  r++;
-  sc(0,r,b('Item')); sc(1,r,b('Value')); sc(2,r,b('Notes'));
-  sc(7,r,b('Investor/Source')); sc(8,r,b('Type')); sc(9,r,b('Amount'));
-  sc(10,r,b('Conv Price')); sc(11,r,b('Basis')); sc(12,r,b('Shares'));
+  // ── Section header row ───────────────────────────────────────────────────
+  sc(0,r,b('')); 
+  sc(1,r,b('Current Capitalization')); mg(r,1,r,3);
+  sc(4,r,b('Pre Money Capitalization')); mg(r,4,r,10);
+  sc(11,r,b('Post Money Capitalization')); mg(r,11,r,13);
   r++;
 
-  const R_pre  = r;
-  sc(0,r,s('Pre-Money Valuation')); sc(1,r,n(premV,'"$"#,##0')); sc(2,r,s('Term sheet agreed value'));
-  // Show first investor on this row; additional investors added to subsequent rows
-  const _pfInvestors = (rc.investors && rc.investors.length > 0) ? rc.investors : [{name: newInvName, amount: inv}];
-  const _fi = _pfInvestors[0];
-  const _fiSh = inv>0 ? Math.round(newInvSh*_fi.amount/inv) : newInvSh;
-  sc(7,r,s(_fi.name||newInvName)); sc(8,r,s('Cash')); sc(9,r,n(_fi.amount||inv,'"$"#,##0'));
-  sc(10,r,n(pps,'"$"#,##0.0000')); sc(11,r,s('Round PPS')); sc(12,r,n(_fiSh,'#,##0'));
-  r++;
-
-  const R_inv  = r;
-  sc(0,r,s('New Investment')); sc(1,r,n(inv,'"$"#,##0')); sc(2,r,s('Total new cash (all tranches)'));
-  // Build right-side queue: extra cash investors (index 1+) then converting instruments
-  // Each item fills the right-side columns of the next available parameter row in order.
-  const _dfRight = [
-    ..._pfInvestors.slice(1).map(iv => ({ _cash:true, name:iv.name, amount:iv.amount })),
-    ...conv.filter(c=>c.originalType==='safe'),
-    ...conv.filter(c=>c.originalType==='note'),
-  ];
-  let _dfi = 0;
-  const _dfFill = (row) => {
-    if (_dfi >= _dfRight.length) return;
-    const item = _dfRight[_dfi++];
-    if (item._cash) {
-      const sh = inv>0 ? Math.round(newInvSh*item.amount/inv) : 0;
-      sc(7,row,s(item.name)); sc(8,row,s('Cash')); sc(9,row,n(item.amount,'"$"#,##0'));
-      sc(10,row,n(pps,'"$"#,##0.0000')); sc(11,row,s('Round PPS')); sc(12,row,n(sh,'#,##0'));
-    } else {
-      sc(7,row,s(item.name||'')); sc(8,row,s(item.originalType==='safe'?'SAFE':'Conv. Note'));
-      sc(9,row,n(item.principal||0,'"$"#,##0')); sc(10,row,n(item.conversionPPS||0,'"$"#,##0.0000'));
-      sc(11,row,s(item.conversionBasis||'')); sc(12,row,n(item.shares||0,'#,##0'));
-    }
-  };
-  _dfFill(r); r++;
-
-  const R_pool = r;
-  sc(0,r,s('Option Pool Target %')); sc(1,r,n(rc.optionPoolTargetPct||0,'0.00%'));
-  sc(2,r,s('Method: '+(rc.optionPoolMethod||'pre-money')));
-  _dfFill(r); r++;
-
-  const R_preFD = r;
-  sc(0,r,s('Pre-Money FD Shares')); sc(1,r,n(preFD,'#,##0'));
-  sc(2,r,s(exp>0?`Includes ${exp.toLocaleString()} new pool shares`:'Sum of all equity types'));
-  _dfFill(r); r++;
-
-  // Overflow: if more financing items than parameter rows, add extra right-side-only rows
-  while (_dfi < _dfRight.length) { _dfFill(r); r++; }
-
-  const R_pps  = r;
-  sc(0,r,s('Price Per Share (PPS)')); sc(1,r,fml(`B${R_pre+1}/B${R_preFD+1}`,pps,'"$"#,##0.0000'));
-  sc(2,r,s('=Pre-Money ÷ Pre-Money FD'));
-  r++;
-
-  sc(0,r,s('New Shares Issued')); sc(1,r,n(newInvSh,'#,##0')); sc(2,r,s('=Investment ÷ PPS'));
-  r++;
-
-  const R_postV = r;
-  sc(0,r,s('Post-Money Valuation')); sc(1,r,fml(`B${R_pre+1}+B${R_inv+1}`,postV,'"$"#,##0'));
-  sc(2,r,s('=Pre-Money + Investment'));
-  r++;
-  r++; // blank
-
-  // ── Section header row ─────────────────────────────────────────────────
-  sc(0,r,b(''));
-  sc(1,r,b('Current Capitalization'));  mg(r,1,r,3);
-  sc(4,r,b('Pre-Money Capitalization')); mg(r,4,r,10);
-  sc(11,r,b('Post-Money Capitalization')); mg(r,11,r,13);
-  r++;
-
-  // ── Column sub-headers ─────────────────────────────────────────────────
-  sc(0,r,b('Series / Holder'));
-  sc(1,r,b('OS')); sc(2,r,b('FD')); sc(3,r,b('%FD'));
-  sc(4,r,b('OIP')); sc(5,r,b('Conv Price\n(Current)')); sc(6,r,b('Calc New\nConv Price'));
-  sc(7,r,b('Conv Price\nPost-Fin')); sc(8,r,b('Conv\nRatio')); sc(9,r,b('FD Shares')); sc(10,r,b('%FD'));
-  sc(11,r,b('OS')); sc(12,r,b('FD')); sc(13,r,b('%FD'));
+  // ── Column sub-header row ────────────────────────────────────────────────
+  sc(0,r,b('Series'));
+  sc(1,r,b('Outstanding\nShares')); sc(2,r,b('Fully Diluted\nShares')); sc(3,r,b('Percent of\nFully Diluted\nShares'));
+  sc(4,r,b('Original Issue\nPrice')); sc(5,r,b('Conversion Price\n(Current)')); sc(6,r,b('Calculated New\nConversion Price'));
+  sc(7,r,b('Conversion Price\n(Post Financing)')); sc(8,r,b('Conversion\nRatio'));
+  sc(9,r,b('Fully Diluted\nShares')); sc(10,r,b('Percent of\nFully Diluted\nShares'));
+  sc(11,r,b('Outstanding\nShares')); sc(12,r,b('Fully Diluted\nShares')); sc(13,r,b('Percent of\nFully Diluted\nShares'));
   r++;
 
   const DATA_FIRST = r;
   const dataRows = [];
+  let optAvailRow = -1, optAddedRow = -1;
 
-  function capRow(name, {curOS,curFD,oip,convCur,calcConv,convPF,ratio,preFDSh,postOS,postFDSh}={}) {
-    const rr = r;
-    sc(0,rr,s(name));
-    if (curOS   !=null) sc(1, rr, n(curOS,   '#,##0'));
-    if (curFD   !=null) sc(2, rr, n(curFD,   '#,##0'));
-    if (oip     !=null) sc(4, rr, n(oip,     '"$"#,##0.0000'));
-    if (convCur !=null) sc(5, rr, n(convCur, '"$"#,##0.0000'));
-    if (calcConv!=null) sc(6, rr, n(calcConv,'"$"#,##0.0000'));
-    if (convPF  !=null) sc(7, rr, n(convPF,  '"$"#,##0.0000'));
-    if (ratio   !=null) sc(8, rr, n(ratio,   '0.0000x'));
-    if (preFDSh !=null) sc(9, rr, n(preFDSh, '#,##0'));
-    if (postOS  !=null) sc(11,rr, n(postOS,  '#,##0'));
-    if (postFDSh!=null) sc(12,rr, n(postFDSh,'#,##0'));
+  function capRow(name,{curOS,curFD,oip,convCur,calcConv,convPF,ratio,preFDSh,postOS,postFDSh,bold}={}) {
+    const rr=r;
+    sc(0,rr,bold?b(name):s(name));
+    if(curOS    !=null) sc(1, rr,n(curOS,   '#,##0'));
+    if(curFD    !=null) sc(2, rr,n(curFD,   '#,##0'));
+    if(oip      !=null) sc(4, rr,n(oip,     '"$"#,##0.0000'));
+    if(convCur  !=null) sc(5, rr,n(convCur, '"$"#,##0.0000'));
+    if(calcConv !=null) sc(6, rr,n(calcConv,'"$"#,##0.0000'));
+    if(convPF   !=null) sc(7, rr,n(convPF,  '"$"#,##0.0000'));
+    if(ratio    !=null) sc(8, rr,n(ratio,   '0.0000000'));
+    if(preFDSh  !=null) sc(9, rr,n(preFDSh, '#,##0'));
+    if(postOS   !=null) sc(11,rr,n(postOS,  '#,##0'));
+    if(postFDSh !=null) sc(12,rr,n(postFDSh,'#,##0'));
     dataRows.push(rr); r++;
     return rr;
   }
 
-  // Common stock
-  for (const c of commons) {
-    const sh=c.shares||0;
-    capRow(c.name||'Common Stock',{curOS:sh,curFD:sh,preFDSh:sh,postOS:sh,postFDSh:sh});
-  }
-  if (commons.length===0) capRow('Common Stock',{curOS:0,curFD:0,preFDSh:0,postOS:0,postFDSh:0});
+  // ── Cap table rows ───────────────────────────────────────────────────────
 
-  // Preferred series (existing)
-  for (const p of preferreds) {
+  // Common Stock
+  if(commons.length===0) capRow('Common Stock',{curOS:0,curFD:0,preFDSh:0,postOS:0,postFDSh:0});
+  for(const c of commons){const sh=c.shares||0; capRow(c.name||'Common Stock',{curOS:sh,curFD:sh,preFDSh:sh,postOS:sh,postFDSh:sh});}
+
+  // Preferred series
+  for(const p of preferreds){
     const sh=p.shares||0, oip=p.originalIssuePrice||0;
     capRow(p.series||p.name||'Preferred',{curOS:sh,curFD:sh,oip,convCur:oip,calcConv:oip,convPF:oip,ratio:1,preFDSh:sh,postOS:sh,postFDSh:sh});
   }
 
+  // Blank separator (keeps row in SUM range but no values)
+  r++;
+
   // Converting SAFEs
-  for (const sf of safes) {
+  for(const sf of safes){
     const cv=conv.find(c=>c.name===sf.name), sh=cv?.shares||0, cp=cv?.conversionPPS||0;
-    const capP = sf.valuationCap&&preFD>0 ? sf.valuationCap/preFD : null;
-    capRow(`${sf.series||sf.name||'SAFE'} (SAFE)`,{curOS:0,curFD:0,oip:capP,convCur:cp,calcConv:cp,convPF:cp,ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
+    const capP=sf.valuationCap&&preFD>0?sf.valuationCap/preFD:null;
+    capRow(`${newSeries} Preferred Stock (SAFE/Note)`,{curOS:0,curFD:0,oip:capP,convCur:cp,calcConv:cp,convPF:cp,
+      ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
   }
 
-  // Converting notes
-  for (const nt of notes) {
+  // Converting Notes
+  for(const nt of notes){
     const cv=conv.find(c=>c.name===nt.name), sh=cv?.shares||0, cp=cv?.conversionPPS||0;
-    capRow(`${nt.series||nt.name||'Conv. Note'} (Note)`,{curOS:0,curFD:0,convCur:cp,calcConv:cp,convPF:cp,ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
+    capRow(`${newSeries} Preferred Stock (Note)`,{curOS:0,curFD:0,convCur:cp,calcConv:cp,convPF:cp,
+      ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
   }
 
-  // New cash investors — one cap table row per investor
-  if (_pfInvestors.length > 1) {
-    let _rem = newInvSh;
-    for (let _ii=0; _ii<_pfInvestors.length; _ii++) {
-      const _iv = _pfInvestors[_ii];
-      const _sh = _ii < _pfInvestors.length-1 ? (inv>0 ? Math.round(newInvSh*_iv.amount/inv) : 0) : _rem;
-      _rem -= _sh;
-      capRow(`${_iv.name} (${newSeries})`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:_sh,postFDSh:_sh});
+  // New cash investors (one row per investor)
+  if(pfInv.length>1){
+    let rem=newInvSh;
+    for(let ii=0;ii<pfInv.length;ii++){
+      const iv=pfInv[ii];
+      const sh=ii<pfInv.length-1?(inv>0?Math.round(newInvSh*iv.amount/inv):0):rem;
+      rem-=sh;
+      capRow(`${newSeries} Preferred Stock (Cash)`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:sh,postFDSh:sh});
     }
   } else {
-    capRow(`${newInvName} (${newSeries})`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:newInvSh,postFDSh:newInvSh});
+    capRow(`${newSeries} Preferred Stock (Cash)`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:newInvSh,postFDSh:newInvSh});
   }
 
   // Warrants
-  if (warrants.length>0) {
+  if(warrants.length>0){
     const sh=warrants.reduce((a,x)=>a+(x.shares||0),0);
-    capRow('Warrants',{curOS:0,curFD:sh,preFDSh:sh,postOS:0,postFDSh:sh});
+    capRow(`${newSeries} Warrants`,{curOS:0,curFD:sh,preFDSh:sh,postOS:0,postFDSh:sh});
   }
+
+  // Series A Option Right Shares (warrant-derived options, if any have name containing "option right")
+  const optRights=pre.filter(x=>x.type==='option'&&/right|right\s+share/i.test(x.name));
+  const optRightSh=optRights.reduce((a,x)=>a+(x.shares||0),0);
+  if(optRightSh>0) capRow(`${newSeries} Option Right Shares`,{curOS:0,curFD:0,preFDSh:optRightSh,postOS:0,postFDSh:optRightSh});
 
   // Options Outstanding (granted)
-  if (optGrantSh>0) capRow('Options Outstanding',{curOS:0,curFD:optGrantSh,preFDSh:optGrantSh,postOS:0,postFDSh:optGrantSh});
+  if(optGrantSh>0) capRow('Options Outstanding',{curOS:0,curFD:optGrantSh,preFDSh:optGrantSh,postOS:0,postFDSh:optGrantSh});
 
   // Options Available (pre-existing unallocated pool)
-  if (optPoolSh>0) capRow('Options Available',{curOS:0,curFD:optPoolSh,preFDSh:optPoolSh,postOS:0,postFDSh:optPoolSh});
+  if(optPoolSh>0){optAvailRow=r; capRow('Options Available',{curOS:0,curFD:optPoolSh,preFDSh:optPoolSh,postOS:0,postFDSh:optPoolSh});}
 
-  // Options Added (pool expansion this round)
-  if (exp>0) capRow('Options Added',{curOS:0,curFD:0,preFDSh:exp,postOS:0,postFDSh:exp});
+  // Options Added (formula patched after TOTAL_R is known)
+  optAddedRow=r;
+  sc(0,r,s('Options Added'));
+  sc(2,r,n(0,'#,##0'));      // current FD = 0
+  sc(9,r,n(exp,'#,##0'));    // pre-money FD placeholder
+  sc(12,r,n(exp,'#,##0'));   // post-money FD placeholder
+  dataRows.push(r); r++;
+  // annotation: Total Pool %
+  sc(14,r-1,s('Total Pool:'));
+  sc(14,r,n(postFD>0?(optPoolSh+exp+optGrantSh)/postFD:0,'0.00%'));
 
   const DATA_LAST = r-1;
-  const TOTAL_R   = r; // totals row index (0-based) — used by %FD formula patches below
+  const TOTAL_R   = r;
 
-  // Patch %FD columns for every data row (referencing totals row)
-  for (const rr of dataRows) {
-    const cFD = ws[ec(2,rr)]?.v;
-    if (cFD!=null) sc(3, rr, fml(`C${rr+1}/C$${TOTAL_R+1}`, curFDTotal>0?cFD/curFDTotal:0, '0.00%'));
-    const pFD = ws[ec(9,rr)]?.v;
-    if (pFD!=null) sc(10,rr, fml(`J${rr+1}/J$${TOTAL_R+1}`, preFD>0?pFD/preFD:0, '0.00%'));
-    const poFD= ws[ec(12,rr)]?.v;
-    if (poFD!=null) sc(13,rr, fml(`M${rr+1}/M$${TOTAL_R+1}`, postFD>0?poFD/postFD:0, '0.00%'));
+  // ── Patch %FD formulas for all data rows ─────────────────────────────────
+  const DR = col=>`${col}${DATA_FIRST+1}:${col}${DATA_LAST+1}`;
+  for(const rr of dataRows){
+    const cFDv=ws[ec(2,rr)]?.v;
+    if(cFDv!=null) sc(3,rr,fml(`C${rr+1}/C$${TOTAL_R+1}`,curFDTotal>0?cFDv/curFDTotal:0,'0.00%'));
+    const pFDv=ws[ec(9,rr)]?.v;
+    if(pFDv!=null) sc(10,rr,fml(`J${rr+1}/J$${TOTAL_R+1}`,preFD>0?pFDv/preFD:0,'0.00%'));
+    const poFDv=ws[ec(12,rr)]?.v;
+    if(poFDv!=null) sc(13,rr,fml(`M${rr+1}/M$${TOTAL_R+1}`,postFD>0?poFDv/postFD:0,'0.00%'));
   }
 
-  // ── Totals row ─────────────────────────────────────────────────────────
-  const DR = col => `${col}${DATA_FIRST+1}:${col}${DATA_LAST+1}`;
-  sc(0,r,b('TOTAL — Fully Diluted'));
+  // ── Options Added live formula (pre-money pool method, closed-form) ───────
+  // expansion = MAX(0, ROUNDDOWN((T*S0 - E0)/(1-T), 0))
+  // where S0 = sum of pre-money FD excluding options_added row, E0 = options available row
+  if(poolT>0){
+    const Tref  = `B${R_poolT+1}`;   // pool target % cell (e.g. B7)
+    const S0ref = `SUM(J${DATA_FIRST+1}:J${optAddedRow})`; // pre-money FD excl. options added
+    const E0ref = optAvailRow>=0 ? `J${optAvailRow+1}` : '0';
+    const optFml= `MAX(0,ROUNDDOWN((${Tref}*${S0ref}-${E0ref})/(1-${Tref}),0))`;
+    sc(9, optAddedRow, fml(optFml, exp,'#,##0'));
+    sc(12,optAddedRow, fml(optFml, exp,'#,##0'));
+  }
+
+  // ── PPS formula: =ROUND(preMoneyVal / J_total, sigdig) ───────────────────
+  sc(1, R_pps, fml(`ROUND(B${R_premoney+1}/J${TOTAL_R+1},B${R_sigdig+1})`, pps, '"$"#,##0.000000'));
+
+  // ── Totals row ────────────────────────────────────────────────────────────
+  sc(0,r,b('Totals'));
   sc(1,r,fml(`SUM(${DR('B')})`,null,'#,##0'));
   sc(2,r,fml(`SUM(${DR('C')})`,curFDTotal,'#,##0'));
   sc(3,r,fml(`SUM(${DR('D')})`,1,'0.00%'));
@@ -3079,45 +3096,96 @@ function _buildProFormaSheet(wb, pf, rc) {
   sc(11,r,fml(`SUM(${DR('L')})`,null,'#,##0'));
   sc(12,r,fml(`SUM(${DR('M')})`,postFD,'#,##0'));
   sc(13,r,fml(`SUM(${DR('N')})`,1,'0.00%'));
-  r++; r++; // blank
+  r++;
 
-  // ── Balance checks ─────────────────────────────────────────────────────
-  sc(0,r,b('BALANCE CHECKS')); sc(2,r,b('Current')); sc(9,r,b('Pre-Money')); sc(12,r,b('Post-Money')); r++;
-  sc(0,r,s('Issued & Outstanding'));
-  sc(2,r,fml(`SUM(${DR('B')})`,null,'#,##0'));
-  sc(11,r,fml(`SUM(${DR('L')})`,null,'#,##0')); r++;
-  sc(0,r,s('Fully Diluted'));
-  sc(2,r,fml(`SUM(${DR('C')})`,curFDTotal,'#,##0'));
-  sc(9,r,fml(`SUM(${DR('J')})`,preFD,'#,##0'));
-  sc(12,r,fml(`SUM(${DR('M')})`,postFD,'#,##0')); r++;
-  sc(0,r,s('Implied Valuation (FD × PPS)'));
-  sc(9,r,fml(`J${TOTAL_R+1}*B${R_pps+1}`,premV,'"$"#,##0'));
-  sc(12,r,fml(`M${TOTAL_R+1}*B${R_pps+1}`,postV,'"$"#,##0')); r++; r++;
+  // ── Implied Valuation ─────────────────────────────────────────────────────
+  sc(9,r,s('Implied Valuation:')); mg(r,9,r,10);
+  sc(11,r,fml(`J${TOTAL_R+1}*B${R_pps+1}`,premV,'"$"#,##0'));
+  sc(13,r,fml(`M${TOTAL_R+1}*B${R_pps+1}`,postV,'"$"#,##0'));
+  r++;
 
-  // ── Cross-checks ───────────────────────────────────────────────────────
-  sc(0,r,b('CROSS-CHECKS')); sc(1,r,b('Status')); sc(2,r,b('Computed Value')); r++;
-  const ppsOk = pps&&premV&&preFD ? Math.abs(pps-premV/preFD)<=0.005 : null;
-  sc(0,r,s('PPS = Pre-Money ÷ Pre-Money FD'));
-  sc(1,r,s(ppsOk==null?'N/A':ppsOk?'PASS ✓':'FAIL ✗'));
-  sc(2,r,fml(`B${R_pre+1}/B${R_preFD+1}`,pps,'"$"#,##0.0000')); r++;
-  const pmOk = Math.abs(premV+inv-postV)<1;
-  sc(0,r,s('Post-Money = Pre-Money + Investment'));
-  sc(1,r,s(pmOk?'PASS ✓':'FAIL ✗'));
-  sc(2,r,fml(`B${R_pre+1}+B${R_inv+1}`,postV,'"$"#,##0')); r++;
-  const xCk = postV ? Math.abs(postFD*pps-postV)/postV<=0.005 : null;
-  sc(0,r,s('Post-Money FD × PPS ≈ Post-Money Valuation'));
-  sc(1,r,s(xCk==null?'N/A':xCk?'PASS ✓':'FAIL ✗'));
-  sc(2,r,n(postFD*pps,'"$"#,##0')); r++;
+  // ── Balance Checks ────────────────────────────────────────────────────────
+  r++;
+  // Current OS = SUM(B data range) = total common+preferred
+  const curOS_sum = `SUM(${DR('B')})`;
+  // Post OS = SUM(L data range)
+  sc(0,r,s('Current OS Balanced')); sc(1,r,fml(curOS_sum,null,'#,##0')); r++;
+  sc(0,r,s('Current FD Balanced')); sc(1,r,fml(`SUM(${DR('C')})`,curFDTotal,'#,##0')); r++;
+  sc(0,r,s('Post OS Balanced'));    sc(1,r,fml(`SUM(${DR('L')})`,null,'#,##0')); r++;
+  sc(0,r,s('Post FD Balanced'));    sc(1,r,fml(`SUM(${DR('M')})`,postFD,'#,##0')); r++;
 
-  ws['!ref']    = XLSX.utils.encode_range({ s:{c:0,r:0}, e:{c:13,r:r} });
+  r++; // separator
+
+  // ── New Money section ─────────────────────────────────────────────────────
+  sc(0,r,b('New Money:')); sc(2,r,b(`${newSeries} Shares`)); r++;
+  let sharesRem=newInvSh;
+  for(let ii=0;ii<pfInv.length;ii++){
+    const iv=pfInv[ii];
+    const iSh=ii<pfInv.length-1?(inv>0?Math.round(newInvSh*iv.amount/inv):0):sharesRem;
+    sharesRem-=iSh;
+    sc(0,r,s(iv.name)); sc(1,r,n(iv.amount,'"$"#,##0')); sc(2,r,n(iSh,'#,##0')); r++;
+  }
+  r++; // blank for "Other Investors" if applicable
+  sc(0,r,b('Totals')); sc(1,r,n(inv,'"$"#,##0')); sc(2,r,n(newInvSh,'#,##0')); r++;
+  r++;
+
+  // ── Warrant Coverage ──────────────────────────────────────────────────────
+  if(warrants.length>0){
+    sc(0,r,b('Warrant Coverage:')); sc(2,r,b('Warrants:')); r++;
+    for(const w of warrants){
+      sc(0,r,s(w.name||'Warrant')); sc(2,r,n(w.shares||0,'#,##0')); r++;
+    }
+    r++;
+  }
+
+  // ── Option Pool section ───────────────────────────────────────────────────
+  sc(5,r,b('Option Pool Increase:')); sc(6,r,n(exp,'#,##0')); r++;
+  sc(5,r,b('New Pool (after increase):')); sc(6,r,n(optPoolSh+exp,'#,##0')); r++;
+  r++;
+  sc(5,r,s('New Option Grants (post-closing):')); r++;
+  sc(5,r,s('Remaining Pool:')); sc(6,r,n(Math.max(0,optPoolSh+exp-optGrantSh),'#,##0')); r++;
+  r++;
+
+  // ── Note Conversion Date ──────────────────────────────────────────────────
+  if(rc.closingDate){ sc(0,r,s('Note Conversion Date (projected):')); sc(2,r,s(rc.closingDate)); r++; r++; }
+
+  // ── Converting Notes & SAFEs table ───────────────────────────────────────
+  const allConv=[...pre.filter(x=>x.type==='note'), ...pre.filter(x=>x.type==='safe')];
+  if(allConv.length>0){
+    sc(0,r,b('Converting Notes:')); r++; r++;
+    const hdrs=['Investor','Note Issue Date','Principal','Interest Rate','Calculated Interest',
+      'Principal + Interest','Discount Rate','Discount Price','Capped Conv Price','Conversion Price','Shares of '+newSeries];
+    hdrs.forEach((h,ci)=>sc(ci,r,b(h))); r++;
+    const closing=rc.closingDate||new Date().toISOString().slice(0,10);
+    for(const nt of allConv){
+      const cv=conv.find(c=>c.name===nt.name);
+      const prin=nt.principal||0, rate=nt.interestRate||0;
+      const days=nt.issueDate?Math.round((new Date(closing)-new Date(nt.issueDate))/86400000):0;
+      const accr=prin*rate*(days/365), pAndI=prin+accr;
+      const disc=nt.discountRate?(1-nt.discountRate):0;
+      const dPrc=pps*(nt.discountRate||1);
+      const capP=nt.valuationCap&&preFD>0?nt.valuationCap/preFD:null;
+      sc(0,r,s(nt.name||'')); sc(1,r,s(nt.issueDate||''));
+      sc(2,r,n(prin,'"$"#,##0.00')); sc(3,r,n(rate,'0.0%'));
+      sc(4,r,n(accr,'"$"#,##0.00')); sc(5,r,n(pAndI,'"$"#,##0.00'));
+      sc(6,r,n(disc,'0%')); sc(7,r,n(dPrc,'"$"#,##0.0000'));
+      sc(8,r,capP!=null?n(capP,'"$"#,##0.0000'):s(''));
+      sc(9,r,n(cv?.conversionPPS||0,'"$"#,##0.0000'));
+      sc(10,r,n(cv?.shares||0,'#,##0')); r++;
+    }
+  }
+
+  ws['!ref']    = XLSX.utils.encode_range({s:{c:0,r:0},e:{c:14,r:r}});
   ws['!merges'] = merges;
   ws['!cols']   = [
-    {wch:32},{wch:14},{wch:14},{wch:10},
-    {wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:14},{wch:10},
-    {wch:14},{wch:14},{wch:10}
+    {wch:38},{wch:14},{wch:14},{wch:10},   // A-D
+    {wch:12},{wch:14},{wch:14},{wch:14},   // E-H
+    {wch:11},{wch:14},{wch:10},            // I-K
+    {wch:14},{wch:14},{wch:10},{wch:12}    // L-O
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Pro Forma');
 }
+
 
 function _buildDetailsSheet(wb, pf, rc) {
   const ws = {};
