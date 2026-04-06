@@ -913,11 +913,64 @@ async function parseTermSheet(file) {
     return a1.reduce((s, v) => s + v, 0) + a2.reduce((s, v) => s + v, 0);
   }
 
-  // Investment: committed tranche sum first, then explicit label patterns.
+  // ── Per-investor parsing ──────────────────────────────────────────────────
+  // Extract individual investor names + amounts from the Investors section.
+  // Handles: "Cure Ventures ... $15 million", "Mission BioCapital $5 million", "JJDC $1 million"
+  function parseInvestors() {
+    const investors = [];
+    // Isolate the "Investors:" block (up to the next blank line or new ALL-CAPS label)
+    const secRe = /investors?\s*[:\-][^\n]*([\s\S]{0,1500}?)(?:\n\s*\n\s*[A-Z][a-z]|\n[A-Z][A-Za-z ]{2,30}:|$)/i;
+    const sec = secRe.exec(text);
+    if (!sec) return investors;
+    const block = sec[0];
+    // Match: one or more capitalized words, then optional filler, then $X unit
+    const lineRe = /([A-Z][A-Za-z0-9\s&,.'-]{1,60?}?)\s+(?:as\s+"?[Ll]ead\s+[Ii]nvestor"?\s+)?(?:with\s+a\s+minimum\s+investment\s+of\s+)?\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(million|m\b|billion|b\b)?/gi;
+    let m;
+    while ((m = lineRe.exec(block)) !== null) {
+      // Skip lines that look like section headers ("Amount Raised", "Investors", etc.)
+      const rawName = m[1].trim();
+      if (/^(?:investors?|amount\s+raised|other\s+investors?|lead\s+investor|financing)$/i.test(rawName)) continue;
+      // Strip trailing boilerplate from name
+      const name = rawName
+        .replace(/\s+as\s+"?[Ll]ead\s+[Ii]nvestor"?.*$/i, '')
+        .replace(/\s+with\s+a\s+minimum.*$/i, '')
+        .replace(/\s+satisfactory.*$/i, '')
+        .trim();
+      if (name.length < 2) continue;
+      let amt = parseFloat(m[2].replace(/,/g, ''));
+      const unit = (m[3] || '').toLowerCase();
+      if (unit.startsWith('m')) amt *= 1e6;
+      else if (unit.startsWith('b')) amt *= 1e9;
+      if (amt > 0) investors.push({ name, amount: amt });
+    }
+    return investors;
+  }
+  ts.investors = parseInvestors();
+
+  // "Amount Raised: $21 million" — most explicit total, parsed as highest priority.
+  // This field appears in NVCA term sheets as the definitive round size and already
+  // excludes converting notes/SAFEs (those are listed separately after "plus ...").
+  const _arMatch = text.match(/amount\s+raised\s*[:\-]?\s*\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(million|m\b|billion|b\b)?/i);
+  const _amountRaised = _arMatch ? (() => {
+    let v = parseFloat(_arMatch[1].replace(/,/g, ''));
+    const u = (_arMatch[2] || '').toLowerCase();
+    if (u.startsWith('m')) v *= 1e6;
+    else if (u.startsWith('b')) v *= 1e9;
+    return v;
+  })() : null;
+
+  // Sum of individually named investors (fallback when "Amount Raised" not present)
+  const _investorSum = ts.investors.length >= 1
+    ? ts.investors.reduce((s, x) => s + x.amount, 0)
+    : null;
+
+  // Investment: "Amount Raised" first (explicit total), then investor sum, then keyword patterns.
   // Pattern for "Series Seed financing/round" is tightened to require : or = so
   // a loose sentence reference ("... in the Series Seed financing ...") cannot
   // accidentally match the authorized cap amount that typically follows it.
   ts.investmentAmount  =
+    _amountRaised ||
+    _investorSum ||
     moneyBefore('in\\s+new\\s+(?:primary\\s+)?capital', 15) ||
     sumTrancheDeal() ||
     money('(?:aggregate\\s+)?(?:total\\s+)?(?:new\\s+)?(?:gross\\s+)?(?:investment|proceeds|round\\s+size)\\s*[:=]') ||
@@ -1538,7 +1591,10 @@ async function runBuilder() {
     optionPoolTargetPct: ts.targetOptionPool || ct._rc?.optionPoolTargetPct || 0.10,
     optionPoolMethod: ts.optionPoolMethod || ct._rc?.optionPoolMethod || 'pre-money',
     newShareClass: ts.dealName ? ts.dealName + ' Preferred' : 'Series A Preferred',
-    newInvestorName: 'New Investors',
+    newInvestorName: ts.investors && ts.investors.length === 1
+      ? ts.investors[0].name
+      : (ts.investors && ts.investors.length > 1 ? ts.investors.map(i => i.name).join(', ') : 'New Investors'),
+    investors: ts.investors || [],
     liquidationMultiple: ts.liquidationMultiple || 1,
     participating: ts.participating || false,
     closingDate: new Date().toISOString().slice(0, 10),
@@ -2850,42 +2906,51 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   const R_pre  = r;
   sc(0,r,s('Pre-Money Valuation')); sc(1,r,n(premV,'"$"#,##0')); sc(2,r,s('Term sheet agreed value'));
-  sc(7,r,s(newInvName)); sc(8,r,s('Cash')); sc(9,r,n(inv,'"$"#,##0'));
-  sc(10,r,n(pps,'"$"#,##0.0000')); sc(11,r,s('Round PPS')); sc(12,r,n(newInvSh,'#,##0'));
+  // Show first investor on this row; additional investors added to subsequent rows
+  const _pfInvestors = (rc.investors && rc.investors.length > 0) ? rc.investors : [{name: newInvName, amount: inv}];
+  const _fi = _pfInvestors[0];
+  const _fiSh = inv>0 ? Math.round(newInvSh*_fi.amount/inv) : newInvSh;
+  sc(7,r,s(_fi.name||newInvName)); sc(8,r,s('Cash')); sc(9,r,n(_fi.amount||inv,'"$"#,##0'));
+  sc(10,r,n(pps,'"$"#,##0.0000')); sc(11,r,s('Round PPS')); sc(12,r,n(_fiSh,'#,##0'));
   r++;
 
   const R_inv  = r;
   sc(0,r,s('New Investment')); sc(1,r,n(inv,'"$"#,##0')); sc(2,r,s('Total new cash (all tranches)'));
-  const dfConv = [...conv.filter(c=>c.originalType==='safe'), ...conv.filter(c=>c.originalType==='note')];
-  if (dfConv[0]) {
-    const c=dfConv[0];
-    sc(7,r,s(c.name||'')); sc(8,r,s(c.originalType==='safe'?'SAFE':'Conv. Note'));
-    sc(9,r,n(c.principal||0,'"$"#,##0')); sc(10,r,n(c.conversionPPS||0,'"$"#,##0.0000'));
-    sc(11,r,s(c.conversionBasis||'')); sc(12,r,n(c.shares||0,'#,##0'));
-  }
-  r++;
+  // Build right-side queue: extra cash investors (index 1+) then converting instruments
+  // Each item fills the right-side columns of the next available parameter row in order.
+  const _dfRight = [
+    ..._pfInvestors.slice(1).map(iv => ({ _cash:true, name:iv.name, amount:iv.amount })),
+    ...conv.filter(c=>c.originalType==='safe'),
+    ...conv.filter(c=>c.originalType==='note'),
+  ];
+  let _dfi = 0;
+  const _dfFill = (row) => {
+    if (_dfi >= _dfRight.length) return;
+    const item = _dfRight[_dfi++];
+    if (item._cash) {
+      const sh = inv>0 ? Math.round(newInvSh*item.amount/inv) : 0;
+      sc(7,row,s(item.name)); sc(8,row,s('Cash')); sc(9,row,n(item.amount,'"$"#,##0'));
+      sc(10,row,n(pps,'"$"#,##0.0000')); sc(11,row,s('Round PPS')); sc(12,row,n(sh,'#,##0'));
+    } else {
+      sc(7,row,s(item.name||'')); sc(8,row,s(item.originalType==='safe'?'SAFE':'Conv. Note'));
+      sc(9,row,n(item.principal||0,'"$"#,##0')); sc(10,row,n(item.conversionPPS||0,'"$"#,##0.0000'));
+      sc(11,row,s(item.conversionBasis||'')); sc(12,row,n(item.shares||0,'#,##0'));
+    }
+  };
+  _dfFill(r); r++;
 
   const R_pool = r;
   sc(0,r,s('Option Pool Target %')); sc(1,r,n(rc.optionPoolTargetPct||0,'0.00%'));
   sc(2,r,s('Method: '+(rc.optionPoolMethod||'pre-money')));
-  if (dfConv[1]) {
-    const c=dfConv[1];
-    sc(7,r,s(c.name||'')); sc(8,r,s(c.originalType==='safe'?'SAFE':'Conv. Note'));
-    sc(9,r,n(c.principal||0,'"$"#,##0')); sc(10,r,n(c.conversionPPS||0,'"$"#,##0.0000'));
-    sc(11,r,s(c.conversionBasis||'')); sc(12,r,n(c.shares||0,'#,##0'));
-  }
-  r++;
+  _dfFill(r); r++;
 
   const R_preFD = r;
   sc(0,r,s('Pre-Money FD Shares')); sc(1,r,n(preFD,'#,##0'));
   sc(2,r,s(exp>0?`Includes ${exp.toLocaleString()} new pool shares`:'Sum of all equity types'));
-  if (dfConv[2]) {
-    const c=dfConv[2];
-    sc(7,r,s(c.name||'')); sc(8,r,s(c.originalType==='safe'?'SAFE':'Conv. Note'));
-    sc(9,r,n(c.principal||0,'"$"#,##0')); sc(10,r,n(c.conversionPPS||0,'"$"#,##0.0000'));
-    sc(11,r,s(c.conversionBasis||'')); sc(12,r,n(c.shares||0,'#,##0'));
-  }
-  r++;
+  _dfFill(r); r++;
+
+  // Overflow: if more financing items than parameter rows, add extra right-side-only rows
+  while (_dfi < _dfRight.length) { _dfFill(r); r++; }
 
   const R_pps  = r;
   sc(0,r,s('Price Per Share (PPS)')); sc(1,r,fml(`B${R_pre+1}/B${R_preFD+1}`,pps,'"$"#,##0.0000'));
@@ -2962,8 +3027,18 @@ function _buildProFormaSheet(wb, pf, rc) {
     capRow(`${nt.series||nt.name||'Conv. Note'} (Note)`,{curOS:0,curFD:0,convCur:cp,calcConv:cp,convPF:cp,ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
   }
 
-  // New cash investors
-  capRow(`${newInvName} (${newSeries})`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:newInvSh,postFDSh:newInvSh});
+  // New cash investors — one cap table row per investor
+  if (_pfInvestors.length > 1) {
+    let _rem = newInvSh;
+    for (let _ii=0; _ii<_pfInvestors.length; _ii++) {
+      const _iv = _pfInvestors[_ii];
+      const _sh = _ii < _pfInvestors.length-1 ? (inv>0 ? Math.round(newInvSh*_iv.amount/inv) : 0) : _rem;
+      _rem -= _sh;
+      capRow(`${_iv.name} (${newSeries})`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:_sh,postFDSh:_sh});
+    }
+  } else {
+    capRow(`${newInvName} (${newSeries})`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:newInvSh,postFDSh:newInvSh});
+  }
 
   // Warrants
   if (warrants.length>0) {
@@ -3079,8 +3154,18 @@ function _buildDetailsSheet(wb, pf, rc) {
   // 1. New Money
   sc(0,r,b('1. NEW MONEY (This Round)')); r++;
   sc(0,r,b('Investor')); sc(1,r,b('Investment')); sc(2,r,b('Shares')); sc(3,r,b('PPS')); sc(4,r,b('Post-Money %')); r++;
-  sc(0,r,s(newInvName)); sc(1,r,n(inv,'"$"#,##0')); sc(2,r,n(newInvSh,'#,##0'));
-  sc(3,r,n(pps,'"$"#,##0.0000')); sc(4,r,n(postFD>0?newInvSh/postFD:0,'0.00%')); r++;
+  const _rcInvestors = (rc.investors && rc.investors.length > 0) ? rc.investors : [{name: newInvName, amount: inv}];
+  let _sharesRem = newInvSh;
+  for (let _ii=0; _ii<_rcInvestors.length; _ii++) {
+    const investor = _rcInvestors[_ii];
+    // Last investor gets remainder shares to absorb rounding drift
+    const iShares = _ii < _rcInvestors.length-1
+      ? (inv>0 ? Math.round(newInvSh*investor.amount/inv) : 0)
+      : _sharesRem;
+    _sharesRem -= iShares;
+    sc(0,r,s(investor.name)); sc(1,r,n(investor.amount,'"$"#,##0')); sc(2,r,n(iShares,'#,##0'));
+    sc(3,r,n(pps,'"$"#,##0.0000')); sc(4,r,n(postFD>0?iShares/postFD:0,'0.00%')); r++;
+  }
   sc(0,r,b('Total')); sc(1,r,n(inv,'"$"#,##0')); sc(2,r,n(newInvSh,'#,##0')); r++; r++;
 
   // 2. Option Pool
