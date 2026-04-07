@@ -3338,7 +3338,8 @@ function _buildDetailsSheet(wb, pf, rc) {
 function _buildSummaryCapTableSheet(wb, pf, rc) {
   // Pre-financing capitalization summary (matches image 1 layout)
   // Columns: Name | Authorized | Issued OS | FD Shares | FD% | Cash Raised
-  // Series OS/FD values reference the Pro Forma sheet via formulas
+  // Series OS/FD values reference the Pro Forma sheet via formulas.
+  // FD% cells and section totals use live Excel formulas (not static JS values).
   const ws = {}, merges = [];
   const ec  = (col,row) => XLSX.utils.encode_cell({c:col,r:row});
   const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
@@ -3370,7 +3371,6 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   const fml = (f,v,z,s) => ({t:'n', f, v:Number(v)||0, z:z||'#,##0', s:s||{}});
 
   const pre      = pf.preRoundCap||pf._stakeholders||[];
-  const preFDV   = pf.premoneyFD||0;
   const commons  = pre.filter(x=>x.type==='common');
   const prefs    = pre.filter(x=>x.type==='preferred');
   const notes    = pre.filter(x=>x.type==='note');
@@ -3424,17 +3424,20 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   for(let c=0;c<=5;c++) sc(c,r,txt(c===0?'Common Stock classes':'',S_sec));
   mg(r,0,r,5); r++;
 
+  const rowCommonData = r;
   sc(0,r,txt('Common (CS) Stock',S_dat));
   sc(1,r,num(commonSh,'#,##0',S_dat));
   sc(2,r,fml(`${PF}!B${PFC}`,commonSh,'#,##0',S_dat));
   sc(3,r,fml(`${PF}!C${PFC}`,commonSh,'#,##0',S_dat));
-  sc(4,r,num(preFDV>0?commonSh/preFDV:0,'0.000%',S_dat));
+  sc(4,r,num(0,'0.000%',S_dat)); // patched below once rowGrandTot is known
   sc(5,r,num(0,'"$"#,##0.00',S_dat)); r++;
 
+  const rowCommonTot = r;
   sc(0,r,txt('Total Common Stock issued and outstanding',S_tot));
-  sc(1,r,txt('',S_tot)); sc(2,r,txt('',S_tot));
-  sc(3,r,fml(`${PF}!C${PFC}`,commonSh,'#,##0',S_tot));
-  sc(4,r,num(preFDV>0?commonSh/preFDV:0,'0.000%',S_tot));
+  sc(1,r,txt('',S_tot));
+  sc(2,r,fml(`C${rowCommonData+1}`,commonSh,'#,##0',S_tot));  // mirrors data row
+  sc(3,r,fml(`D${rowCommonData+1}`,commonSh,'#,##0',S_tot));  // mirrors data row
+  sc(4,r,num(0,'0.000%',S_tot)); // patched below
   sc(5,r,num(0,'"$"#,##0.00',S_tot)); r++;
   r++; // blank
 
@@ -3442,6 +3445,7 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   for(let c=0;c<=5;c++) sc(c,r,txt(c===0?'Preferred Stock classes':'',S_sec));
   mg(r,0,r,5); r++;
 
+  const rowPrefFirst = r;
   let prefFDTot=0, prefCashTot=0;
   for(let i=0;i<seriesOrder.length;i++){
     const k=seriesOrder[i];
@@ -3451,21 +3455,26 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
     sc(1,r,num(d.sh,'#,##0',S_dat));
     sc(2,r,fml(`${PF}!B${PFS(i)}`,d.sh,'#,##0',S_dat));
     sc(3,r,fml(`${PF}!C${PFS(i)}`,d.sh,'#,##0',S_dat));
-    sc(4,r,num(preFDV>0?d.sh/preFDV:0,'0.000%',S_dat));
+    sc(4,r,num(0,'0.000%',S_dat)); // patched below
     sc(5,r,num(d.sh*d.oip,'"$"#,##0.0000',S_dat)); r++;
   }
 
+  const rowPrefTot = r;
   sc(0,r,txt('Total Preferred Stock issued and outstanding',S_tot));
-  sc(1,r,txt('',S_tot)); sc(2,r,txt('',S_tot));
-  sc(3,r,num(prefFDTot,'#,##0',S_tot));
-  sc(4,r,num(preFDV>0?prefFDTot/preFDV:0,'0.000%',S_tot));
-  sc(5,r,num(prefCashTot,'"$"#,##0.0000',S_tot)); r++;
+  sc(1,r,txt('',S_tot));
+  // SUM formulas span all individual series rows (rowPrefFirst → rowPrefTot-1)
+  sc(2,r,fml(`SUM(C${rowPrefFirst+1}:C${rowPrefTot})`,prefFDTot,'#,##0',S_tot));
+  sc(3,r,fml(`SUM(D${rowPrefFirst+1}:D${rowPrefTot})`,prefFDTot,'#,##0',S_tot));
+  sc(4,r,num(0,'0.000%',S_tot)); // patched below
+  sc(5,r,fml(`SUM(F${rowPrefFirst+1}:F${rowPrefTot})`,prefCashTot,'"$"#,##0.0000',S_tot)); r++;
   r++; // blank
 
   // ── Section: Convertibles ─────────────────────────────────────────────────
+  let rowConvTot = -1;
   if(notes.length>0||safes.length>0){
     for(let c=0;c<=5;c++) sc(c,r,txt(c===0?'Convertibles':'',S_sec));
     mg(r,0,r,5); r++;
+    const rowConvFirst = r;
     for(const nt of notes){
       sc(0,r,txt(nt.name||'Convertible Promissory Note (CN)',S_dat));
       for(let c=1;c<=4;c++) sc(c,r,txt('',S_dat));
@@ -3476,9 +3485,10 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
       for(let c=1;c<=4;c++) sc(c,r,txt('',S_dat));
       sc(5,r,num(sf.principal||0,'"$"#,##0.00',S_dat)); r++;
     }
+    rowConvTot = r;
     sc(0,r,txt('Total Convertibles issued',S_tot));
     for(let c=1;c<=4;c++) sc(c,r,txt('',S_tot));
-    sc(5,r,num(noteAmt+safeAmt,'"$"#,##0.00',S_tot)); r++;
+    sc(5,r,fml(`SUM(F${rowConvFirst+1}:F${rowConvTot})`,noteAmt+safeAmt,'"$"#,##0.00',S_tot)); r++;
     r++; // blank
   }
 
@@ -3488,31 +3498,59 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   for(let c=2;c<=5;c++) sc(c,r,txt('',S_sec));
   r++;
 
+  const rowRSA = r;
   sc(0,r,txt('RSAs not purchased',S_ital));
   for(let c=1;c<=3;c++) sc(c,r,txt('',S_ital));
-  sc(4,r,num(0,'0.000%',S_ital));
+  sc(4,r,num(0,'0.000%',S_ital)); // 0 RSAs — no patching needed (value is 0)
   sc(5,r,txt('',S_ital)); r++;
 
+  const rowEIPGrant = r;
   sc(0,r,txt('Options and RSUs issued and outstanding',S_ital));
   sc(1,r,txt('',S_ital)); sc(2,r,txt('',S_ital));
   sc(3,r,num(optGSh,'#,##0',S_ital));
-  sc(4,r,num(preFDV>0?optGSh/preFDV:0,'0.000%',S_ital));
+  sc(4,r,num(0,'0.000%',S_ital)); // patched below
   sc(5,r,txt('',S_ital)); r++;
 
+  const rowEIPPool = r;
   sc(0,r,txt('Shares available for issuance under the plan',S_ital));
   sc(1,r,txt('',S_ital)); sc(2,r,txt('',S_ital));
   sc(3,r,num(optPSh,'#,##0',S_ital));
-  sc(4,r,num(preFDV>0?optPSh/preFDV:0,'0.000%',S_ital));
+  sc(4,r,num(0,'0.000%',S_ital)); // patched below
   sc(5,r,txt('',S_ital)); r++;
+
+  const rowEIPTot = r;
+  sc(0,r,txt(`Total ${planLabel}`,S_tot));
+  sc(1,r,txt('',S_tot)); sc(2,r,txt('',S_tot));
+  sc(3,r,fml(`D${rowRSA+1}+D${rowEIPGrant+1}+D${rowEIPPool+1}`,optGSh+optPSh,'#,##0',S_tot));
+  sc(4,r,num(0,'0.000%',S_tot)); // patched below
+  sc(5,r,txt('',S_tot)); r++;
   r++; // blank
 
   // ── Totals ────────────────────────────────────────────────────────────────
   const totalFD = commonSh+prefFDTot+optGSh+optPSh;
+  const rowGrandTot = r;
   sc(0,r,txt('Totals',S_gtot));
   sc(1,r,txt('',S_gtot)); sc(2,r,txt('',S_gtot));
-  sc(3,r,num(totalFD,'#,##0',S_gtot));
-  sc(4,r,num(1,'0.000%',S_gtot));
-  sc(5,r,num(prefCashTot+(noteAmt+safeAmt),'"$"#,##0.0000',S_gtot)); r++;
+  // Grand total FD = Common total + Preferred total + EIP total
+  sc(3,r,fml(`D${rowCommonTot+1}+D${rowPrefTot+1}+D${rowEIPTot+1}`,totalFD,'#,##0',S_gtot));
+  sc(4,r,num(1,'0.000%',S_gtot)); // 100% by definition
+  // Grand total cash = Common cash + Preferred cash + Convertibles cash (if any)
+  const cashFml = rowConvTot>=0
+    ? `F${rowCommonTot+1}+F${rowPrefTot+1}+F${rowConvTot+1}`
+    : `F${rowCommonTot+1}+F${rowPrefTot+1}`;
+  sc(5,r,fml(cashFml,prefCashTot+(noteAmt+safeAmt),'"$"#,##0.0000',S_gtot)); r++;
+
+  // ── Patch FD% cells (now that rowGrandTot is known) ─────────────────────
+  // FD% = this row's FD / grand total FD
+  const GD = `D${rowGrandTot+1}`; // grand total FD denominator
+  const pct = (row,stl) => fml(`IFERROR(D${row+1}/${GD},0)`,0,'0.000%',stl);
+  sc(4, rowCommonData, pct(rowCommonData, S_dat));
+  sc(4, rowCommonTot,  pct(rowCommonTot,  S_tot));
+  for(let i=0;i<seriesOrder.length;i++) sc(4, rowPrefFirst+i, pct(rowPrefFirst+i, S_dat));
+  sc(4, rowPrefTot,    pct(rowPrefTot,    S_tot));
+  sc(4, rowEIPGrant,   pct(rowEIPGrant,   S_ital));
+  sc(4, rowEIPPool,    pct(rowEIPPool,    S_ital));
+  sc(4, rowEIPTot,     pct(rowEIPTot,     S_tot));
 
   // ── Sheet metadata ────────────────────────────────────────────────────────
   ws['!ref']    = XLSX.utils.encode_range({s:{c:0,r:0},e:{c:5,r:r}});
@@ -3745,13 +3783,23 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
   }
 
   const DATA_LAST = r-1;
+  const TOTALS_R  = r; // 0-indexed totals row (written next)
 
-  // ── Patch %Ownership columns (computed after totals are known) ─────────────
+  // ── Helper: column letter from 0-based index ──────────────────────────────
+  const col = c => XLSX.utils.encode_col(c);
+
+  // ── Patch %Ownership columns with live Excel formulas ────────────────────
+  // Denominator = totals row (TOTALS_R+1 in Excel 1-indexed)
+  const os1T = `${col(C_OS1)}${TOTALS_R+1}`;
+  const fd1T = `${col(C_FD1)}${TOTALS_R+1}`;
+  const os2T = `${col(C_OS2)}${TOTALS_R+1}`;
+  const fd2T = `${col(C_FD2)}${TOTALS_R+1}`;
   for(let rr=DATA_FIRST;rr<=DATA_LAST;rr++){
-    const v1=ws[ec(C_OS1,rr)]?.v; if(v1&&totPreOS)  sc(C_P1OS,rr,n(v1/totPreOS, '0.000%'));
-    const v2=ws[ec(C_FD1,rr)]?.v; if(v2&&totPreFD)  sc(C_P1FD,rr,n(v2/totPreFD, '0.000%'));
-    const v3=ws[ec(C_OS2,rr)]?.v; if(v3&&totPostOS) sc(C_P2OS,rr,n(v3/totPostOS,'0.000%'));
-    const v4=ws[ec(C_FD2,rr)]?.v; if(v4&&totPostFD) sc(C_P2FD,rr,n(v4/totPostFD,'0.000%'));
+    const xr = rr+1; // Excel row (1-indexed)
+    if(ws[ec(C_OS1,rr)]) sc(C_P1OS,rr,{t:'n',f:`IFERROR(${col(C_OS1)}${xr}/${os1T},0)`,v:0,z:'0.000%'});
+    if(ws[ec(C_FD1,rr)]) sc(C_P1FD,rr,{t:'n',f:`IFERROR(${col(C_FD1)}${xr}/${fd1T},0)`,v:0,z:'0.000%'});
+    if(ws[ec(C_OS2,rr)]) sc(C_P2OS,rr,{t:'n',f:`IFERROR(${col(C_OS2)}${xr}/${os2T},0)`,v:0,z:'0.000%'});
+    if(ws[ec(C_FD2,rr)]) sc(C_P2FD,rr,{t:'n',f:`IFERROR(${col(C_FD2)}${xr}/${fd2T},0)`,v:0,z:'0.000%'});
   }
 
   // ── Totals row — series face/FD reference the Pro Forma sheet ─────────────
@@ -3762,6 +3810,7 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
   const PF_commonRow = 13;
   const PF_seriesRow = i => 14+i;
 
+  const DR1 = `${DATA_FIRST+1}:${DATA_LAST+1}`; // Excel data row range
   sc(0, r, b('Totals'));
   // Common: face from Pro Forma current OS
   sc(C_COM, r,{t:'n',f:`${PF}!B${PF_commonRow}`,v:0,z:'#,##0'});
@@ -3770,12 +3819,13 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
     sc(C_SF(i),r,{t:'n',f:`${PF}!B${PF_seriesRow(i)}`,v:0,z:'#,##0'});
     sc(C_SC(i),r,{t:'n',f:`${PF}!J${PF_seriesRow(i)}`,v:0,z:'#,##0'});
   }
-  sc(C_OS1,r,n(totPreOS,'#,##0'));
-  sc(C_FD1,r,n(totPreFD,'#,##0'));
+  // OS/FD totals as SUM formulas so they auto-update if any cell is edited
+  sc(C_OS1,r,{t:'n',f:`SUM(${col(C_OS1)}${DR1})`,v:totPreOS, z:'#,##0'});
+  sc(C_FD1,r,{t:'n',f:`SUM(${col(C_FD1)}${DR1})`,v:totPreFD, z:'#,##0'});
   sc(C_P1OS,r,n(1,'0.000%'));
   sc(C_P1FD,r,n(1,'0.000%'));
-  sc(C_OS2,r,n(totPostOS,'#,##0'));
-  sc(C_FD2,r,n(totPostFD,'#,##0'));
+  sc(C_OS2,r,{t:'n',f:`SUM(${col(C_OS2)}${DR1})`,v:totPostOS,z:'#,##0'});
+  sc(C_FD2,r,{t:'n',f:`SUM(${col(C_FD2)}${DR1})`,v:totPostFD,z:'#,##0'});
   sc(C_P2OS,r,n(1,'0.000%'));
   sc(C_P2FD,r,n(1,'0.000%'));
   r++;
