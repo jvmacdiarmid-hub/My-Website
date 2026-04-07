@@ -2839,7 +2839,7 @@ function downloadBuilderXLSX() {
   _buildProFormaSheet(wb, pf, rc);
   _buildDetailsSheet(wb, pf, rc);
   _buildFormulaAuditSheet(wb, pf, rc);
-  const arr  = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const arr  = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
   const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -2860,6 +2860,14 @@ function _buildProFormaSheet(wb, pf, rc) {
   const fml = (fm,v,z)=> ({t:'n', f:fm, v:Number(v)||0, ...(z?{z}:{})});
   const b   = v       => ({t:'s', v:String(v??''), s:{font:{bold:true}}});
   const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
+  // Colored header helpers: fill + bold font (patternType:'solid' required by SheetJS)
+  const BLUE   = {fill:{patternType:'solid',fgColor:{rgb:'4472C4'}}, font:{bold:true,color:{rgb:'FFFFFF'}}};
+  const AMBER  = {fill:{patternType:'solid',fgColor:{rgb:'FFC000'}}, font:{bold:true,color:{rgb:'000000'}}};
+  const ORANGE = {fill:{patternType:'solid',fgColor:{rgb:'C55A11'}}, font:{bold:true,color:{rgb:'FFFFFF'}}};
+  const BLUE_L  = {fill:{patternType:'solid',fgColor:{rgb:'D9E1F2'}}, font:{bold:true}};
+  const AMBER_L = {fill:{patternType:'solid',fgColor:{rgb:'FFF2CC'}}, font:{bold:true}};
+  const ORNG_L  = {fill:{patternType:'solid',fgColor:{rgb:'F4B183'}}, font:{bold:true}};
+  const hdr = (v, stl) => ({t:'s', v:String(v??''), s:stl});
   const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
   let r = 0;
 
@@ -2949,20 +2957,26 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   r++; // blank
 
-  // ── Section header row ───────────────────────────────────────────────────
-  sc(0,r,b('')); 
-  sc(1,r,b('Current Capitalization')); mg(r,1,r,3);
-  sc(4,r,b('Pre Money Capitalization')); mg(r,4,r,10);
-  sc(11,r,b('Post Money Capitalization')); mg(r,11,r,13);
+  // ── Section header row (colored) ─────────────────────────────────────────
+  sc(0,r,hdr('',BLUE));
+  sc(1,r,hdr('Current Capitalization',BLUE));   sc(2,r,hdr('',BLUE)); sc(3,r,hdr('',BLUE));
+  mg(r,1,r,3);
+  sc(4,r,hdr('Pre Money Capitalization',AMBER));
+  sc(5,r,hdr('',AMBER)); sc(6,r,hdr('',AMBER)); sc(7,r,hdr('',AMBER)); sc(8,r,hdr('',AMBER));
+  sc(9,r,hdr('',AMBER)); sc(10,r,hdr('',AMBER));
+  mg(r,4,r,10);
+  sc(11,r,hdr('Post Money Capitalization',ORANGE));
+  sc(12,r,hdr('',ORANGE)); sc(13,r,hdr('',ORANGE));
+  mg(r,11,r,13);
   r++;
 
-  // ── Column sub-header row ────────────────────────────────────────────────
+  // ── Column sub-header row (tinted) ───────────────────────────────────────
   sc(0,r,b('Series'));
-  sc(1,r,b('Outstanding\nShares')); sc(2,r,b('Fully Diluted\nShares')); sc(3,r,b('Percent of\nFully Diluted\nShares'));
-  sc(4,r,b('Original Issue\nPrice')); sc(5,r,b('Conversion Price\n(Current)')); sc(6,r,b('Calculated New\nConversion Price'));
-  sc(7,r,b('Conversion Price\n(Post Financing)')); sc(8,r,b('Conversion\nRatio'));
-  sc(9,r,b('Fully Diluted\nShares')); sc(10,r,b('Percent of\nFully Diluted\nShares'));
-  sc(11,r,b('Outstanding\nShares')); sc(12,r,b('Fully Diluted\nShares')); sc(13,r,b('Percent of\nFully Diluted\nShares'));
+  sc(1,r,hdr('Outstanding\nShares',BLUE_L)); sc(2,r,hdr('Fully Diluted\nShares',BLUE_L)); sc(3,r,hdr('Percent of\nFully Diluted\nShares',BLUE_L));
+  sc(4,r,hdr('Original Issue\nPrice',AMBER_L)); sc(5,r,hdr('Conversion Price\n(Current)',AMBER_L)); sc(6,r,hdr('Calculated New\nConversion Price',AMBER_L));
+  sc(7,r,hdr('Conversion Price\n(Post Financing)',AMBER_L)); sc(8,r,hdr('Conversion\nRatio',AMBER_L));
+  sc(9,r,hdr('Fully Diluted\nShares',AMBER_L)); sc(10,r,hdr('Percent of\nFully Diluted\nShares',AMBER_L));
+  sc(11,r,hdr('Outstanding\nShares',ORNG_L)); sc(12,r,hdr('Fully Diluted\nShares',ORNG_L)); sc(13,r,hdr('Percent of\nFully Diluted\nShares',ORNG_L));
   r++;
 
   const DATA_FIRST = r;
@@ -2988,48 +3002,44 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   // ── Cap table rows ───────────────────────────────────────────────────────
 
-  // Common Stock
-  if(commons.length===0) capRow('Common Stock',{curOS:0,curFD:0,preFDSh:0,postOS:0,postFDSh:0});
-  for(const c of commons){const sh=c.shares||0; capRow(c.name||'Common Stock',{curOS:sh,curFD:sh,preFDSh:sh,postOS:sh,postFDSh:sh});}
+  // Common Stock — aggregate all common holders into one row
+  const commonSh = commons.reduce((a,x)=>a+(x.shares||0),0);
+  capRow('Common Stock',{curOS:commonSh,curFD:commonSh,preFDSh:commonSh,postOS:commonSh,postFDSh:commonSh});
 
-  // Preferred series
+  // Preferred series — aggregate by series name (one row per series)
+  const seriesMap = new Map();
   for(const p of preferreds){
-    const sh=p.shares||0, oip=p.originalIssuePrice||0;
-    capRow(p.series||p.name||'Preferred',{curOS:sh,curFD:sh,oip,convCur:oip,calcConv:oip,convPF:oip,ratio:1,preFDSh:sh,postOS:sh,postFDSh:sh});
+    const key=p.series||p.name||'Preferred';
+    if(!seriesMap.has(key)) seriesMap.set(key,{sh:0,oip:p.originalIssuePrice||0});
+    seriesMap.get(key).sh += p.shares||0;
+  }
+  for(const [seriesName,{sh,oip}] of seriesMap){
+    capRow(seriesName,{curOS:sh,curFD:sh,oip,convCur:oip,calcConv:oip,convPF:oip,ratio:1,preFDSh:sh,postOS:sh,postFDSh:sh});
   }
 
   // Blank separator (keeps row in SUM range but no values)
   r++;
 
-  // Converting SAFEs
-  for(const sf of safes){
-    const cv=conv.find(c=>c.name===sf.name), sh=cv?.shares||0, cp=cv?.conversionPPS||0;
-    const capP=sf.valuationCap&&preFD>0?sf.valuationCap/preFD:null;
-    capRow(`${newSeries} Preferred Stock (SAFE/Note)`,{curOS:0,curFD:0,oip:capP,convCur:cp,calcConv:cp,convPF:cp,
-      ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
+  // Converting SAFEs — aggregate all into one row
+  if(safes.length>0){
+    const safeSh=safes.reduce((a,sf)=>{ const cv=conv.find(c=>c.name===sf.name); return a+(cv?.shares||0); },0);
+    const safeCP=(()=>{ const sf=safes[0]; const cv=conv.find(c=>c.name===sf.name); return cv?.conversionPPS||0; })();
+    capRow(`${newSeries} Preferred Stock (SAFE/Note)`,{curOS:0,curFD:0,convCur:safeCP,calcConv:safeCP,convPF:safeCP,
+      ratio:safeCP>0?pps/safeCP:null,preFDSh:safeSh,postOS:safeSh,postFDSh:safeSh});
   }
 
-  // Converting Notes
-  for(const nt of notes){
-    const cv=conv.find(c=>c.name===nt.name), sh=cv?.shares||0, cp=cv?.conversionPPS||0;
-    capRow(`${newSeries} Preferred Stock (Note)`,{curOS:0,curFD:0,convCur:cp,calcConv:cp,convPF:cp,
-      ratio:cp>0?pps/cp:null,preFDSh:sh,postOS:sh,postFDSh:sh});
+  // Converting Notes — aggregate all into one row
+  if(notes.length>0){
+    const noteSh=notes.reduce((a,nt)=>{ const cv=conv.find(c=>c.name===nt.name); return a+(cv?.shares||0); },0);
+    const noteCP=(()=>{ const nt=notes[0]; const cv=conv.find(c=>c.name===nt.name); return cv?.conversionPPS||0; })();
+    capRow(`${newSeries} Preferred Stock (Note)`,{curOS:0,curFD:0,convCur:noteCP,calcConv:noteCP,convPF:noteCP,
+      ratio:noteCP>0?pps/noteCP:null,preFDSh:noteSh,postOS:noteSh,postFDSh:noteSh});
   }
 
-  // New cash investors (one row per investor)
-  if(pfInv.length>1){
-    let rem=newInvSh;
-    for(let ii=0;ii<pfInv.length;ii++){
-      const iv=pfInv[ii];
-      const sh=ii<pfInv.length-1?(inv>0?Math.round(newInvSh*iv.amount/inv):0):rem;
-      rem-=sh;
-      capRow(`${newSeries} Preferred Stock (Cash)`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:sh,postFDSh:sh});
-    }
-  } else {
-    capRow(`${newSeries} Preferred Stock (Cash)`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:newInvSh,postFDSh:newInvSh});
-  }
+  // New cash investors — aggregate all into one row
+  capRow(`${newSeries} Preferred Stock (Cash)`,{curOS:0,curFD:0,oip:pps,convCur:pps,calcConv:pps,convPF:pps,ratio:1,preFDSh:0,postOS:newInvSh,postFDSh:newInvSh});
 
-  // Warrants
+  // Warrants — aggregate all into one row
   if(warrants.length>0){
     const sh=warrants.reduce((a,x)=>a+(x.shares||0),0);
     capRow(`${newSeries} Warrants`,{curOS:0,curFD:sh,preFDSh:sh,postOS:0,postFDSh:sh});
