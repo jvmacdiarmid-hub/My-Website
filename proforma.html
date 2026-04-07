@@ -2837,6 +2837,7 @@ function downloadBuilderXLSX() {
   const { pf, rc } = _csvData.b;
   const wb = XLSX.utils.book_new();
   _buildProFormaSheet(wb, pf, rc);
+  _buildSummaryCapTableSheet(wb, pf, rc);
   _buildInvestorDetailSheet(wb, pf, rc);
   _buildDetailsSheet(wb, pf, rc);
   _buildFormulaAuditSheet(wb, pf, rc);
@@ -2865,10 +2866,11 @@ function _buildProFormaSheet(wb, pf, rc) {
   const BLUE   = {fill:{patternType:'solid',fgColor:{rgb:'4472C4'}}, font:{bold:true,color:{rgb:'FFFFFF'}}};
   const AMBER  = {fill:{patternType:'solid',fgColor:{rgb:'FFC000'}}, font:{bold:true,color:{rgb:'000000'}}};
   const ORANGE = {fill:{patternType:'solid',fgColor:{rgb:'C55A11'}}, font:{bold:true,color:{rgb:'FFFFFF'}}};
-  const BLUE_L  = {fill:{patternType:'solid',fgColor:{rgb:'D9E1F2'}}, font:{bold:true}};
-  const AMBER_L = {fill:{patternType:'solid',fgColor:{rgb:'FFF2CC'}}, font:{bold:true}};
-  const ORNG_L  = {fill:{patternType:'solid',fgColor:{rgb:'F4B183'}}, font:{bold:true}};
+  const BLUE_L  = {fill:{patternType:'solid',fgColor:{rgb:'D9E1F2'}}, font:{bold:true}, alignment:{wrapText:true}};
+  const AMBER_L = {fill:{patternType:'solid',fgColor:{rgb:'FFF2CC'}}, font:{bold:true}, alignment:{wrapText:true}};
+  const ORNG_L  = {fill:{patternType:'solid',fgColor:{rgb:'F4B183'}}, font:{bold:true}, alignment:{wrapText:true}};
   const hdr = (v, stl) => ({t:'s', v:String(v??''), s:stl});
+  const it  = v => ({t:'s', v:String(v??''), s:{font:{italic:true, color:{rgb:'5B9BD5'}}}});
   const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
   let r = 0;
 
@@ -3120,10 +3122,10 @@ function _buildProFormaSheet(wb, pf, rc) {
   // Current OS = SUM(B data range) = total common+preferred
   const curOS_sum = `SUM(${DR('B')})`;
   // Post OS = SUM(L data range)
-  sc(0,r,s('Current OS Balanced')); sc(1,r,fml(curOS_sum,null,'#,##0')); r++;
-  sc(0,r,s('Current FD Balanced')); sc(1,r,fml(`SUM(${DR('C')})`,curFDTotal,'#,##0')); r++;
-  sc(0,r,s('Post OS Balanced'));    sc(1,r,fml(`SUM(${DR('L')})`,null,'#,##0')); r++;
-  sc(0,r,s('Post FD Balanced'));    sc(1,r,fml(`SUM(${DR('M')})`,postFD,'#,##0')); r++;
+  sc(0,r,it('Current OS Balanced')); sc(1,r,fml(curOS_sum,null,'#,##0')); r++;
+  sc(0,r,it('Current FD Balanced')); sc(1,r,fml(`SUM(${DR('C')})`,curFDTotal,'#,##0')); r++;
+  sc(0,r,it('Post OS Balanced'));    sc(1,r,fml(`SUM(${DR('L')})`,null,'#,##0')); r++;
+  sc(0,r,it('Post FD Balanced'));    sc(1,r,fml(`SUM(${DR('M')})`,postFD,'#,##0')); r++;
 
   r++; // separator
 
@@ -3188,8 +3190,20 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   ws['!ref']    = XLSX.utils.encode_range({s:{c:0,r:0},e:{c:14,r:r}});
   ws['!merges'] = merges;
+  // Row heights: row 10 = colored section headers, row 11 = column sub-headers (3 lines)
+  ws['!rows'] = [];
+  ws['!rows'][10] = {hpt:22};
+  ws['!rows'][11] = {hpt:52};
+  // Apply thin borders to the cap table data/header section (rows 10 through r-1)
+  { const _th={style:'thin',color:{rgb:'D4D4D4'}};
+    const _bd={top:_th,bottom:_th,left:_th,right:_th};
+    for(let _r=10;_r<r;_r++) for(let _c=0;_c<=13;_c++){
+      const _a=ec(_c,_r);
+      if(ws[_a]){if(!ws[_a].s)ws[_a].s={};if(!ws[_a].s.border)ws[_a].s.border=_bd;}
+    }
+  }
   ws['!cols']   = [
-    {wch:38},{wch:14},{wch:14},{wch:10},   // A-D
+    {wch:42},{wch:14},{wch:14},{wch:10},   // A-D  (col A wider for long series names)
     {wch:12},{wch:14},{wch:14},{wch:14},   // E-H
     {wch:11},{wch:14},{wch:10},            // I-K
     {wch:14},{wch:14},{wch:10},{wch:12}    // L-O
@@ -3319,6 +3333,194 @@ function _buildDetailsSheet(wb, pf, rc) {
     {wch:14},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14},{wch:12}
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Details');
+}
+
+function _buildSummaryCapTableSheet(wb, pf, rc) {
+  // Pre-financing capitalization summary (matches image 1 layout)
+  // Columns: Name | Authorized | Issued OS | FD Shares | FD% | Cash Raised
+  // Series OS/FD values reference the Pro Forma sheet via formulas
+  const ws = {}, merges = [];
+  const ec  = (col,row) => XLSX.utils.encode_cell({c:col,r:row});
+  const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
+  const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+
+  // Border definitions
+  const TH  = {style:'thin',  color:{rgb:'AAAAAA'}};
+  const TM  = {style:'medium',color:{rgb:'666666'}};
+  const BD  = {top:TH,bottom:TH,left:TH,right:TH};
+  const BDbot = {top:TH,bottom:TM,left:TH,right:TH};
+
+  // Style presets
+  const S_title = {fill:{patternType:'solid',fgColor:{rgb:'1F4E79'}},
+                   font:{bold:true,color:{rgb:'FFFFFF'},sz:12}, alignment:{wrapText:true}};
+  const S_colhdr = {fill:{patternType:'solid',fgColor:{rgb:'4472C4'}},
+                    font:{bold:true,color:{rgb:'FFFFFF'}},
+                    alignment:{wrapText:true,horizontal:'center'}, border:BD};
+  const S_sec   = {fill:{patternType:'solid',fgColor:{rgb:'D6E4F7'}},
+                   font:{bold:true}, border:BD};
+  const S_dat   = {border:BD};
+  const S_tot   = {font:{bold:true}, border:BDbot};
+  const S_ital  = {font:{italic:true}, border:BD};
+  const S_gtot  = {fill:{patternType:'solid',fgColor:{rgb:'BDD7EE'}},
+                   font:{bold:true,sz:11}, border:BDbot};
+
+  // Cell creators
+  const txt = (v,s) => ({t:'s', v:String(v??''), s:s||{}});
+  const num = (v,z,s) => ({t:'n', v:Number(v)||0, z:z||'#,##0', s:s||{}});
+  const fml = (f,v,z,s) => ({t:'n', f, v:Number(v)||0, z:z||'#,##0', s:s||{}});
+
+  const pre      = pf.preRoundCap||pf._stakeholders||[];
+  const preFDV   = pf.premoneyFD||0;
+  const commons  = pre.filter(x=>x.type==='common');
+  const prefs    = pre.filter(x=>x.type==='preferred');
+  const notes    = pre.filter(x=>x.type==='note');
+  const safes    = pre.filter(x=>x.type==='safe');
+  const optG     = pre.filter(x=>x.type==='option'&&!/pool|unalloc|available|reserve/i.test(x.name));
+  const optP     = pre.filter(x=>x.type==='option'&&/pool|unalloc|available|reserve/i.test(x.name));
+
+  // Aggregate preferreds by series (same insertion order as Pro Forma)
+  const seriesOrder = [], seenS = new Set(), seriesData = new Map();
+  for(const p of prefs){
+    const k=p.series||p.name||'Preferred';
+    if(!seenS.has(k)){ seenS.add(k); seriesOrder.push(k); }
+    if(!seriesData.has(k)) seriesData.set(k,{sh:0,oip:p.originalIssuePrice||0});
+    seriesData.get(k).sh += p.shares||0;
+  }
+
+  const commonSh = commons.reduce((a,x)=>a+(x.shares||0),0);
+  const optGSh   = optG.reduce((a,x)=>a+(x.shares||0),0);
+  const optPSh   = optP.reduce((a,x)=>a+(x.shares||0),0);
+  const noteAmt  = notes.reduce((a,x)=>a+(x.principal||0),0);
+  const safeAmt  = safes.reduce((a,x)=>a+(x.principal||0),0);
+
+  // Try to extract EIP year from pool/grant names
+  const eipRaw = [...optP,...optG].find(x=>x.name);
+  const yearM  = eipRaw?.name?.match(/\b(20\d\d)\b/);
+  const planLabel = yearM ? `${yearM[1]} Equity Incentive Plan` : 'Equity Incentive Plan';
+
+  // Pro Forma row references (Excel 1-indexed)
+  // Pro Forma DATA_FIRST=12 (0-idx) → row 13; Common=13, Series[i]=14+i
+  const PF  = "'Pro Forma'";
+  const PFC = 13;
+  const PFS = i => 14+i;
+
+  let r=0;
+
+  // ── Row 0: Title ──────────────────────────────────────────────────────────
+  sc(0,r,txt('Summary Cap Table — Pre-Financing Capitalization',S_title));
+  mg(r,0,r,5); r++;
+  r++; // blank spacer
+
+  // ── Row 2: Column headers ─────────────────────────────────────────────────
+  sc(0,r,txt('',S_colhdr));
+  sc(1,r,txt('Shares\nAuthorized',S_colhdr));
+  sc(2,r,txt('Shares Issued\nand\nOutstanding',S_colhdr));
+  sc(3,r,txt('Fully Diluted\nShares',S_colhdr));
+  sc(4,r,txt('Fully Diluted\nOwnership',S_colhdr));
+  sc(5,r,txt('Cash Raised\n(USD)',S_colhdr));
+  const HDR_ROW=r; r++;
+
+  // ── Section: Common Stock ─────────────────────────────────────────────────
+  for(let c=0;c<=5;c++) sc(c,r,txt(c===0?'Common Stock classes':'',S_sec));
+  mg(r,0,r,5); r++;
+
+  sc(0,r,txt('Common (CS) Stock',S_dat));
+  sc(1,r,num(commonSh,'#,##0',S_dat));
+  sc(2,r,fml(`${PF}!B${PFC}`,commonSh,'#,##0',S_dat));
+  sc(3,r,fml(`${PF}!C${PFC}`,commonSh,'#,##0',S_dat));
+  sc(4,r,num(preFDV>0?commonSh/preFDV:0,'0.000%',S_dat));
+  sc(5,r,num(0,'"$"#,##0.00',S_dat)); r++;
+
+  sc(0,r,txt('Total Common Stock issued and outstanding',S_tot));
+  sc(1,r,txt('',S_tot)); sc(2,r,txt('',S_tot));
+  sc(3,r,fml(`${PF}!C${PFC}`,commonSh,'#,##0',S_tot));
+  sc(4,r,num(preFDV>0?commonSh/preFDV:0,'0.000%',S_tot));
+  sc(5,r,num(0,'"$"#,##0.00',S_tot)); r++;
+  r++; // blank
+
+  // ── Section: Preferred Stock ──────────────────────────────────────────────
+  for(let c=0;c<=5;c++) sc(c,r,txt(c===0?'Preferred Stock classes':'',S_sec));
+  mg(r,0,r,5); r++;
+
+  let prefFDTot=0, prefCashTot=0;
+  for(let i=0;i<seriesOrder.length;i++){
+    const k=seriesOrder[i];
+    const d=seriesData.get(k);
+    prefFDTot+=d.sh; prefCashTot+=d.sh*d.oip;
+    sc(0,r,txt(k,S_dat));
+    sc(1,r,num(d.sh,'#,##0',S_dat));
+    sc(2,r,fml(`${PF}!B${PFS(i)}`,d.sh,'#,##0',S_dat));
+    sc(3,r,fml(`${PF}!C${PFS(i)}`,d.sh,'#,##0',S_dat));
+    sc(4,r,num(preFDV>0?d.sh/preFDV:0,'0.000%',S_dat));
+    sc(5,r,num(d.sh*d.oip,'"$"#,##0.0000',S_dat)); r++;
+  }
+
+  sc(0,r,txt('Total Preferred Stock issued and outstanding',S_tot));
+  sc(1,r,txt('',S_tot)); sc(2,r,txt('',S_tot));
+  sc(3,r,num(prefFDTot,'#,##0',S_tot));
+  sc(4,r,num(preFDV>0?prefFDTot/preFDV:0,'0.000%',S_tot));
+  sc(5,r,num(prefCashTot,'"$"#,##0.0000',S_tot)); r++;
+  r++; // blank
+
+  // ── Section: Convertibles ─────────────────────────────────────────────────
+  if(notes.length>0||safes.length>0){
+    for(let c=0;c<=5;c++) sc(c,r,txt(c===0?'Convertibles':'',S_sec));
+    mg(r,0,r,5); r++;
+    for(const nt of notes){
+      sc(0,r,txt(nt.name||'Convertible Promissory Note (CN)',S_dat));
+      for(let c=1;c<=4;c++) sc(c,r,txt('',S_dat));
+      sc(5,r,num(nt.principal||0,'"$"#,##0.00',S_dat)); r++;
+    }
+    for(const sf of safes){
+      sc(0,r,txt(sf.name||'SAFE',S_dat));
+      for(let c=1;c<=4;c++) sc(c,r,txt('',S_dat));
+      sc(5,r,num(sf.principal||0,'"$"#,##0.00',S_dat)); r++;
+    }
+    sc(0,r,txt('Total Convertibles issued',S_tot));
+    for(let c=1;c<=4;c++) sc(c,r,txt('',S_tot));
+    sc(5,r,num(noteAmt+safeAmt,'"$"#,##0.00',S_tot)); r++;
+    r++; // blank
+  }
+
+  // ── Section: Equity Incentive Plan ───────────────────────────────────────
+  sc(0,r,txt(planLabel,S_sec));
+  sc(1,r,num(optGSh+optPSh,'#,##0',{...S_sec})); // authorized = granted + available
+  for(let c=2;c<=5;c++) sc(c,r,txt('',S_sec));
+  r++;
+
+  sc(0,r,txt('RSAs not purchased',S_ital));
+  for(let c=1;c<=3;c++) sc(c,r,txt('',S_ital));
+  sc(4,r,num(0,'0.000%',S_ital));
+  sc(5,r,txt('',S_ital)); r++;
+
+  sc(0,r,txt('Options and RSUs issued and outstanding',S_ital));
+  sc(1,r,txt('',S_ital)); sc(2,r,txt('',S_ital));
+  sc(3,r,num(optGSh,'#,##0',S_ital));
+  sc(4,r,num(preFDV>0?optGSh/preFDV:0,'0.000%',S_ital));
+  sc(5,r,txt('',S_ital)); r++;
+
+  sc(0,r,txt('Shares available for issuance under the plan',S_ital));
+  sc(1,r,txt('',S_ital)); sc(2,r,txt('',S_ital));
+  sc(3,r,num(optPSh,'#,##0',S_ital));
+  sc(4,r,num(preFDV>0?optPSh/preFDV:0,'0.000%',S_ital));
+  sc(5,r,txt('',S_ital)); r++;
+  r++; // blank
+
+  // ── Totals ────────────────────────────────────────────────────────────────
+  const totalFD = commonSh+prefFDTot+optGSh+optPSh;
+  sc(0,r,txt('Totals',S_gtot));
+  sc(1,r,txt('',S_gtot)); sc(2,r,txt('',S_gtot));
+  sc(3,r,num(totalFD,'#,##0',S_gtot));
+  sc(4,r,num(1,'0.000%',S_gtot));
+  sc(5,r,num(prefCashTot+(noteAmt+safeAmt),'"$"#,##0.0000',S_gtot)); r++;
+
+  // ── Sheet metadata ────────────────────────────────────────────────────────
+  ws['!ref']    = XLSX.utils.encode_range({s:{c:0,r:0},e:{c:5,r:r}});
+  ws['!merges'] = merges;
+  ws['!cols']   = [{wch:46},{wch:14},{wch:16},{wch:16},{wch:14},{wch:18}];
+  ws['!rows']   = [];
+  ws['!rows'][HDR_ROW] = {hpt:50};  // taller for 3-line wrapped headers
+  XLSX.utils.book_append_sheet(wb, ws, 'Summary Cap Table');
 }
 
 function _buildInvestorDetailSheet(wb, pf, rc) {
