@@ -2837,6 +2837,7 @@ function downloadBuilderXLSX() {
   const { pf, rc } = _csvData.b;
   const wb = XLSX.utils.book_new();
   _buildProFormaSheet(wb, pf, rc);
+  _buildInvestorDetailSheet(wb, pf, rc);
   _buildDetailsSheet(wb, pf, rc);
   _buildFormulaAuditSheet(wb, pf, rc);
   const arr  = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
@@ -3318,6 +3319,272 @@ function _buildDetailsSheet(wb, pf, rc) {
     {wch:14},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14},{wch:12}
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Details');
+}
+
+function _buildInvestorDetailSheet(wb, pf, rc) {
+  // Per-investor cap table: Pre-Financing (with AD) | Post-Financing side-by-side
+  const ws = {}, merges = [];
+  const ec  = (col,row) => XLSX.utils.encode_cell({c:col,r:row});
+  const s   = v       => ({t:'s', v:String(v??'')});
+  const n   = (v,z)   => ({t:'n', v:Number(v)||0, ...(z?{z}:{})});
+  const b   = v       => ({t:'s', v:String(v??''), s:{font:{bold:true}}});
+  const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
+  const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+  const hdr = (v,stl) => ({t:'s',v:String(v??''),s:stl});
+  const BLUE  = {fill:{patternType:'solid',fgColor:{rgb:'BDD7EE'}},font:{bold:true}};
+  const AMBER = {fill:{patternType:'solid',fgColor:{rgb:'FFE699'}},font:{bold:true}};
+
+  const pre       = pf.preRoundCap||pf._stakeholders||[];
+  const conv      = pf.convertedInstruments||[];
+  const ppsV      = pf.pps||0;
+  const preFDV    = pf.premoneyFD||0;
+  const invV      = rc.newInvestment||pf.newInvestment||0;
+  const newInvSh  = pf.newInvestorShares||0;
+  const newSeries = rc.newShareClass||rc.roundName||'Series A';
+  const pfInv     = (rc.investors&&rc.investors.length>0)?rc.investors
+                    :[{name:rc.newInvestorName||'New Investor(s)',amount:invV}];
+
+  const preferreds = pre.filter(x=>x.type==='preferred');
+  const commons    = pre.filter(x=>x.type==='common');
+  const optGranted = pre.filter(x=>x.type==='option'&&!/pool|unalloc|available|reserve/i.test(x.name));
+  const warrants   = pre.filter(x=>x.type==='warrant');
+  const safes      = pre.filter(x=>x.type==='safe');
+  const notes      = pre.filter(x=>x.type==='note');
+
+  // Series order — preserve insertion order from preRoundCap
+  const seriesOrder = [];
+  const seenSeries  = new Set();
+  for(const p of preferreds){
+    const k = p.series||p.name||'Preferred';
+    if(!seenSeries.has(k)){ seenSeries.add(k); seriesOrder.push(k); }
+  }
+  const nSeries = seriesOrder.length;
+
+  // Per-series OIP and BAWA AD conversion ratio
+  const seriesInfo = new Map();
+  for(const p of preferreds){
+    const k = p.series||p.name||'Preferred';
+    if(!seriesInfo.has(k)) seriesInfo.set(k,{oip:p.originalIssuePrice||0});
+  }
+  for(const [k,d] of seriesInfo){
+    const oip = d.oip;
+    let calcConv = oip;
+    // BAWA anti-dilution: only if round is a down round
+    if(ppsV>0 && ppsV<oip && preFDV>0 && newInvSh>0)
+      calcConv = oip*(preFDV+invV/oip)/(preFDV+newInvSh);
+    d.convRatio = calcConv>0 ? oip/calcConv : 1;
+  }
+
+  // Build per-investor data
+  const invMap = new Map();
+  const getInv = nm => {
+    if(!invMap.has(nm)) invMap.set(nm,{
+      common:0, pref:new Map(), opts:0, convSh:0, wrnts:0, newCash:0, newCashAmt:0
+    });
+    return invMap.get(nm);
+  };
+  for(const c of commons) getInv(c.name).common += c.shares||0;
+  for(const p of preferreds){
+    const k = p.series||p.name||'Preferred';
+    const d = getInv(p.name);
+    d.pref.set(k,(d.pref.get(k)||0)+(p.shares||0));
+  }
+  for(const o of optGranted) getInv(o.name).opts += o.shares||0;
+  for(const sf of safes){ const cv=conv.find(c=>c.name===sf.name); if(cv?.shares) getInv(sf.name).convSh+=cv.shares; }
+  for(const nt of notes){ const cv=conv.find(c=>c.name===nt.name); if(cv?.shares) getInv(nt.name).convSh+=cv.shares; }
+  for(const w of warrants) getInv(w.name).wrnts += w.shares||0;
+  // Distribute new cash investment shares proportionally
+  { let rem=newInvSh;
+    for(let ii=0;ii<pfInv.length;ii++){
+      const iv=pfInv[ii];
+      const sh=ii<pfInv.length-1?(invV>0?Math.round(newInvSh*iv.amount/invV):0):rem;
+      rem-=sh;
+      const d=getInv(iv.name);
+      d.newCash+=sh; d.newCashAmt+=iv.amount||0;
+    }
+  }
+
+  const investorNames = [...invMap.keys()].sort((a,b)=>a.localeCompare(b));
+
+  // ── Column offsets ────────────────────────────────────────────────────────
+  // Col 0: Name (shared)
+  // Pre-Financing block:
+  //   Col 1            : Common
+  //   Col 2+2i         : Series i face shares
+  //   Col 3+2i         : Series i as-converted shares
+  //   Col 2+2n         : Options Outstanding
+  //   Col 3+2n         : Outstanding Shares
+  //   Col 4+2n         : Fully Diluted Shares
+  //   Col 5+2n / 6+2n  : OS% / FD%
+  // gap at Col 7+2n
+  // Post-Financing block:
+  //   Col 8+2n  : Common
+  //   Col 9+2n  : Most-recent pre series (reference)
+  //   Col 10+2n : New Money $
+  //   Col 11+2n : New Money Shares
+  //   Col 12+2n : Converting Notes/SAFE Shares
+  //   Col 13+2n : Total New Series Shares
+  //   Col 14+2n : Warrants
+  //   Col 15+2n : New Options
+  //   Col 16+2n : Total Options
+  //   Col 17+2n : Outstanding Shares
+  //   Col 18+2n : Fully Diluted Shares
+  //   Col 19+2n / 20+2n: OS% / FD%
+  const C_COM   = 1;
+  const C_SF    = i => 2+2*i;
+  const C_SC    = i => 3+2*i;
+  const C_OPRE  = 2+2*nSeries;
+  const C_OS1   = 3+2*nSeries;
+  const C_FD1   = 4+2*nSeries;
+  const C_P1OS  = 5+2*nSeries;
+  const C_P1FD  = 6+2*nSeries;
+  // gap at 7+2*nSeries
+  const C_COM2  = 8+2*nSeries;
+  const C_SLT   = 9+2*nSeries;
+  const C_NM$   = 10+2*nSeries;
+  const C_NMSh  = 11+2*nSeries;
+  const C_CVSh  = 12+2*nSeries;
+  const C_TotA  = 13+2*nSeries;
+  const C_Wrnt  = 14+2*nSeries;
+  const C_NewO  = 15+2*nSeries;
+  const C_TotO  = 16+2*nSeries;
+  const C_OS2   = 17+2*nSeries;
+  const C_FD2   = 18+2*nSeries;
+  const C_P2OS  = 19+2*nSeries;
+  const C_P2FD  = 20+2*nSeries;
+  const LAST_COL = C_P2FD;
+
+  let r = 0;
+
+  // ── Row 0: Section title headers ─────────────────────────────────────────
+  sc(C_COM, r, hdr('Pre-Financing (with AD adjustment included)', BLUE));
+  mg(r, C_COM, r, C_P1FD);
+  sc(C_COM2, r, hdr('Post-Financing', AMBER));
+  mg(r, C_COM2, r, C_P2FD);
+  r++;
+
+  // ── Row 1: Column sub-headers ─────────────────────────────────────────────
+  sc(0, r, b('Name'));
+  sc(C_COM,  r, b('Common'));
+  for(let i=0;i<nSeries;i++){
+    sc(C_SF(i), r, b(seriesOrder[i]));
+    sc(C_SC(i), r, b(seriesOrder[i]+'\n(as converted)'));
+  }
+  sc(C_OPRE, r, b('Options\nOutstanding'));
+  sc(C_OS1,  r, b('Outstanding\nShares'));
+  sc(C_FD1,  r, b('Fully Diluted\nShares'));
+  sc(C_P1OS, r, b('Outstanding\nOwnership'));
+  sc(C_P1FD, r, b('Fully Diluted\nOwnership'));
+  sc(C_COM2, r, b('Common'));
+  sc(C_SLT,  r, b(nSeries>0?seriesOrder[nSeries-1]:'Preferred'));
+  sc(C_NM$,  r, b(newSeries+'\nNew Money'));
+  sc(C_NMSh, r, b(newSeries+'\nShares\n(New Money)'));
+  sc(C_CVSh, r, b(newSeries+'\nShares\n(converting\nnotes)'));
+  sc(C_TotA, r, b(newSeries+'\nshares\n(total)'));
+  sc(C_Wrnt, r, b(newSeries+'\nWarrants'));
+  sc(C_NewO, r, b('New\nOptions'));
+  sc(C_TotO, r, b('Total\nOptions'));
+  sc(C_OS2,  r, b('Outstanding\nShares'));
+  sc(C_FD2,  r, b('Fully Diluted\nShares'));
+  sc(C_P2OS, r, b('Outstanding\nOwnership'));
+  sc(C_P2FD, r, b('Fully Diluted\nOwnership'));
+  r++;
+
+  const DATA_FIRST = r;
+  let totPreOS=0, totPreFD=0, totPostOS=0, totPostFD=0;
+
+  // ── Per-investor rows ─────────────────────────────────────────────────────
+  for(const nm of investorNames){
+    const d = invMap.get(nm);
+    sc(0, r, s(nm));
+
+    // Pre-Financing
+    if(d.common) sc(C_COM, r, n(d.common,'#,##0'));
+    let rowPreOS = d.common, rowPreFD = d.common;
+    for(let i=0;i<nSeries;i++){
+      const k  = seriesOrder[i];
+      const sh = d.pref.get(k)||0;
+      if(sh){
+        const ratio = seriesInfo.get(k)?.convRatio||1;
+        const asSh  = Math.round(sh*ratio);
+        sc(C_SF(i), r, n(sh,'#,##0'));
+        sc(C_SC(i), r, n(asSh,'#,##0'));
+        rowPreOS += sh;
+        rowPreFD += asSh;
+      }
+    }
+    if(d.opts){ sc(C_OPRE,r,n(d.opts,'#,##0')); rowPreFD+=d.opts; }
+    rowPreFD += d.convSh; // SAFEs/Notes included in pre-financing FD
+
+    if(rowPreOS) sc(C_OS1,r,n(rowPreOS,'#,##0'));
+    if(rowPreFD) sc(C_FD1,r,n(rowPreFD,'#,##0'));
+    totPreOS+=rowPreOS; totPreFD+=rowPreFD;
+
+    // Post-Financing
+    if(d.common) sc(C_COM2,r,n(d.common,'#,##0'));
+    const lastSerSh = nSeries>0?(d.pref.get(seriesOrder[nSeries-1])||0):0;
+    if(lastSerSh) sc(C_SLT,r,n(lastSerSh,'#,##0'));
+    if(d.newCashAmt) sc(C_NM$, r,n(d.newCashAmt,'"$"#,##0'));
+    if(d.newCash)    sc(C_NMSh,r,n(d.newCash,'#,##0'));
+    if(d.convSh)     sc(C_CVSh,r,n(d.convSh,'#,##0'));
+    const totASh = d.newCash+d.convSh;
+    sc(C_TotA,r,n(totASh,'#,##0'));
+    if(d.wrnts) sc(C_Wrnt,r,n(d.wrnts,'#,##0'));
+    if(d.opts)  sc(C_TotO,r,n(d.opts,'#,##0'));
+    // Post OS = common + ALL preferred face + new cash + converting notes
+    let allPref=0; for(const [,sh] of d.pref) allPref+=sh;
+    const rowPostOS = d.common+allPref+d.newCash+d.convSh;
+    const rowPostFD = rowPostOS+d.wrnts+d.opts;
+    if(rowPostOS) sc(C_OS2,r,n(rowPostOS,'#,##0'));
+    if(rowPostFD) sc(C_FD2,r,n(rowPostFD,'#,##0'));
+    totPostOS+=rowPostOS; totPostFD+=rowPostFD;
+
+    r++;
+  }
+
+  const DATA_LAST = r-1;
+
+  // ── Patch %Ownership columns (computed after totals are known) ─────────────
+  for(let rr=DATA_FIRST;rr<=DATA_LAST;rr++){
+    const v1=ws[ec(C_OS1,rr)]?.v; if(v1&&totPreOS)  sc(C_P1OS,rr,n(v1/totPreOS, '0.000%'));
+    const v2=ws[ec(C_FD1,rr)]?.v; if(v2&&totPreFD)  sc(C_P1FD,rr,n(v2/totPreFD, '0.000%'));
+    const v3=ws[ec(C_OS2,rr)]?.v; if(v3&&totPostOS) sc(C_P2OS,rr,n(v3/totPostOS,'0.000%'));
+    const v4=ws[ec(C_FD2,rr)]?.v; if(v4&&totPostFD) sc(C_P2FD,rr,n(v4/totPostFD,'0.000%'));
+  }
+
+  // ── Totals row — series face/FD reference the Pro Forma sheet ─────────────
+  // Pro Forma sheet layout: DATA_FIRST=12 (0-idx) → Excel row 13
+  //   Common Stock: Excel row 13   Series i: Excel row 14+i
+  //   Col B = Current OS, Col J = Pre-money FD (as-converted after AD)
+  const PF = "'Pro Forma'";
+  const PF_commonRow = 13;
+  const PF_seriesRow = i => 14+i;
+
+  sc(0, r, b('Totals'));
+  // Common: face from Pro Forma current OS
+  sc(C_COM, r,{t:'n',f:`${PF}!B${PF_commonRow}`,v:0,z:'#,##0'});
+  // Each preferred series: face=Pro Forma OS, as-converted=Pro Forma pre-money FD
+  for(let i=0;i<nSeries;i++){
+    sc(C_SF(i),r,{t:'n',f:`${PF}!B${PF_seriesRow(i)}`,v:0,z:'#,##0'});
+    sc(C_SC(i),r,{t:'n',f:`${PF}!J${PF_seriesRow(i)}`,v:0,z:'#,##0'});
+  }
+  sc(C_OS1,r,n(totPreOS,'#,##0'));
+  sc(C_FD1,r,n(totPreFD,'#,##0'));
+  sc(C_P1OS,r,n(1,'0.000%'));
+  sc(C_P1FD,r,n(1,'0.000%'));
+  sc(C_OS2,r,n(totPostOS,'#,##0'));
+  sc(C_FD2,r,n(totPostFD,'#,##0'));
+  sc(C_P2OS,r,n(1,'0.000%'));
+  sc(C_P2FD,r,n(1,'0.000%'));
+  r++;
+
+  // ── Sheet metadata ────────────────────────────────────────────────────────
+  ws['!ref']    = XLSX.utils.encode_range({s:{c:0,r:0},e:{c:LAST_COL,r:r}});
+  ws['!merges'] = merges;
+  const colWidths = [{wch:35}];
+  for(let i=1;i<=LAST_COL;i++) colWidths.push({wch:13});
+  ws['!cols'] = colWidths;
+  XLSX.utils.book_append_sheet(wb, ws, 'Investor Detail');
 }
 
 function _buildFormulaAuditSheet(wb, pf, rc) {
