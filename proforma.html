@@ -1468,11 +1468,14 @@ function extractStakeholders(rows, out) {
 
   // ── 4. Fallback: single-column mode for simple cap tables ─────────
   // Used when no class columns were found (e.g. a plain two-column sheet).
-  let cS = -1;
+  // Also detect OIP column for NVCA class-as-rows format.
+  let cS = -1, cOIP = -1;
   if (classCols.length === 0) {
-    cS = colBy(['total shares','total fd','fd shares','fully diluted shares',
-                'shares outstanding','outstanding shares','fully diluted',
-                'shares','# shares','outstanding','total','stock']);
+    // Outstanding Shares column (prefer OS over FD so we get pre-money face counts)
+    cS = colBy(['outstanding shares','shares outstanding','shares issued','outstanding','shares','# shares',
+                'total fd','fd shares','fully diluted shares','fully diluted','total','stock']);
+    // Original Issue Price column — read per-series OIP for NVCA format
+    cOIP = colBy(['original issue price','issue price','oip','original price','issueprice']);
     if (cS < 0) {
       // Numeric heuristic: column after cN with most large-integer cells
       const sample = rows.slice(hIdx + 1, hIdx + 50).filter(r => {
@@ -1536,7 +1539,7 @@ function extractStakeholders(rows, out) {
         if (shares > 0) out.push({ name, shares, type, ...(series ? { series } : {}) });
       }
     } else {
-      // Single-column fallback
+      // Single-column fallback (also used for NVCA class-as-rows format)
       let type = sectionType;
       if (cT >= 0) {
         const rawT = String(row[cT]||'').toLowerCase();
@@ -1547,7 +1550,18 @@ function extractStakeholders(rows, out) {
         else if (rawT.includes('common'))                             type = 'common';
       }
       const shares = cS >= 0 ? (parseFloat(String(row[cS]||'').replace(/,/g,''))||0) : 0;
-      out.push({ name, shares, type });
+      const entry = { name, shares, type };
+      // For NVCA class-as-rows format: extract OIP and series name from the row
+      if (type === 'preferred') {
+        if (cOIP >= 0) {
+          const oip = parseFloat(String(row[cOIP]||'').replace(/[$,\s]/g,''));
+          if (!isNaN(oip) && oip > 0) entry.originalIssuePrice = oip;
+        }
+        // Derive series key from the row name (e.g. "Series Seed-2 Preferred Stock" → "Seed-2")
+        const sm = name.match(/series\s+([\w\-]+)/i);
+        if (sm) entry.series = sm[1].toUpperCase();
+      }
+      out.push(entry);
     }
   }
 
@@ -2950,6 +2964,10 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   sc(0,r,s('Post Money Available Pool')); sc(1,r,s('-')); r++;
 
+  // Apply/Waive AD: 'Apply' when the round triggers BAWA anti-dilution (down round)
+  { const anyAD = preferreds.some(p=>(p.originalIssuePrice||0)>0 && pps<(p.originalIssuePrice||0));
+    sc(0,r,s('Apply/Waive AD')); sc(1,r,s(anyAD?'Apply':'Waive')); r++; }
+
   const R_pps = r;
   sc(0,r,s('Price Per Share')); sc(2,r,s('pps'));
   // DF Total row
@@ -3017,7 +3035,14 @@ function _buildProFormaSheet(wb, pf, rc) {
     seriesMap.get(key).sh += p.shares||0;
   }
   for(const [seriesName,{sh,oip}] of seriesMap){
-    capRow(seriesName,{curOS:sh,curFD:sh,oip,convCur:oip,calcConv:oip,convPF:oip,ratio:1,preFDSh:sh,postOS:sh,postFDSh:sh});
+    // BAWA anti-dilution: apply only when this is a down round (pps < oip)
+    let calcConv = oip, convRatio = 1, preFDSh = sh;
+    if(oip>0 && pps>0 && pps<oip && preFD>0 && newInvSh>0){
+      calcConv  = oip*(preFD+inv/oip)/(preFD+newInvSh);
+      convRatio = calcConv>0 ? oip/calcConv : 1;
+      preFDSh   = Math.round(sh*convRatio);
+    }
+    capRow(seriesName,{curOS:sh,curFD:sh,oip,convCur:oip,calcConv,convPF:calcConv,ratio:convRatio,preFDSh,postOS:sh,postFDSh:Math.round(sh*convRatio)});
   }
 
   // Blank separator (keeps row in SUM range but no values)
@@ -3190,14 +3215,15 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   ws['!ref']    = XLSX.utils.encode_range({s:{c:0,r:0},e:{c:14,r:r}});
   ws['!merges'] = merges;
-  // Row heights: row 10 = colored section headers, row 11 = column sub-headers (3 lines)
+  // Row heights: row 11 = colored section headers, row 12 = column sub-headers (3 lines)
+  // (Apply/Waive AD row added at row 8, pushing headers down by 1 from previous rows 10/11)
   ws['!rows'] = [];
-  ws['!rows'][10] = {hpt:22};
-  ws['!rows'][11] = {hpt:52};
-  // Apply thin borders to the cap table data/header section (rows 10 through r-1)
+  ws['!rows'][11] = {hpt:22};
+  ws['!rows'][12] = {hpt:52};
+  // Apply thin borders to the cap table data/header section (rows 11 through r-1)
   { const _th={style:'thin',color:{rgb:'D4D4D4'}};
     const _bd={top:_th,bottom:_th,left:_th,right:_th};
-    for(let _r=10;_r<r;_r++) for(let _c=0;_c<=13;_c++){
+    for(let _r=11;_r<r;_r++) for(let _c=0;_c<=13;_c++){
       const _a=ec(_c,_r);
       if(ws[_a]){if(!ws[_a].s)ws[_a].s={};if(!ws[_a].s.border)ws[_a].s.border=_bd;}
     }
@@ -3399,10 +3425,11 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   const planLabel = yearM ? `${yearM[1]} Equity Incentive Plan` : 'Equity Incentive Plan';
 
   // Pro Forma row references (Excel 1-indexed)
-  // Pro Forma DATA_FIRST=12 (0-idx) → row 13; Common=13, Series[i]=14+i
+  // Pro Forma DATA_FIRST=13 (0-idx) → row 14; Common=14, Series[i]=15+i
+  // (Apply/Waive AD row at param row 8 pushes data section down by 1)
   const PF  = "'Pro Forma'";
-  const PFC = 13;
-  const PFS = i => 14+i;
+  const PFC = 14;
+  const PFS = i => 15+i;
 
   let r=0;
 
@@ -3803,12 +3830,12 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
   }
 
   // ── Totals row — series face/FD reference the Pro Forma sheet ─────────────
-  // Pro Forma sheet layout: DATA_FIRST=12 (0-idx) → Excel row 13
-  //   Common Stock: Excel row 13   Series i: Excel row 14+i
+  // Pro Forma sheet layout: DATA_FIRST=13 (0-idx) → Excel row 14
+  //   Common Stock: Excel row 14   Series i: Excel row 15+i
   //   Col B = Current OS, Col J = Pre-money FD (as-converted after AD)
   const PF = "'Pro Forma'";
-  const PF_commonRow = 13;
-  const PF_seriesRow = i => 14+i;
+  const PF_commonRow = 14;
+  const PF_seriesRow = i => 15+i;
 
   const DR1 = `${DATA_FIRST+1}:${DATA_LAST+1}`; // Excel data row range
   sc(0, r, b('Totals'));
