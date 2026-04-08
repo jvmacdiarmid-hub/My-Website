@@ -1130,10 +1130,25 @@ async function parseCapTableOrProForma(file) {
 
   if (ext === 'xlsx' || ext === 'xls') {
     const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+    // extractRoundConfig runs on every sheet (round params may live on any sheet).
+    // extractStakeholders stops as soon as we find a substantive multi-class cap table
+    // (both common + preferred entries from a single sheet).  Processing additional sheets
+    // risks double-counting if a secondary sheet (Pro Forma, Summary, etc.) repeats the
+    // same holdings in a different layout.
+    let _capTableFound = false;
     for (const sn of wb.SheetNames) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: false });
       extractRoundConfig(rows, rc);
-      extractStakeholders(rows, stakeholders);
+      if (!_capTableFound) {
+        const prevLen = stakeholders.length;
+        extractStakeholders(rows, stakeholders);
+        const added = stakeholders.slice(prevLen);
+        if (added.length >= 3 &&
+            added.some(s => s.type === 'common') &&
+            added.some(s => s.type === 'preferred')) {
+          _capTableFound = true;
+        }
+      }
     }
   } else if (ext === 'docx' || ext === 'doc') {
     const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
@@ -3071,9 +3086,14 @@ function _buildProFormaSheet(wb, pf, rc) {
 
   // ── Cap table rows ───────────────────────────────────────────────────────
 
-  // Common Stock — aggregate all common holders into one row
+  // Common Stock — aggregate all common holders into one row.
+  // The "Current Capitalization" outstanding/FD columns reference the Summary Cap Table
+  // as the authoritative pre-money source; Pro Forma derives from Summary, not vice versa.
+  const SC = "'Summary Cap Table'";   // cross-sheet reference prefix (single-quoted sheet name)
   const commonSh = commons.reduce((a,x)=>a+(x.shares||0),0);
-  capRow('Common Stock',{curOS:commonSh,curFD:commonSh,preFDSh:commonSh,postOS:commonSh,postFDSh:commonSh});
+  const commonRow = capRow('Common Stock',{curOS:commonSh,curFD:commonSh,preFDSh:commonSh,postOS:commonSh,postFDSh:commonSh});
+  sc(1, commonRow, fml(`${SC}!C5`, commonSh, '#,##0'));  // Outstanding ← Summary C5
+  sc(2, commonRow, fml(`${SC}!D5`, commonSh, '#,##0'));  // FD         ← Summary D5
 
   // Preferred series — aggregate by series name (one row per series)
   const seriesMap = new Map();
@@ -3082,6 +3102,9 @@ function _buildProFormaSheet(wb, pf, rc) {
     if(!seriesMap.has(key)) seriesMap.set(key,{sh:0,oip:p.originalIssuePrice||0});
     seriesMap.get(key).sh += p.shares||0;
   }
+  // Summary preferred series begin at Excel row 9 (0-idx row 8 = rowPrefFirst).
+  // Series insertion order matches between both sheets (same stakeholders array).
+  let _si = 0;
   for(const [seriesName,{sh,oip}] of seriesMap){
     // BAWA anti-dilution: apply only when this is a down round (pps < oip)
     let calcConv = oip, convRatio = 1, preFDSh = sh;
@@ -3090,7 +3113,10 @@ function _buildProFormaSheet(wb, pf, rc) {
       convRatio = calcConv>0 ? oip/calcConv : 1;
       preFDSh   = Math.round(sh*convRatio);
     }
-    capRow(seriesName,{curOS:sh,curFD:sh,oip,convCur:oip,calcConv,convPF:calcConv,ratio:convRatio,preFDSh,postOS:sh,postFDSh:Math.round(sh*convRatio)});
+    const prefRow = capRow(seriesName,{curOS:sh,curFD:sh,oip,convCur:oip,calcConv,convPF:calcConv,ratio:convRatio,preFDSh,postOS:sh,postFDSh:Math.round(sh*convRatio)});
+    sc(1, prefRow, fml(`${SC}!C${9+_si}`, sh, '#,##0'));  // Outstanding ← Summary C{9+i}
+    sc(2, prefRow, fml(`${SC}!D${9+_si}`, sh, '#,##0'));  // FD         ← Summary D{9+i}
+    _si++;
   }
 
   // Blank separator (keeps row in SUM range but no values)
@@ -3480,13 +3506,6 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   const yearM  = eipRaw?.name?.match(/\b(20\d\d)\b/);
   const planLabel = yearM ? `${yearM[1]} Equity Incentive Plan` : 'Equity Incentive Plan';
 
-  // Pro Forma row references (Excel 1-indexed)
-  // Pro Forma DATA_FIRST=13 (0-idx) → row 14; Common=14, Series[i]=15+i
-  // (Apply/Waive AD row at param row 8 pushes data section down by 1)
-  const PF  = "'Pro Forma'";
-  const PFC = 14;
-  const PFS = i => 15+i;
-
   let r=0;
 
   // ── Row 0: Title ──────────────────────────────────────────────────────────
@@ -3510,8 +3529,8 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   const rowCommonData = r;
   sc(0,r,txt('Common (CS) Stock',S_dat));
   sc(1,r,num(commonSh,'#,##0',S_dat));
-  sc(2,r,fml(`${PF}!B${PFC}`,commonSh,'#,##0',S_dat));
-  sc(3,r,fml(`${PF}!C${PFC}`,commonSh,'#,##0',S_dat));
+  sc(2,r,num(commonSh,'#,##0',S_dat));  // direct value — Summary is the authoritative source
+  sc(3,r,num(commonSh,'#,##0',S_dat));
   sc(4,r,num(0,'0.000%',S_dat)); // patched below once rowGrandTot is known
   sc(5,r,num(0,'"$"#,##0.00',S_dat)); r++;
 
@@ -3536,8 +3555,8 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
     prefFDTot+=d.sh; prefCashTot+=d.sh*d.oip;
     sc(0,r,txt(k,S_dat));
     sc(1,r,num(d.sh,'#,##0',S_dat));
-    sc(2,r,fml(`${PF}!B${PFS(i)}`,d.sh,'#,##0',S_dat));
-    sc(3,r,fml(`${PF}!C${PFS(i)}`,d.sh,'#,##0',S_dat));
+    sc(2,r,num(d.sh,'#,##0',S_dat));  // direct value — Summary is the authoritative source
+    sc(3,r,num(d.sh,'#,##0',S_dat));
     sc(4,r,num(0,'0.000%',S_dat)); // patched below
     sc(5,r,num(d.sh*d.oip,'"$"#,##0.0000',S_dat)); r++;
   }
