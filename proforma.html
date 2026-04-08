@@ -1528,6 +1528,18 @@ function extractStakeholders(rows, out) {
     // the engine to report a wrong actualOptionPoolPct.
     if (/pool\s*(increase|expansion|addition|supplement|shuffle|top.?up)/i.test(name)) continue;
 
+    // Admin section markers — skip this row AND set the skipSection flag so any
+    // subsequent sub-rows (individual grantees, etc.) are also skipped.
+    // IMPORTANT: this check runs BEFORE hasNum so it fires even when the row
+    // carries a numeric total in the common column (e.g. "New Option Grants
+    // (post-closing): [4,320,877 in col 1]").  Without this early guard the row
+    // passes hasNum=true, never reaches the !hasNum / isAdmin branch, and its
+    // common-column value is emitted as a common-stockholder share count.
+    if (/new\s+(?:option|eip|rsu)\s+grants?|post.{0,20}clos.*grants?|reserved\s+for\s+issuance|shares?\s+reserved\s+for\s+(?:option|issuance)/i.test(name)) {
+      skipSection = true;
+      continue;
+    }
+
     // Section header: non-empty name but no positive numeric value anywhere after cN.
     // Percentage strings (e.g. "16.644%") must be excluded — parseFloat("16.644%") returns
     // 16.644 which is > 0, but it is not a share count and must not trigger hasNum=true.
