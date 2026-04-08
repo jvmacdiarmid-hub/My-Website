@@ -2874,18 +2874,33 @@ function _buildProFormaSheet(wb, pf, rc) {
   const s   = v       => ({t:'s', v:String(v??'')});
   const n   = (v,z)   => ({t:'n', v:Number(v)||0, ...(z?{z}:{})});
   const fml = (fm,v,z)=> ({t:'n', f:fm, v:Number(v)||0, ...(z?{z}:{})});
-  const b   = v       => ({t:'s', v:String(v??''), s:{font:{bold:true}}});
+  const b   = v       => ({t:'s', v:String(v??''), s:{font:{bold:true,name:'Calibri',sz:11}}});
   const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
-  // Colored header helpers: fill + bold font (patternType:'solid' required by SheetJS)
-  const BLUE   = {fill:{patternType:'solid',fgColor:{rgb:'4472C4'}}, font:{bold:true,color:{rgb:'FFFFFF'}}};
-  const AMBER  = {fill:{patternType:'solid',fgColor:{rgb:'FFC000'}}, font:{bold:true,color:{rgb:'000000'}}};
-  const ORANGE = {fill:{patternType:'solid',fgColor:{rgb:'C55A11'}}, font:{bold:true,color:{rgb:'FFFFFF'}}};
-  const BLUE_L  = {fill:{patternType:'solid',fgColor:{rgb:'D9E1F2'}}, font:{bold:true}, alignment:{wrapText:true}};
-  const AMBER_L = {fill:{patternType:'solid',fgColor:{rgb:'FFF2CC'}}, font:{bold:true}, alignment:{wrapText:true}};
-  const ORNG_L  = {fill:{patternType:'solid',fgColor:{rgb:'F4B183'}}, font:{bold:true}, alignment:{wrapText:true}};
-  const hdr = (v, stl) => ({t:'s', v:String(v??''), s:stl});
-  const it  = v => ({t:'s', v:String(v??''), s:{font:{italic:true, color:{rgb:'5B9BD5'}}}});
   const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+
+  // ── Style factory functions (new object per call prevents SheetJS ref-sharing issues)
+  // Colors use 8-digit ARGB (FF prefix = fully opaque) — required by SheetJS 0.20.x.
+  // bgColor:{indexed:64} is required for Excel to render the fill correctly.
+  const mkFill = (rgb) => ({patternType:'solid', fgColor:{rgb:'FF'+rgb}, bgColor:{indexed:64}});
+  const mkFill6 = (rgb6) => mkFill(rgb6); // alias for 6-digit input
+
+  const BLUE   = () => ({fill:mkFill('4472C4'), font:{bold:true,color:{rgb:'FFFFFFFF'},name:'Calibri',sz:11},
+                          alignment:{horizontal:'center',vertical:'center'}});
+  const AMBER  = () => ({fill:mkFill('FFC000'), font:{bold:true,color:{rgb:'FF000000'},name:'Calibri',sz:11},
+                          alignment:{horizontal:'center',vertical:'center'}});
+  const ORANGE = () => ({fill:mkFill('C55A11'), font:{bold:true,color:{rgb:'FFFFFFFF'},name:'Calibri',sz:11},
+                          alignment:{horizontal:'center',vertical:'center'}});
+  const BLUE_L  = () => ({fill:mkFill('D9E1F2'), font:{bold:true,name:'Calibri',sz:10},
+                           alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
+  const AMBER_L = () => ({fill:mkFill('FFF2CC'), font:{bold:true,name:'Calibri',sz:10},
+                           alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
+  const ORNG_L  = () => ({fill:mkFill('F4B183'), font:{bold:true,name:'Calibri',sz:10},
+                           alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
+  // hdr: styled header cell — uses space (' ') for empty values so SheetJS writes the cell
+  const hdr = (v, stlFn) => ({t:'s', v:v||' ', s:stlFn()});
+  // it: italic balance-check rows
+  const it  = v => ({t:'s', v:String(v??''), s:{font:{italic:true,color:{rgb:'FF5B9BD5'},name:'Calibri',sz:11}}});
+
   let r = 0;
 
   const pre      = pf.preRoundCap||pf._stakeholders||[];
@@ -3221,11 +3236,16 @@ function _buildProFormaSheet(wb, pf, rc) {
   ws['!rows'][11] = {hpt:22};
   ws['!rows'][12] = {hpt:52};
   // Apply thin borders to the cap table data/header section (rows 11 through r-1)
-  { const _th={style:'thin',color:{rgb:'D4D4D4'}};
-    const _bd={top:_th,bottom:_th,left:_th,right:_th};
-    for(let _r=11;_r<r;_r++) for(let _c=0;_c<=13;_c++){
+  // Each cell gets its own border object (no shared refs) with ARGB color format
+  { for(let _r=11;_r<r;_r++) for(let _c=0;_c<=13;_c++){
       const _a=ec(_c,_r);
-      if(ws[_a]){if(!ws[_a].s)ws[_a].s={};if(!ws[_a].s.border)ws[_a].s.border=_bd;}
+      if(ws[_a]){
+        if(!ws[_a].s) ws[_a].s={};
+        if(!ws[_a].s.border){
+          const _th={style:'thin',color:{rgb:'FFD4D4D4'}};
+          ws[_a].s.border={top:_th,bottom:_th,left:_th,right:_th};
+        }
+      }
     }
   }
   ws['!cols']   = [
@@ -3371,30 +3391,33 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
   const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
   const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
 
-  // Border definitions
-  const TH  = {style:'thin',  color:{rgb:'AAAAAA'}};
-  const TM  = {style:'medium',color:{rgb:'666666'}};
-  const BD  = {top:TH,bottom:TH,left:TH,right:TH};
-  const BDbot = {top:TH,bottom:TM,left:TH,right:TH};
+  // ── Style helpers (ARGB 8-digit colors + bgColor required by SheetJS 0.20.x) ──
+  const mkFill = rgb8 => ({patternType:'solid', fgColor:{rgb:'FF'+rgb8}, bgColor:{indexed:64}});
+  // Border definitions (ARGB colors)
+  const TH  = () => ({style:'thin',   color:{rgb:'FFAAAAAA'}});
+  const TM  = () => ({style:'medium', color:{rgb:'FF666666'}});
+  const BD  = () => ({top:TH(),bottom:TH(),left:TH(),right:TH()});
+  const BDbot = () => ({top:TH(),bottom:TM(),left:TH(),right:TH()});
 
-  // Style presets
-  const S_title = {fill:{patternType:'solid',fgColor:{rgb:'1F4E79'}},
-                   font:{bold:true,color:{rgb:'FFFFFF'},sz:12}, alignment:{wrapText:true}};
-  const S_colhdr = {fill:{patternType:'solid',fgColor:{rgb:'4472C4'}},
-                    font:{bold:true,color:{rgb:'FFFFFF'}},
-                    alignment:{wrapText:true,horizontal:'center'}, border:BD};
-  const S_sec   = {fill:{patternType:'solid',fgColor:{rgb:'D6E4F7'}},
-                   font:{bold:true}, border:BD};
-  const S_dat   = {border:BD};
-  const S_tot   = {font:{bold:true}, border:BDbot};
-  const S_ital  = {font:{italic:true}, border:BD};
-  const S_gtot  = {fill:{patternType:'solid',fgColor:{rgb:'BDD7EE'}},
-                   font:{bold:true,sz:11}, border:BDbot};
+  // Style presets — factory functions to avoid shared-reference issues
+  const S_title = () => ({fill:mkFill('1F4E79'),
+                   font:{bold:true,color:{rgb:'FFFFFFFF'},sz:12,name:'Calibri'},
+                   alignment:{wrapText:true,horizontal:'left',vertical:'center'}});
+  const S_colhdr = () => ({fill:mkFill('4472C4'),
+                    font:{bold:true,color:{rgb:'FFFFFFFF'},name:'Calibri',sz:10},
+                    alignment:{wrapText:true,horizontal:'center',vertical:'center'}, border:BD()});
+  const S_sec   = () => ({fill:mkFill('D6E4F7'),
+                   font:{bold:true,name:'Calibri',sz:11}, border:BD()});
+  const S_dat   = () => ({border:BD(), font:{name:'Calibri',sz:11}});
+  const S_tot   = () => ({font:{bold:true,name:'Calibri',sz:11}, border:BDbot()});
+  const S_ital  = () => ({font:{italic:true,name:'Calibri',sz:11}, border:BD()});
+  const S_gtot  = () => ({fill:mkFill('BDD7EE'),
+                   font:{bold:true,sz:11,name:'Calibri'}, border:BDbot()});
 
-  // Cell creators
-  const txt = (v,s) => ({t:'s', v:String(v??''), s:s||{}});
-  const num = (v,z,s) => ({t:'n', v:Number(v)||0, z:z||'#,##0', s:s||{}});
-  const fml = (f,v,z,s) => ({t:'n', f, v:Number(v)||0, z:z||'#,##0', s:s||{}});
+  // Cell creators — pass style factory (called per cell so each gets a fresh object)
+  const txt = (v,sf) => ({t:'s', v:String(v??''), s:sf?sf():{}});
+  const num = (v,z,sf) => ({t:'n', v:Number(v)||0, z:z||'#,##0', s:sf?sf():{}});
+  const fml = (f,v,z,sf) => ({t:'n', f, v:Number(v)||0, z:z||'#,##0', s:sf?sf():{}});
 
   const pre      = pf.preRoundCap||pf._stakeholders||[];
   const commons  = pre.filter(x=>x.type==='common');
@@ -3521,7 +3544,7 @@ function _buildSummaryCapTableSheet(wb, pf, rc) {
 
   // ── Section: Equity Incentive Plan ───────────────────────────────────────
   sc(0,r,txt(planLabel,S_sec));
-  sc(1,r,num(optGSh+optPSh,'#,##0',{...S_sec})); // authorized = granted + available
+  sc(1,r,num(optGSh+optPSh,'#,##0',S_sec)); // authorized = granted + available
   for(let c=2;c<=5;c++) sc(c,r,txt('',S_sec));
   r++;
 
@@ -3597,9 +3620,13 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
   const b   = v       => ({t:'s', v:String(v??''), s:{font:{bold:true}}});
   const sc  = (col,row,cell) => { if(cell!=null) ws[ec(col,row)]=cell; };
   const mg  = (r1,c1,r2,c2) => merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
-  const hdr = (v,stl) => ({t:'s',v:String(v??''),s:stl});
-  const BLUE  = {fill:{patternType:'solid',fgColor:{rgb:'BDD7EE'}},font:{bold:true}};
-  const AMBER = {fill:{patternType:'solid',fgColor:{rgb:'FFE699'}},font:{bold:true}};
+  // Style factory functions (ARGB colors + bgColor required by SheetJS 0.20.x)
+  const mkFill = rgb8 => ({patternType:'solid',fgColor:{rgb:'FF'+rgb8},bgColor:{indexed:64}});
+  const BLUE  = () => ({fill:mkFill('BDD7EE'), font:{bold:true,name:'Calibri',sz:10},
+                         alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
+  const AMBER = () => ({fill:mkFill('FFE699'), font:{bold:true,name:'Calibri',sz:10},
+                         alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
+  const hdr = (v,stlFn) => ({t:'s', v:v||' ', s:stlFn?stlFn():{font:{bold:true,name:'Calibri',sz:10}}});
 
   const pre       = pf.preRoundCap||pf._stakeholders||[];
   const conv      = pf.convertedInstruments||[];
