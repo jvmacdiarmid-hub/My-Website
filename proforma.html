@@ -2994,20 +2994,21 @@ function _buildProFormaSheet(wb, pf, rc) {
   r++; // blank
 
   // ── Section header row (colored) ─────────────────────────────────────────
-  sc(0,r,hdr('',BLUE));
-  sc(1,r,hdr('Current Capitalization',BLUE));   sc(2,r,hdr('',BLUE)); sc(3,r,hdr('',BLUE));
+  sc(0,r,hdr(' ',BLUE));
+  sc(1,r,hdr('Current Capitalization',BLUE));   sc(2,r,hdr(' ',BLUE)); sc(3,r,hdr(' ',BLUE));
   mg(r,1,r,3);
   sc(4,r,hdr('Pre Money Capitalization',AMBER));
-  sc(5,r,hdr('',AMBER)); sc(6,r,hdr('',AMBER)); sc(7,r,hdr('',AMBER)); sc(8,r,hdr('',AMBER));
-  sc(9,r,hdr('',AMBER)); sc(10,r,hdr('',AMBER));
+  sc(5,r,hdr(' ',AMBER)); sc(6,r,hdr(' ',AMBER)); sc(7,r,hdr(' ',AMBER)); sc(8,r,hdr(' ',AMBER));
+  sc(9,r,hdr(' ',AMBER)); sc(10,r,hdr(' ',AMBER));
   mg(r,4,r,10);
   sc(11,r,hdr('Post Money Capitalization',ORANGE));
-  sc(12,r,hdr('',ORANGE)); sc(13,r,hdr('',ORANGE));
+  sc(12,r,hdr(' ',ORANGE)); sc(13,r,hdr(' ',ORANGE)); sc(14,r,hdr(' ',ORANGE));
   mg(r,11,r,13);
   r++;
 
   // ── Column sub-header row (tinted) ───────────────────────────────────────
-  sc(0,r,b('Series'));
+  // Col 0: "Series" — use BLUE_L tint so row is visually uniform
+  sc(0,r,hdr('Series',BLUE_L));
   sc(1,r,hdr('Outstanding\nShares',BLUE_L)); sc(2,r,hdr('Fully Diluted\nShares',BLUE_L)); sc(3,r,hdr('Percent of\nFully Diluted\nShares',BLUE_L));
   sc(4,r,hdr('Original Issue\nPrice',AMBER_L)); sc(5,r,hdr('Conversion Price\n(Current)',AMBER_L)); sc(6,r,hdr('Calculated New\nConversion Price',AMBER_L));
   sc(7,r,hdr('Conversion Price\n(Post Financing)',AMBER_L)); sc(8,r,hdr('Conversion\nRatio',AMBER_L));
@@ -3237,7 +3238,7 @@ function _buildProFormaSheet(wb, pf, rc) {
   ws['!rows'][12] = {hpt:52};
   // Apply thin borders to the cap table data/header section (rows 11 through r-1)
   // Each cell gets its own border object (no shared refs) with ARGB color format
-  { for(let _r=11;_r<r;_r++) for(let _c=0;_c<=13;_c++){
+  { for(let _r=11;_r<r;_r++) for(let _c=0;_c<=14;_c++){
       const _a=ec(_c,_r);
       if(ws[_a]){
         if(!ws[_a].s) ws[_a].s={};
@@ -3626,7 +3627,8 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
                          alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
   const AMBER = () => ({fill:mkFill('FFE699'), font:{bold:true,name:'Calibri',sz:10},
                          alignment:{wrapText:true,horizontal:'center',vertical:'center'}});
-  const hdr = (v,stlFn) => ({t:'s', v:v||' ', s:stlFn?stlFn():{font:{bold:true,name:'Calibri',sz:10}}});
+  const hdr  = (v,stlFn) => ({t:'s', v:v||' ', s:stlFn?stlFn():{font:{bold:true,name:'Calibri',sz:10}}});
+  const bhdr = v => ({t:'s', v:String(v??'')||' ', s:{font:{bold:true,name:'Calibri',sz:10}, alignment:{wrapText:true,horizontal:'center',vertical:'center'}}});
 
   const pre       = pf.preRoundCap||pf._stakeholders||[];
   const conv      = pf.convertedInstruments||[];
@@ -3758,30 +3760,30 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
   r++;
 
   // ── Row 1: Column sub-headers ─────────────────────────────────────────────
-  sc(0, r, b('Name'));
-  sc(C_COM,  r, b('Common'));
+  sc(0, r, bhdr('Name'));
+  sc(C_COM,  r, bhdr('Common'));
   for(let i=0;i<nSeries;i++){
-    sc(C_SF(i), r, b(seriesOrder[i]));
-    sc(C_SC(i), r, b(seriesOrder[i]+'\n(as converted)'));
+    sc(C_SF(i), r, bhdr(seriesOrder[i]));
+    sc(C_SC(i), r, bhdr(seriesOrder[i]+'\n(as converted)'));
   }
-  sc(C_OPRE, r, b('Options\nOutstanding'));
-  sc(C_OS1,  r, b('Outstanding\nShares'));
-  sc(C_FD1,  r, b('Fully Diluted\nShares'));
-  sc(C_P1OS, r, b('Outstanding\nOwnership'));
-  sc(C_P1FD, r, b('Fully Diluted\nOwnership'));
-  sc(C_COM2, r, b('Common'));
-  sc(C_SLT,  r, b(nSeries>0?seriesOrder[nSeries-1]:'Preferred'));
-  sc(C_NM$,  r, b(newSeries+'\nNew Money'));
-  sc(C_NMSh, r, b(newSeries+'\nShares\n(New Money)'));
-  sc(C_CVSh, r, b(newSeries+'\nShares\n(converting\nnotes)'));
-  sc(C_TotA, r, b(newSeries+'\nshares\n(total)'));
-  sc(C_Wrnt, r, b(newSeries+'\nWarrants'));
-  sc(C_NewO, r, b('New\nOptions'));
-  sc(C_TotO, r, b('Total\nOptions'));
-  sc(C_OS2,  r, b('Outstanding\nShares'));
-  sc(C_FD2,  r, b('Fully Diluted\nShares'));
-  sc(C_P2OS, r, b('Outstanding\nOwnership'));
-  sc(C_P2FD, r, b('Fully Diluted\nOwnership'));
+  sc(C_OPRE, r, bhdr('Options\nOutstanding'));
+  sc(C_OS1,  r, bhdr('Outstanding\nShares'));
+  sc(C_FD1,  r, bhdr('Fully Diluted\nShares'));
+  sc(C_P1OS, r, bhdr('Outstanding\nOwnership'));
+  sc(C_P1FD, r, bhdr('Fully Diluted\nOwnership'));
+  sc(C_COM2, r, bhdr('Common'));
+  sc(C_SLT,  r, bhdr(nSeries>0?seriesOrder[nSeries-1]:'Preferred'));
+  sc(C_NM$,  r, bhdr(newSeries+'\nNew Money'));
+  sc(C_NMSh, r, bhdr(newSeries+'\nShares\n(New Money)'));
+  sc(C_CVSh, r, bhdr(newSeries+'\nShares\n(converting\nnotes)'));
+  sc(C_TotA, r, bhdr(newSeries+'\nshares\n(total)'));
+  sc(C_Wrnt, r, bhdr(newSeries+'\nWarrants'));
+  sc(C_NewO, r, bhdr('New\nOptions'));
+  sc(C_TotO, r, bhdr('Total\nOptions'));
+  sc(C_OS2,  r, bhdr('Outstanding\nShares'));
+  sc(C_FD2,  r, bhdr('Fully Diluted\nShares'));
+  sc(C_P2OS, r, bhdr('Outstanding\nOwnership'));
+  sc(C_P2FD, r, bhdr('Fully Diluted\nOwnership'));
   r++;
 
   const DATA_FIRST = r;
@@ -3890,6 +3892,9 @@ function _buildInvestorDetailSheet(wb, pf, rc) {
   const colWidths = [{wch:35}];
   for(let i=1;i<=LAST_COL;i++) colWidths.push({wch:13});
   ws['!cols'] = colWidths;
+  ws['!rows'] = [];
+  ws['!rows'][0] = {hpt:22};   // section title row height
+  ws['!rows'][1] = {hpt:60};   // column sub-headers (up to 4 lines)
   XLSX.utils.book_append_sheet(wb, ws, 'Investor Detail');
 }
 
