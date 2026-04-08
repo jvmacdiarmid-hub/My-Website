@@ -1514,6 +1514,7 @@ function extractStakeholders(rows, out) {
   ];
   let sectionType = 'common';
   const cT = colBy(['type','class','security','instrument']);
+  let skipSection = false;  // true when inside an administrative bottom-section block
 
   for (let ri = hIdx + 1; ri < rows.length; ri++) {
     const row  = rows[ri];
@@ -1527,16 +1528,28 @@ function extractStakeholders(rows, out) {
     // the engine to report a wrong actualOptionPoolPct.
     if (/pool\s*(increase|expansion|addition|supplement|shuffle|top.?up)/i.test(name)) continue;
 
-    // Section header: non-empty name but no positive numeric value anywhere after cN
+    // Section header: non-empty name but no positive numeric value anywhere after cN.
+    // Percentage strings (e.g. "16.644%") must be excluded — parseFloat("16.644%") returns
+    // 16.644 which is > 0, but it is not a share count and must not trigger hasNum=true.
     const hasNum = row.some((c, i) => {
       if (i <= cN) return false;
-      const v = parseFloat(String(c||'').replace(/,/g,''));
+      const raw = String(c||'').replace(/,/g,'').trim();
+      if (raw.includes('%')) return false;
+      const v = parseFloat(raw);
       return !isNaN(v) && v > 0;
     });
     if (!hasNum) {
-      for (const [re, t] of sectionTypeRe) { if (re.test(name)) { sectionType = t; break; } }
+      // Detect administrative bottom-section headers; set a flag to skip their sub-rows too.
+      const isAdmin = /new\s+option\s+grants?|new\s+pool\s+\(after|remaining\s+pool|unallocated\s+pool|options?\s+and\s+rsus?\s+issued|percentage\s+outstanding|ownership\s+%/i.test(name);
+      if (isAdmin) {
+        skipSection = true;
+      } else {
+        skipSection = false;
+        for (const [re, t] of sectionTypeRe) { if (re.test(name)) { sectionType = t; break; } }
+      }
       continue;
     }
+    if (skipSection) continue;  // skip data sub-rows under admin section headers
 
     if (classCols.length > 0) {
       // Multi-class mode: emit one stakeholder entry per class column that
