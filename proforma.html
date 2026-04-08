@@ -1410,7 +1410,10 @@ function extractStakeholders(rows, out) {
       if (headerKw.some(k => s.includes(k))) hits++;
     }
     if (hits > bestScore) { bestScore = hits; hIdx = i; }
-    if (hits >= 4) break;   // good enough — stop early
+    // Only stop early if the row itself contains a "Name"-type column header.
+    // This prevents stopping at group-label rows (which have series/preferred keywords
+    // but no "Name" column) — those rows would cause merged-cell prefixes to double-count.
+    if (hits >= 4 && rows[i].some(cell => /^(name|holder|investor|stockholder|shareholder)$/i.test(String(cell||'').trim()))) break;
   }
   if (hIdx === -1 || bestScore < 1) return;
 
@@ -1445,10 +1448,12 @@ function extractStakeholders(rows, out) {
   // specific equity class or skip it. STOP at the first "total" /
   // "fully diluted" column so we only read pre-money class columns and
   // don't double-count post-money panels that repeat the same headers.
-  const skipRe   = /total|fully.?diluted|\bfd\b|allocation|cash\s+paid|primary|post.?money|financing|dilut.*%|ownership|%\s*of/i;
+  const skipRe   = /total|fully.?diluted|\bfd\b|allocation|cash\s+paid|primary|post.?money|financing|dilut.*%|ownership|%\s*of|\bratio\b|outstanding.?shares|shares.?outstanding/i;
+  // \bratio\b  — skips "Conversion Ratio" / "1:1 Ratio" columns (which duplicate the adjacent preferred column)
+  // outstanding.?shares — skips the computed "Outstanding Shares" total column
   const classMap = [
     { re: /\bcommon\b/i,              type: 'common',    seriesFn: ()   => ''        },
-    { re: /\boption|warrant\b/i,      type: 'option',    seriesFn: ()   => ''        },
+    { re: /\boption|warrant\b|\brsu\b|equity.{0,20}incentive|incentive.{0,5}plan|\beip\b/i, type: 'option', seriesFn: () => '' },
     { re: /series\s+([a-z0-9\-]+)/i,  type: 'preferred', seriesFn: m   => m[1].toUpperCase() },
     { re: /\bpreferred\b/i,           type: 'preferred', seriesFn: ()   => ''        },
     { re: /\bsafe\b/i,                type: 'safe',      seriesFn: ()   => ''        },
