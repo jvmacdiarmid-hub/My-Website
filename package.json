@@ -3,21 +3,27 @@
   "version": "1.0.0",
   "description": "NVCA Pro Forma Builder and Analyzer — browser app + CLI test runner",
   "scripts": {
-    "test":          "node run-tests.js",
-    "test:pps":      "node run-tests.js --category PPS",
-    "test:safe":     "node run-tests.js --category SAFE",
-    "test:notes":    "node run-tests.js --category 'Convertible Notes'",
-    "test:pool":     "node run-tests.js --category 'Option Pool'",
-    "test:full":     "node run-tests.js --category 'Full Pro Forma'",
+    "test": "node run-tests.js",
+    "test:pps": "node run-tests.js --category PPS",
+    "test:safe": "node run-tests.js --category SAFE",
+    "test:notes": "node run-tests.js --category 'Convertible Notes'",
+    "test:pool": "node run-tests.js --category 'Option Pool'",
+    "test:full": "node run-tests.js --category 'Full Pro Forma'",
     "test:analysis": "node run-tests.js --category Analyzer",
-    "test:list":     "node run-tests.js --list",
-    "db":            "node manage-db.js",
-    "db:list":       "node manage-db.js list",
-    "db:audit":      "node manage-db.js audit",
-    "db:import":     "node manage-db.js import --file"
+    "test:list": "node run-tests.js --list",
+    "db": "node manage-db.js",
+    "db:list": "node manage-db.js list",
+    "db:audit": "node manage-db.js audit",
+    "db:import": "node manage-db.js import --file"
   },
   "engines": {
     "node": ">=14"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
+  }
 }
