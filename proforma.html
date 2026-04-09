@@ -1612,6 +1612,46 @@ function extractStakeholders(rows, out) {
     }
   }
 
+  // ── 5b. Post-parse correction: honour cap table's own aggregate totals ────
+  // The cap table may contain admin/section-total rows that inflated the parsed
+  // share counts.  The cap table's own "Fully diluted shares" or
+  // "Total Shares outstanding" rows are authoritative.  If the sum of parsed
+  // entries for a class exceeds that cap, trim the excess from the END of `out`
+  // (legitimate holder rows appear before admin rows, so end-trimming removes
+  // the spurious entries while keeping real stockholders intact).
+  if (classCols.length > 0) {
+    // Find the authoritative-total row
+    const totRow = (() => {
+      for (let ri = hIdx + 1; ri < rows.length; ri++) {
+        const nm = String(rows[ri][cN]||'').trim();
+        if (/^(fully[\s-]+diluted[\s-]+shares?|total[\s-]+shares?[\s-]+outstanding|total[\s-]+(?:common|preferred)?[\s-]*shares?[\s-]+(?:issued|outstanding))[:\s]*$/i.test(nm)) {
+          return rows[ri];
+        }
+      }
+      return null;
+    })();
+
+    if (totRow) {
+      for (const { c, type, series } of classCols) {
+        const raw = String(totRow[c]||'').replace(/,/g,'').trim();
+        if (!raw || raw.includes('%')) continue;
+        const cap = parseFloat(raw);
+        if (isNaN(cap) || cap <= 0) continue;
+        const entries = out.filter(e => e.type === type && (e.series||'') === (series||''));
+        const sum = entries.reduce((s, e) => s + (e.shares||0), 0);
+        if (sum <= cap) continue;
+        // Trim excess from end of out
+        let excess = Math.round(sum - cap);
+        for (let i = out.length - 1; i >= 0 && excess > 0; i--) {
+          if (out[i].type !== type || (out[i].series||'') !== (series||'')) continue;
+          const sh = out[i].shares || 0;
+          if (sh <= excess) { excess -= sh; out.splice(i, 1); }
+          else { out[i].shares -= excess; excess = 0; }
+        }
+      }
+    }
+  }
+
   // ── 6. Post-closing unallocated pool % (secondary scan) ───────────
   // Scan ALL rows (including those with no positive pre-closing values) for the
   // "Available EIP Shares" row and read its rightmost percentage-like value.
