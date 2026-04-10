@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Forma Admin Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+a{color:#60a5fa}
+/* ── Layout ── */
+.topbar{background:#1e2330;border-bottom:1px solid #2d3548;padding:14px 32px;display:flex;align-items:center;gap:16px}
+.topbar h1{font-size:1.1rem;font-weight:600;color:#f1f5f9}
+.topbar .badge{background:#334155;color:#94a3b8;font-size:.72rem;padding:2px 8px;border-radius:4px}
+.main{max-width:1200px;margin:0 auto;padding:32px 24px}
+/* ── Upload grid ── */
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.upload-card{background:#1e2330;border:2px dashed #334155;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.upload-card.drag{border-color:#60a5fa;background:#1a2540}
+.upload-card.done{border-color:#34d399;border-style:solid}
+.upload-card.error{border-color:#f87171;border-style:solid}
+.upload-card .icon{font-size:2rem;margin-bottom:10px}
+.upload-card h3{font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:4px}
+.upload-card p{font-size:.75rem;color:#64748b}
+.upload-card .filename{margin-top:10px;font-size:.75rem;color:#34d399;word-break:break-all}
+.upload-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:opacity .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-primary:hover:not(:disabled){background:#2563eb}
+.btn-green{background:#059669;color:#fff}
+.btn-green:hover:not(:disabled){background:#047857}
+.btn-red{background:#dc2626;color:#fff}
+.btn-red:hover:not(:disabled){background:#b91c1c}
+.btn-ghost{background:#1e2330;color:#94a3b8;border:1px solid #334155}
+.btn-ghost:hover:not(:disabled){background:#2d3548}
+.btn-row{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;align-items:center}
+/* ── Score card ── */
+.score-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+.score-card{background:#1e2330;border-radius:10px;padding:16px 20px;border:1px solid #2d3548}
+.score-card .label{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.score-card .value{font-size:1.6rem;font-weight:700;color:#f1f5f9}
+.score-card .value.green{color:#34d399}
+.score-card .value.yellow{color:#fbbf24}
+.score-card .value.red{color:#f87171}
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;border-bottom:1px solid #2d3548;margin-bottom:20px}
+.tab{padding:9px 18px;font-size:.82rem;font-weight:500;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.tab.active{color:#60a5fa;border-color:#60a5fa}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid #2d3548}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:#1a2035;color:#94a3b8;font-weight:600;padding:9px 12px;text-align:left;border-bottom:1px solid #2d3548;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid #1e2330;color:#cbd5e1;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#1a2035}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:600}
+.pill-red{background:#450a0a;color:#fca5a5}
+.pill-yellow{background:#422006;color:#fde68a}
+.pill-green{background:#052e16;color:#86efac}
+.pill-blue{background:#0c1a3d;color:#93c5fd}
+.pill-gray{background:#1e2330;color:#64748b}
+/* ── Diff rows ── */
+.diff-high td:first-child{border-left:3px solid #f87171}
+.diff-medium td:first-child{border-left:3px solid #fbbf24}
+.diff-low td:first-child{border-left:3px solid #60a5fa}
+/* ── Patch list ── */
+.patch-item{background:#1e2330;border:1px solid #2d3548;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.patch-item.selected{border-color:#3b82f6;background:#0c1a3d}
+.patch-check{margin-top:2px;accent-color:#3b82f6;width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.patch-body{flex:1;min-width:0}
+.patch-desc{font-size:.82rem;color:#e2e8f0;margin-bottom:4px}
+.patch-guidance{font-size:.75rem;color:#64748b;margin-top:4px;line-height:1.5}
+.patch-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+/* ── Spinner ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #334155;border-top-color:#60a5fa;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px 20px;font-size:.82rem;color:#e2e8f0;z-index:9999;display:none;max-width:380px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#toast.show{display:block}
+#toast.ok{border-color:#34d399}
+#toast.err{border-color:#f87171}
+/* ── Empty state ── */
+.empty{text-align:center;padding:48px 24px;color:#475569}
+.empty .icon{font-size:2.5rem;margin-bottom:12px}
+/* ── Code preview ── */
+.code-diff{font-family:'Courier New',monospace;font-size:.75rem;background:#0d1117;border-radius:6px;padding:12px;overflow-x:auto;max-height:300px;overflow-y:auto}
+.code-diff .del{color:#f87171;background:#2d0a0a}
+.code-diff .add{color:#86efac;background:#052e16}
+/* ── Backup list ── */
+.backup-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1e2330;border:1px solid #2d3548;border-radius:6px;margin-bottom:6px}
+.backup-item .bname{font-size:.78rem;color:#94a3b8;font-family:monospace}
+.section-title{font-size:.9rem;font-weight:600;color:#94a3b8;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #2d3548}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Pro Forma Admin Portal</h1>
+  <span class="badge">NVCA Builder Conformance</span>
+  <span style="margin-left:auto;font-size:.75rem;color:#475569">localhost only — never expose publicly</span>
+</div>
+
+<div class="main">
+
+  <!-- ── STEP 1: Upload ─────────────────────────────────────────── -->
+  <div class="section-title">Step 1 — Upload Files</div>
+  <div class="upload-grid">
+    <div class="upload-card" id="zone-ts" ondragover="drag(event,'ts')" ondragleave="undrag('ts')" ondrop="drop(event,'ts')">
+      <div class="icon">📄</div>
+      <h3>Term Sheet</h3>
+      <p>The negotiated deal terms<br>.xlsx / .docx / .txt / .pdf</p>
+      <div class="filename" id="fn-ts" style="display:none"></div>
+      <input type="file" id="file-ts" accept=".xlsx,.xls,.docx,.doc,.txt,.pdf" onchange="fileChosen('ts',this)">
+    </div>
+    <div class="upload-card" id="zone-prec" ondragover="drag(event,'prec')" ondragleave="undrag('prec')" ondrop="drop(event,'prec')">
+      <div class="icon">📊</div>
+      <h3>Precedent Excel Pro Forma</h3>
+      <p>The "gold standard" Excel<br>derived from the term sheet</p>
+      <div class="filename" id="fn-prec" style="display:none"></div>
+      <input type="file" id="file-prec" accept=".xlsx,.xls" onchange="fileChosen('prec',this)">
+    </div>
+    <div class="upload-card" id="zone-bld" ondragover="drag(event,'bld')" ondragleave="undrag('bld')" ondrop="drop(event,'bld')">
+      <div class="icon">🔧</div>
+      <h3>Builder Excel Pro Forma</h3>
+      <p>Output from the pro forma<br>builder tool</p>
+      <div class="filename" id="fn-bld" style="display:none"></div>
+      <input type="file" id="file-bld" accept=".xlsx,.xls" onchange="fileChosen('bld',this)">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btn-upload" onclick="uploadFiles()" disabled>
+      <span>Upload All Files</span>
+    </button>
+    <button class="btn btn-primary" id="btn-compare" onclick="runCompare()" disabled>
+      <span id="compare-label">Run Comparison</span>
+    </button>
+    <span id="upload-status" style="font-size:.78rem;color:#64748b"></span>
+  </div>
+
+  <!-- ── STEP 2: Results ────────────────────────────────────────── -->
+  <div id="results" style="display:none">
+
+    <!-- Score row -->
+    <div class="score-row" id="score-row"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('overview')">Overview</div>
+      <div class="tab" onclick="switchTab('sheets')">Sheets</div>
+      <div class="tab" onclick="switchTab('diffs')">Cell Diffs</div>
+      <div class="tab" onclick="switchTab('patches')">Patches</div>
+      <div class="tab" onclick="switchTab('backups')">Backups</div>
+    </div>
+
+    <!-- Overview tab -->
+    <div class="tab-panel active" id="tab-overview">
+      <div id="overview-body"></div>
+    </div>
+
+    <!-- Sheets tab -->
+    <div class="tab-panel" id="tab-sheets">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Precedent Sheet</th><th>Builder Sheet</th><th>Status</th>
+            <th>Missing Rows</th><th>Extra Rows</th><th>Cell Diffs</th><th>Style Diffs</th><th>Match %</th>
+          </tr></thead>
+          <tbody id="sheets-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Diffs tab -->
+    <div class="tab-panel" id="tab-diffs">
+      <div class="btn-row" style="margin-bottom:14px">
+        <select id="diff-filter-sheet" onchange="renderDiffs()" style="background:#1e2330;color:#cbd5e1;border:1px solid #334155;border-radius:6px;padding:6px 10px;font-size:.8rem">
+          <option value="">All Sheets</option>
+        </select>
+        <select id="diff-filter-sev" onchange="renderDiffs()" style="background:#1e2330;color:#cbd5e1;border:1px solid #334155;border-radius:6px;padding:6px 10px;font-size:.8rem">
+          <option value="">All Severities</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <span id="diff-count" style="font-size:.78rem;color:#64748b;margin-left:4px"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Sheet</th><th>Row Label</th><th>Column</th><th>Severity</th><th>Issue</th><th>Precedent</th><th>Builder</th>
+          </tr></thead>
+          <tbody id="diffs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Patches tab -->
+    <div class="tab-panel" id="tab-patches">
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="selectAllPatches(true)">Select All Auto-Apply</button>
+        <button class="btn btn-ghost" onclick="selectAllPatches(false)">Deselect All</button>
+        <button class="btn btn-green" id="btn-preview" onclick="previewPatches()" disabled>Preview Changes</button>
+        <button class="btn btn-red"   id="btn-apply"   onclick="applyPatches()"   disabled>Apply to Builder</button>
+      </div>
+      <div id="preview-output" style="display:none;margin-bottom:16px">
+        <div class="section-title">Diff Preview</div>
+        <div class="code-diff" id="preview-lines"></div>
+      </div>
+      <div id="patches-list"></div>
+    </div>
+
+    <!-- Backups tab -->
+    <div class="tab-panel" id="tab-backups">
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="loadBackups()">↻ Refresh</button>
+      </div>
+      <div id="backups-list"></div>
+    </div>
+
+  </div><!-- /results -->
+
+</div><!-- /main -->
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let sessionId   = null;
+let diffData    = null;   // full diff from GET /api/diff/:id
+let patchData   = null;   // full patches from GET /api/patches/:id
+let compareResult = null; // summary from POST /api/compare
+
+const files = { ts: null, prec: null, bld: null };
+
+// ─── File upload zones ────────────────────────────────────────────────────────
+function drag(e, key)  { e.preventDefault(); document.getElementById('zone-'+key).classList.add('drag'); }
+function undrag(key)   { document.getElementById('zone-'+key).classList.remove('drag'); }
+function drop(e, key)  {
+  e.preventDefault(); undrag(key);
+  const f = e.dataTransfer.files[0];
+  if (f) assignFile(key, f);
+}
+function fileChosen(key, input) { if (input.files[0]) assignFile(key, input.files[0]); }
+
+function assignFile(key, f) {
+  files[key] = f;
+  const zone = document.getElementById('zone-'+key);
+  const fn   = document.getElementById('fn-'+key);
+  zone.classList.remove('drag','error');
+  zone.classList.add('done');
+  fn.textContent = f.name;
+  fn.style.display = 'block';
+  updateUploadBtn();
+}
+
+function updateUploadBtn() {
+  document.getElementById('btn-upload').disabled = !(files.prec && files.bld);
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+async function uploadFiles() {
+  setStatus('Uploading…');
+  const fd = new FormData();
+  if (files.ts)   fd.append('termSheet',      files.ts);
+  if (files.prec) fd.append('precedentExcel', files.prec);
+  if (files.bld)  fd.append('builderExcel',   files.bld);
+
+  try {
+    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    sessionId = j.sessionId;
+    setStatus(`Uploaded: ${j.uploaded.join(', ')}`);
+    document.getElementById('btn-compare').disabled = false;
+    toast('Files uploaded — click Run Comparison', 'ok');
+  } catch(e) {
+    setStatus('Upload failed: ' + e.message);
+    toast('Upload error: ' + e.message, 'err');
+  }
+}
+
+// ─── Compare ─────────────────────────────────────────────────────────────────
+async function runCompare() {
+  if (!sessionId) return;
+  setCompareLabel('<span class="spinner"></span> Comparing…', true);
+  setStatus('Running comparison…');
+
+  try {
+    const r = await fetch('/api/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error + (j.stack ? '\n' + j.stack : ''));
+    compareResult = j;
+
+    // Load full diff and patches in parallel
+    const [dR, pR] = await Promise.all([
+      fetch('/api/diff/'    + sessionId).then(x => x.json()),
+      fetch('/api/patches/' + sessionId).then(x => x.json()),
+    ]);
+    diffData  = dR.diff;
+    patchData = pR.patches;
+
+    renderResults();
+    setStatus('Comparison complete');
+    setCompareLabel('Re-run Comparison', false);
+    document.getElementById('results').style.display = 'block';
+    toast('Comparison complete — ' + j.conformanceScore + '% conformance', j.conformanceScore >= 80 ? 'ok' : 'err');
+  } catch(e) {
+    setStatus('Compare failed: ' + e.message);
+    setCompareLabel('Run Comparison', false);
+    toast('Compare error: ' + e.message, 'err');
+    console.error(e);
+  }
+}
+
+// ─── Render results ───────────────────────────────────────────────────────────
+function renderResults() {
+  renderScoreRow();
+  renderOverview();
+  renderSheets();
+  renderDiffs();
+  renderPatches();
+}
+
+function scoreColor(n) { return n >= 85 ? 'green' : n >= 60 ? 'yellow' : 'red'; }
+
+function renderScoreRow() {
+  const cr = compareResult;
+  const sc = cr.conformanceScore;
+  document.getElementById('score-row').innerHTML = `
+    <div class="score-card"><div class="label">Conformance Score</div>
+      <div class="value ${scoreColor(sc)}">${sc}%</div></div>
+    <div class="score-card"><div class="label">Sheets Compared</div>
+      <div class="value">${cr.sheetCount.precedent} prec / ${cr.sheetCount.builder} bld</div></div>
+    <div class="score-card"><div class="label">Cell Diffs</div>
+      <div class="value ${cr.summary.diffs>0?'yellow':''}">${cr.summary.diffs.toLocaleString()}</div></div>
+    <div class="score-card"><div class="label">Missing Rows</div>
+      <div class="value ${cr.summary.missingRows>0?'red':''}">${cr.summary.missingRows}</div></div>
+    <div class="score-card"><div class="label">Auto Patches</div>
+      <div class="value blue">${cr.patchCount.searchReplace}</div></div>
+    <div class="score-card"><div class="label">High Severity</div>
+      <div class="value ${cr.patchCount.high>0?'red':''}">${cr.patchCount.high}</div></div>
+  `.replace('blue','').replace('<div class="value blue">',`<div class="value" style="color:#60a5fa">`);
+}
+
+function renderOverview() {
+  const cr = compareResult;
+  const ts = cr.termSheetData;
+  let html = '';
+
+  // Missing/extra sheets
+  if (cr.missingInBuilder.length) {
+    html += `<div style="background:#2d0a0a;border:1px solid #991b1b;border-radius:8px;padding:14px 18px;margin-bottom:14px">
+      <strong style="color:#fca5a5">⚠ Sheets missing from builder:</strong>
+      <ul style="margin-top:6px;padding-left:20px;color:#fca5a5;font-size:.82rem">
+        ${cr.missingInBuilder.map(s=>`<li>${s}</li>`).join('')}
+      </ul></div>`;
+  }
+  if (cr.extraInBuilder.length) {
+    html += `<div style="background:#1a2035;border:1px solid #334155;border-radius:8px;padding:14px 18px;margin-bottom:14px">
+      <strong style="color:#93c5fd">ℹ Extra sheets in builder (not in precedent):</strong>
+      <ul style="margin-top:6px;padding-left:20px;color:#93c5fd;font-size:.82rem">
+        ${cr.extraInBuilder.map(s=>`<li>${s}</li>`).join('')}
+      </ul></div>`;
+  }
+
+  // Sheet summary table
+  html += `<div style="margin-bottom:20px">
+    <div class="section-title">Sheet-Level Summary</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Sheet</th><th>Match %</th><th>Cell Diffs</th><th>Missing Rows</th><th>Extra Rows</th></tr></thead>
+      <tbody>
+      ${cr.sheets.map(s => {
+        const pct = s.totalCells > 0 ? Math.round(s.matching/s.totalCells*100) : 100;
+        return `<tr>
+          <td>${s.precedentName}${s.nameMismatch?` → <span style="color:#fbbf24">${s.builderName}</span>`:''}</td>
+          <td><span class="pill ${pct>=85?'pill-green':pct>=60?'pill-yellow':'pill-red'}">${pct}%</span></td>
+          <td>${s.cellDiffs+s.styleDiffs}</td>
+          <td>${s.missingRows||'-'}</td>
+          <td>${s.extraRows||'-'}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div></div>`;
+
+  // Term sheet summary (if parsed)
+  if (ts && Object.keys(ts).length) {
+    html += `<div class="section-title">Term Sheet Parameters Detected</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+        <tbody>
+          ${Object.entries(ts).map(([k,v])=>`<tr><td style="color:#94a3b8">${k}</td><td>${v}</td></tr>`).join('')}
+        </tbody>
+      </table></div>`;
+  }
+
+  document.getElementById('overview-body').innerHTML = html || '<div class="empty"><div class="icon">✅</div><p>No structural issues detected.</p></div>';
+}
+
+function renderSheets() {
+  const rows = compareResult.sheets.map(s => {
+    const pct = s.totalCells > 0 ? Math.round(s.matching/s.totalCells*100) : 100;
+    const status = s.builderName ? (s.nameMismatch ? 'name-mismatch' : 'found') : 'missing';
+    const statusPill = { found: '<span class="pill pill-green">Found</span>', 'name-mismatch': '<span class="pill pill-yellow">Renamed</span>', missing: '<span class="pill pill-red">Missing</span>' }[status];
+    return `<tr>
+      <td>${s.precedentName}</td>
+      <td>${s.builderName || '<span style="color:#64748b">—</span>'}</td>
+      <td>${statusPill}</td>
+      <td>${s.missingRows || '—'}</td>
+      <td>${s.extraRows || '—'}</td>
+      <td>${s.cellDiffs}</td>
+      <td>${s.styleDiffs}</td>
+      <td><span class="pill ${pct>=85?'pill-green':pct>=60?'pill-yellow':'pill-red'}">${pct}%</span></td>
+    </tr>`;
+  });
+  document.getElementById('sheets-tbody').innerHTML = rows.join('') || '<tr><td colspan="8" style="text-align:center;color:#475569">No sheets</td></tr>';
+}
+
+function renderDiffs() {
+  if (!diffData) return;
+  const sheetFilter = document.getElementById('diff-filter-sheet').value;
+  const sevFilter   = document.getElementById('diff-filter-sev').value;
+
+  // Populate sheet filter (first call only)
+  const sel = document.getElementById('diff-filter-sheet');
+  if (sel.options.length === 1) {
+    diffData.sheetComparisons.forEach(sc => {
+      const o = document.createElement('option');
+      o.value = sc.precedentName; o.textContent = sc.precedentName;
+      sel.appendChild(o);
+    });
+  }
+
+  let rows = [], count = 0;
+  for (const sc of diffData.sheetComparisons) {
+    if (sheetFilter && sc.precedentName !== sheetFilter) continue;
+    const allDiffs = [...(sc.cellDiffs||[]), ...(sc.styleDiffs||[])];
+    for (const cd of allDiffs) {
+      if (sevFilter && cd.severity !== sevFilter) continue;
+      count++;
+      for (const d of (cd.diffs||[])) {
+        const kindLabel = { value:'Value', text:'Text', formula_missing:'Formula Missing', formula_unexpected:'Formula Added', formula:'Formula Mismatch', format:'Format', missing:'Cell Missing' }[d.kind] || d.kind;
+        rows.push(`<tr class="diff-${cd.severity}">
+          <td><span class="pill pill-gray">${sc.precedentName}</span></td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(cd.rowLabel)}">${esc(cd.rowLabel)}</td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(cd.colHeader)}">${esc(cd.colHeader||'')}</td>
+          <td><span class="pill ${cd.severity==='high'?'pill-red':cd.severity==='medium'?'pill-yellow':'pill-blue'}">${cd.severity}</span></td>
+          <td>${kindLabel}</td>
+          <td style="font-family:monospace;font-size:.75rem">${fmtVal(d.precedentValue??d.precedentFormula)}</td>
+          <td style="font-family:monospace;font-size:.75rem;color:${d.builderValue!==undefined||d.builderFormula?'':'#f87171'}">${fmtVal(d.builderValue??d.builderFormula)}</td>
+        </tr>`);
+      }
+    }
+    // Missing rows
+    if (!sheetFilter || sheetFilter === sc.precedentName) {
+      for (const mr of (sc.missingRows||[])) {
+        if (sevFilter && sevFilter !== 'high') continue;
+        count++;
+        rows.push(`<tr class="diff-high">
+          <td><span class="pill pill-gray">${sc.precedentName}</span></td>
+          <td colspan="2" style="color:#fca5a5">${esc(mr.label)}</td>
+          <td><span class="pill pill-red">high</span></td>
+          <td>Row Missing</td>
+          <td colspan="2" style="color:#64748b">entire row absent from builder</td>
+        </tr>`);
+      }
+    }
+  }
+
+  document.getElementById('diff-count').textContent = `${count} item${count!==1?'s':''}`;
+  document.getElementById('diffs-tbody').innerHTML = rows.join('') ||
+    `<tr><td colspan="7" style="text-align:center;padding:32px;color:#475569">No diffs match the current filter.</td></tr>`;
+}
+
+function renderPatches() {
+  if (!patchData) return;
+  document.getElementById('btn-preview').disabled = false;
+  document.getElementById('btn-apply').disabled   = false;
+
+  const html = patchData.map((p, i) => `
+    <div class="patch-item" id="patch-${i}">
+      <input type="checkbox" class="patch-check" id="chk-${i}" ${p.type==='search_replace'?'checked':''} onchange="patchCheckChange()">
+      <div class="patch-body">
+        <div class="patch-desc">${esc(p.description)}</div>
+        ${p.guidance ? `<div class="patch-guidance">${esc(p.guidance)}</div>` : ''}
+        <div class="patch-meta">
+          <span class="pill ${p.type==='search_replace'?'pill-green':'pill-blue'}">${p.type==='search_replace'?'Auto-Apply':'Manual'}</span>
+          <span class="pill ${p.severity==='high'?'pill-red':p.severity==='medium'?'pill-yellow':'pill-gray'}">${p.severity}</span>
+          <span class="pill pill-gray">${esc(p.sheetName||'')}</span>
+          ${p.confidence ? `<span class="pill pill-gray">confidence: ${p.confidence}</span>` : ''}
+        </div>
+        ${p.type==='search_replace'?`<div style="margin-top:8px;font-size:.72rem;font-family:monospace;color:#64748b">
+          <span style="color:#f87171">- ${esc(p.search)}</span><br>
+          <span style="color:#86efac">+ ${esc(p.replace)}</span>
+        </div>`:''}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('patches-list').innerHTML = html ||
+    '<div class="empty"><div class="icon">✅</div><p>No patches generated.</p></div>';
+}
+
+function patchCheckChange() {
+  const any = Array.from(document.querySelectorAll('.patch-check')).some(c => c.checked);
+  document.getElementById('btn-preview').disabled = !any;
+  document.getElementById('btn-apply').disabled   = !any;
+}
+
+function selectAllPatches(onlyAutoApply) {
+  document.querySelectorAll('.patch-check').forEach((chk, i) => {
+    const p = patchData[i];
+    chk.checked = onlyAutoApply ? (p && p.type === 'search_replace') : false;
+    const item = document.getElementById('patch-'+i);
+    if (item) item.classList.toggle('selected', chk.checked);
+  });
+  patchCheckChange();
+}
+
+function selectedIndices() {
+  return Array.from(document.querySelectorAll('.patch-check'))
+    .map((c, i) => c.checked ? i : -1)
+    .filter(i => i >= 0);
+}
+
+async function previewPatches() {
+  const idx = selectedIndices();
+  if (!idx.length) return;
+  try {
+    const r = await fetch('/api/patch/preview', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId, patchIndices: idx })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    const linesHtml = j.changedLines.map(l => `
+      <div style="margin-bottom:6px">
+        <span style="color:#64748b">L${l.line}:</span><br>
+        <span class="del">- ${esc(l.before||'')}</span><br>
+        <span class="add">+ ${esc(l.after||'')}</span>
+      </div>`).join('');
+    document.getElementById('preview-lines').innerHTML =
+      linesHtml || '<span style="color:#64748b">No line changes (search strings not found in builder source).</span>';
+    document.getElementById('preview-output').style.display = 'block';
+    toast(`${j.appliedCount} change${j.appliedCount!==1?'s':''} would be applied`, 'ok');
+  } catch(e) { toast('Preview error: ' + e.message, 'err'); }
+}
+
+async function applyPatches() {
+  const idx = selectedIndices();
+  if (!idx.length) return;
+  if (!confirm(`Apply ${idx.length} patch(es) to proforma.html?\n\nA backup will be created automatically.`)) return;
+  try {
+    const r = await fetch('/api/patch/apply', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId, patchIndices: idx })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    toast(`Applied ${j.appliedCount} patch(es). Backup: ${j.backupPath.split('/').pop()}`, 'ok');
+    loadBackups();
+    switchTab('backups');
+  } catch(e) { toast('Apply error: ' + e.message, 'err'); }
+}
+
+async function loadBackups() {
+  try {
+    const r = await fetch('/api/backups');
+    const j = await r.json();
+    const html = j.backups.length
+      ? j.backups.map(b => `
+          <div class="backup-item">
+            <span class="bname">${esc(b.name)}</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span style="font-size:.72rem;color:#475569">${(b.size/1024).toFixed(0)} KB</span>
+              <button class="btn btn-ghost" style="padding:4px 12px;font-size:.75rem" onclick="restoreBackup('${esc(b.name)}')">Restore</button>
+            </div>
+          </div>`).join('')
+      : '<div class="empty"><div class="icon">📦</div><p>No backups yet.</p></div>';
+    document.getElementById('backups-list').innerHTML = html;
+  } catch(e) { toast('Could not load backups: ' + e.message, 'err'); }
+}
+
+async function restoreBackup(name) {
+  if (!confirm(`Restore proforma.html from ${name}?\nThe current file will be overwritten.`)) return;
+  try {
+    const r = await fetch('/api/restore', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ backupName: name })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    toast('Restored from ' + name, 'ok');
+  } catch(e) { toast('Restore error: ' + e.message, 'err'); }
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['overview','sheets','diffs','patches','backups'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name)?.classList.add('active');
+  if (name === 'backups') loadBackups();
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setStatus(msg) { document.getElementById('upload-status').textContent = msg; }
+function setCompareLabel(html, disabled) {
+  document.getElementById('compare-label').innerHTML = html;
+  document.getElementById('btn-compare').disabled = !!disabled;
+}
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtVal(v) {
+  if (v == null) return '<span style="color:#475569">—</span>';
+  if (typeof v === 'number') {
+    if (Math.abs(v) >= 1e6) return (v/1e6).toFixed(3)+'M';
+    if (Math.abs(v) >= 1e3) return v.toLocaleString('en-US',{maximumFractionDigits:0});
+    return v.toFixed(4);
+  }
+  return esc(String(v).slice(0,80));
+}
+
+let _toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type||'');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.className = '', 4000);
+}
+</script>
+</body>
+</html>
